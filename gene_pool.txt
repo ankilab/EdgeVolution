@@ -1,0 +1,17 @@
+[
+# 'layer': Abbreviation; 'f_name': TensorFlow function name; '<param_name>': TensorFlow functions parameters with [start, stop, step] or ['option1', 'option2']
+{'layer': 'C', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
+{'layer': 'DC','f_name': 'DepthwiseConv2D', 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
+{'layer': 'D', 'f_name': 'Dense', 'units': [16, 128, 8]},
+{'layer': 'MP', 'f_name': 'MaxPooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
+{'layer': 'AP', 'f_name': 'AveragePooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
+{'layer': 'GAP', 'f_name': 'GlobalAveragePooling2D()'},
+{'layer': 'GMP', 'f_name': 'GlobalMaxPooling2D()'},
+{'layer': 'F', 'f_name': 'Flatten()'},
+{'layer': 'BN', 'f_name': 'BatchNormalization()'},
+{'layer': 'IN', 'f_name': 'InstanceNormalization()'},
+{'layer': 'R', 'f_name': 'ReLU()'},
+{'layer': 'DO', 'f_name': 'Dropout', 'rate': [0.0, 1.0, 0.1]}
+]
+
+

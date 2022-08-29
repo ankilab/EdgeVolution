@@ -1,0 +1,19 @@
+[
+# feature extraction layers ("not_allowed" after the layer)
+{'layer': 'C', 'not_allowed': ['D', 'GAP', 'GMP', 'F', 'DO']},
+{'layer': 'DC', 'not_allowed': ['D', 'GAP', 'GMP', 'F', 'DO']},
+{'layer': 'R', 'not_allowed': ['R', 'BN', 'IN', 'D', 'GAP', 'GMP', 'F', 'DO']},
+{'layer': 'BN', 'not_allowed': ['BN', 'IN', 'D', 'GAP', 'GMP', 'F', 'DO']},
+{'layer': 'IN', 'not_allowed': ['IN', 'BN', 'D', 'GAP', 'GMP', 'F', 'DO']},
+{'layer': 'MP', 'not_allowed': ['MP', 'AP', 'GAP', 'GMP', 'D', 'F', 'DO']},
+{'layer': 'AP', 'not_allowed': ['MP', 'AP', 'GAP', 'GMP', 'D', 'F', 'DO']},
+
+# after GAP and GMP only Dense layer and Dropout are allowed
+{'layer': 'GAP', 'only_allowed': ['D', 'DO']},
+{'layer': 'GMP', 'only_allowed': ['D', 'DO']},
+{'layer': 'F', 'only_allowed': ['D', 'DO']},
+
+# Dense and Dropout layer only allowed after Flatten, GAP and GMP
+{'layer': 'DO', 'only_allowed': ['D']},
+{'layer': 'D', 'only_allowed': ['DO']},
+]
