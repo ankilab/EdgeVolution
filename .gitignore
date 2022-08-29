@@ -1,0 +1,8 @@
+.*
+tflite/bootloader/
+tflite/modules/
+tflite/tools/
+tflite/zephyr/
+tiny_ml/
+measure*
+*pycache*
