@@ -2,12 +2,13 @@ import os.path
 from subprocess import Popen
 from coolname import generate_slug
 import json
+import numpy as np
 
 from src.genepool import GenePool
 from src.translation import translate
 from utils.helper import grouper
 from utils.saver import Saver
-from src.crossover import crossover
+from src.fitness import calculate_fitness
 
 from utils.convert_to_tflite import convert_to_tflite
 from tflite.flash_tflite_model import flash_tflite_model
@@ -57,9 +58,10 @@ class GeneticAlgorithm:
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
-        for individuals in grouper(5, self.preselected_individuals):
+        n_models = self.params['nb_models_trained_parallel']
+        for individuals in grouper(n_models, self.preselected_individuals):
             command = 'python genetic_algorithm/src/train.py' + \
-                      f' {self.my_saver.results_dir} Generation_{self.generation_counter}'
+                      f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]}'
             procs = [Popen(command + ' ' + name, shell=True) for name in individuals if name is not None]
             for p in procs:
                 p.wait()
@@ -69,25 +71,36 @@ class GeneticAlgorithm:
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
         for individual in self.preselected_individuals:
             # determine energy consumption and inference speed
-            flash_tflite_model(path + individual + '/models/model_trained.h5')
+            flash_tflite_model(path + individual + '/models/model_tflite.tflite')
 
     def selection(self):
-        # calculate fitness of all preselected models --> order them by their achieved fitness
-        # for individual in self.preselected_individuals:
-        #    with open() as f:
-        #        d = json.loads(f.read())
-        #        fitness = calculate_fitness()
-        #
-        #        # save fitness in results.json
-        #        json.dump(d, f)
-        #        self.best_models.append()
-        self.best_models_current_generation = self.preselected_individuals
+        # calculate fitness of all preselected models
+        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+        models_with_fitness = dict()
+        for individual in self.preselected_individuals:
+            with open(path + individual + '/results.json', 'r') as f:
+                results = json.loads(f.read())
+                fitness = calculate_fitness(results, self.params)
+                models_with_fitness[f'{individual}'] = fitness
+
+            # save fitness in results.json
+            with open(path + individual + '/results.json', 'w') as f:
+                results['fitness'] = float(fitness)
+                json.dump(results, f, indent=2)
+
+        # sort them by their achieved fitness
+        models_with_fitness = sorted(models_with_fitness.items(), key=lambda item: item[1], reverse=True)
+
+        # save the model with the best fitness to find it easier later on
+        self.my_saver.save_best_individual(self.generation_counter, models_with_fitness[0])
+
+        self.best_models_current_generation = \
+            [models_with_fitness[i][0] for i in range(self.params['nb_best_models_crossover']) if i < len(models_with_fitness)]
 
     def crossover(self):
-        self.population_next_generation = crossover(
+        self.population_next_generation = self.my_gene_pool.crossover(
             path=f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/',
-            fittest_chromosomes=self.best_models_current_generation,
-            population_size=self.params['population_size'])
+            fittest_chromosomes=self.best_models_current_generation)
 
     def mutation(self):
         self.population_genotype = []

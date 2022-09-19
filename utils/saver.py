@@ -1,8 +1,7 @@
-import pandas as pd
 import os
 import time
-import tensorflow as tf
 import json
+import csv
 
 
 class Saver:
@@ -39,9 +38,6 @@ class Saver:
             os.mkdir(p)
             self._save_chromosome_phenotype(chromosome_p, chromosome_p_tflite, p)
 
-    def save_phenotypes(self, tf_model):
-        pass
-
     @staticmethod
     def _save_chromosome_genotype(chromosome, path):
         with open(path + '/chromosome.json', 'w') as f:
@@ -53,4 +49,11 @@ class Saver:
 
         with open(path + '/model_tflite_untrained.tflite', 'wb') as f:
             f.write(model_tflite_untrained)
+
+    def save_best_individual(self, gen_count, best_individual):
+        row = [f'Generation: {gen_count}', best_individual[0], best_individual[1]]
+        with open(self.results_dir + r'/best_individual_each_generation.csv', 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
 

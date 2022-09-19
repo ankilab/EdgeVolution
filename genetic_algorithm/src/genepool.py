@@ -1,5 +1,6 @@
 from ast import literal_eval
 import numpy as np
+import json
 
 
 class GenePool:
@@ -13,33 +14,35 @@ class GenePool:
 
     def get_random_chromosome(self):
         # create a gene sequence containing all layers of this random gene
-        # first layer is always 'C' or 'DC'
-        current_gene = np.random.choice(['C', 'DC'])
-        chromosome = [self._get_gene_with_random_parameters(current_gene)]
+        # add preprocessing layers (STFT, normalization and Resizing)
+        chromosome = [self._get_gene_with_random_parameters('STFT'), self._get_gene_with_random_parameters('NORM'),
+                      self._get_gene_with_random_parameters('RES')]
+
+        # first layer after preprocessing layers is always 'C' or 'DC'
+        gene = np.random.choice(['C', 'DC'])
+        chromosome.append(self._get_gene_with_random_parameters(gene))
 
         for _ in range(1, np.random.choice(np.arange(1, self.params['max_nb_feature_layers'] + 1))):
-            possible_gene = self._get_possible_genes(current_gene)  # check rule set
-            next_gene = np.random.choice(possible_gene)
-            current_gene = next_gene
+            possible_genes = self._get_possible_genes(gene)  # check rule set
+            gene = np.random.choice(possible_genes)
 
             # add current layer
-            chromosome.append(self._get_gene_with_random_parameters(current_gene))
+            chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        next_gene = np.random.choice(['GAP', 'GMP', 'F'])
-        current_gene = next_gene
-        chromosome.append(self._get_gene_with_random_parameters(current_gene))
+        gene = np.random.choice(['GAP', 'GMP', 'F'])
+        chromosome.append(self._get_gene_with_random_parameters(gene))
 
         for _ in range(1, np.random.choice(np.arange(1, self.params['max_nb_classification_layers'] + 1))):
-            possible_gene = self._get_possible_genes(current_gene)  # check rule set
-            next_gene = np.random.choice(possible_gene)
-            current_gene = next_gene
+            possible_genes = self._get_possible_genes(gene)  # check rule set
+            gene = np.random.choice(possible_genes)
 
             # add current layer
-            chromosome.append(self._get_gene_with_random_parameters(current_gene))
+            chromosome.append(self._get_gene_with_random_parameters(gene))
 
         return chromosome
 
     def _get_gene_with_random_parameters(self, target_gene: str) -> dict:
+        """ Method to get random parameters for a given gene. """
         gene_with_random_params = {}
         for gene in self.gene_pool:
             # find target_gene in gene pool
@@ -61,8 +64,83 @@ class GenePool:
                 break
         return gene_with_random_params
 
+    ##################################################################################
+    # Crossover
+    ##################################################################################
+    def crossover(self, path, fittest_chromosomes):
+        # generate N evenly spaced numbers (+ one more because we want to omit 0 afterwards)
+        choice_probabilities = np.linspace(0, 1, len(fittest_chromosomes) + 1)[1:][::-1]
+        # divide the generated numbers by their sum, to get values between 0 and 1 that sum up to 1
+        # --> this is equal to a CDF from a uniform distribution
+        choice_probabilities = choice_probabilities / np.sum(choice_probabilities)
+
+        new_population = []
+        while len(new_population) < self.params['population_size']:
+            # get random chromosome
+            chromosome_1_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+
+            # get another random chromosome (make sure to not take the same chromosome again)
+            chromosome_2_name = chromosome_1_name
+            while chromosome_1_name == chromosome_2_name:
+                chromosome_2_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+
+            # load chromosomes
+            with open(path + chromosome_1_name + '/chromosome.json') as f:
+                chromosome_1 = json.loads(f.read())
+            with open(path + chromosome_2_name + '/chromosome.json') as f:
+                chromosome_2 = json.loads(f.read())
+
+            new_chromosome_1, new_chromosome_2 = self._crossover_chromosomes(chromosome_1, chromosome_2)
+
+            if new_chromosome_1 is not None and new_chromosome_2 is not None:
+                new_population.append(new_chromosome_1)
+                new_population.append(new_chromosome_2)
+        return new_population
+
+    def _crossover_chromosomes(self, chromosome_1, chromosome_2):
+        # get the indices where preprocessing ends and where the classification layers start
+        # --> between those layers we will determine a random crossover point
+        idx_start_1 = self._get_first_conv_layer_index(chromosome_1)
+        idx_start_2 = self._get_first_conv_layer_index(chromosome_2)
+        idx_end_1 = self._get_flatten_gap_gmp_index(chromosome_1)
+        idx_end_2 = self._get_flatten_gap_gmp_index(chromosome_2)
+
+        # get two random split points
+        chr_1_split = np.random.randint(idx_start_1, idx_end_1)
+        chr_2_split = np.random.randint(idx_start_2, idx_end_2)
+
+        new_chromosome_1, new_chromosome_2 = None, None
+        i = 0
+        while i < 100:
+            if chromosome_1[chr_1_split] in self._get_possible_genes(chromosome_2[chr_2_split + 1]) \
+                    and chromosome_2[chr_2_split] in self._get_possible_genes(chromosome_1[chr_1_split + 1]):
+
+                new_chromosome_1 = chromosome_1[:chr_1_split:] + chromosome_2[chr_2_split::]
+                new_chromosome_2 = chromosome_2[:chr_2_split:] + chromosome_1[chr_1_split::]
+                break
+            i += 1
+
+        return new_chromosome_1, new_chromosome_2
+
+    @staticmethod
+    def _get_first_conv_layer_index(chromosome):
+        """ Iterate over all genes and return the index where layer C or DC is. """
+        for idx, gene in enumerate(chromosome):
+            if gene['layer'] == 'C' or gene['layer'] == 'DC':
+                return idx
+
+    @staticmethod
+    def _get_flatten_gap_gmp_index(chromosome):
+        """ Iterate over all genes and return the index where layer F, GAP or GMP is. """
+        for idx, gene in enumerate(chromosome):
+            if gene['layer'] == 'F' or gene['layer'] == 'GAP' or gene['layer'] == 'GMP':
+                return idx
+
+    ##################################################################################
+    # Mutation
+    ##################################################################################
     def mutate_chromosome(self, chromosome):
-        mutations = ['drop', 'add']#, 'params']
+        mutations = ['drop', 'add', 'params']
         mutation_probability = self.params['mutation_rate']
 
         idx = 0
@@ -101,7 +179,7 @@ class GenePool:
                 elif mutation == 'params':
                     print(f"MUTATION: Mutated Layer: {chromosome[idx]['f_name']}")
                     mutated_gene = self._mutate_parameters(chromosome[idx])
-                    chromosome.insert(idx, mutated_gene)
+                    chromosome = self._replace_gene(chromosome, mutated_gene, idx)
 
             idx += 1
 
@@ -150,11 +228,17 @@ class GenePool:
             idx += 1
         return new_chromosome
 
-    def _mutate_parameters(self, current_gene):
-        for gene in self.gene_pool:
-            if gene == current_gene:
-                pass
+    @staticmethod
+    def _replace_gene(chromosome, mutated_gene, pos):
+        return [mutated_gene if idx == pos else gene for idx, gene in enumerate(chromosome)]
 
+    def _mutate_parameters(self, current_gene):
+        mutated_gene = self._get_gene_with_random_parameters(current_gene['layer'])
+        return mutated_gene
+
+    ##################################################################################
+    # Helper
+    ##################################################################################
     def _get_possible_genes(self, previous_layer):
         """
         Method to apply the previously defined rule set (rule_set.txt) given the previous layer.

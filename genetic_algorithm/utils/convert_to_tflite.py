@@ -11,13 +11,15 @@ def convert_to_tflite(model, representative_data=None):
             for _ in range(len(representative_data)):
                 yield [representative_data.astype(np.float32)]
         converter.representative_dataset = representative_dataset
-        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
 
     # converter specifications
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
+                                           #tf.lite.OpsSet.TFLITE_BUILTINS_INT8,
+                                           tf.lite.OpsSet.SELECT_TF_OPS]
+
     # converter.inference_input_type = tf.int8
     # converter.inference_output_type = tf.int8
 
     tflite_model = converter.convert()
-
     return tflite_model

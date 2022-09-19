@@ -1,6 +1,10 @@
 [
 # 'layer': Abbreviation; 'f_name': TensorFlow function name; '<param_name>': TensorFlow functions parameters with [start, stop, step] or ['option1', 'option2']
-{'layer': 'C', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
+{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [128, 2048, 128], 'hop_length': [64, 1024, 64], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
+{'layer': 'NORM', 'f_name': 'get_norm_layer'},
+{'layer': 'RES', 'f_name': 'Resizing', 'height': [64, 64, 1], 'width': [64, 64, 1]},
+
+{'layer': 'C', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
 {'layer': 'DC','f_name': 'DepthwiseConv2D', 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
 {'layer': 'D', 'f_name': 'Dense', 'units': [16, 128, 8]},
 {'layer': 'MP', 'f_name': 'MaxPooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
