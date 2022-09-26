@@ -4,13 +4,13 @@ from coolname import generate_slug
 import json
 import numpy as np
 
-from src.genepool import GenePool
-from src.translation import translate
+from .src.genepool import GenePool
+from .src.translation import translate
 from utils.helper import grouper
 from utils.saver import Saver
-from src.fitness import calculate_fitness
+from .src.fitness import calculate_fitness
 
-from utils.convert_to_tflite import convert_to_tflite
+from .utils.convert_to_tflite import convert_to_tflite
 from tflite.flash_tflite_model import flash_tflite_model
 
 
@@ -61,7 +61,8 @@ class GeneticAlgorithm:
         n_models = self.params['nb_models_trained_parallel']
         for individuals in grouper(n_models, self.preselected_individuals):
             command = 'python genetic_algorithm/src/train.py' + \
-                      f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]}'
+                      f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]} ' \
+                      f' {self.params["dataset"]}'
             procs = [Popen(command + ' ' + name, shell=True) for name in individuals if name is not None]
             for p in procs:
                 p.wait()

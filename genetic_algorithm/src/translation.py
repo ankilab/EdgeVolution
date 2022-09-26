@@ -8,7 +8,7 @@ from tensorflow_addons.layers import InstanceNormalization
 from ast import literal_eval
 
 from kapre import STFT, Magnitude, MagnitudeToDecibel, ApplyFilterbank
-from utils.norm_layer import get_norm_layer
+from genetic_algorithm.utils.norm_layer import get_norm_layer
 
 
 def translate(chromosome: list, input_shape, nb_classes) -> tf.keras.Model:
@@ -16,17 +16,16 @@ def translate(chromosome: list, input_shape, nb_classes) -> tf.keras.Model:
     model.add(tf.keras.Input(shape=input_shape))
 
     # add preprocessing layers
-    # melspectrogram = get_melspectrogram_layer(input_shape=input_shape, n_fft=1024, win_length=64, hop_length=64,
-    #                                           return_decibel=True,
-    #                                           n_mels=80, input_data_format='channels_last',
-    #                                           output_data_format='channels_last', mel_htk=True)
-    #
-    # for layer in melspectrogram.layers:
-    #     model.add(layer)
+    melspectrogram = get_melspectrogram_layer(input_shape=input_shape, n_fft=1024, win_length=64, hop_length=64,
+                                              return_decibel=True,
+                                              n_mels=80, input_data_format='channels_last',
+                                              output_data_format='channels_last', mel_htk=True)
 
+    for layer in melspectrogram.layers:
+        model.add(layer)
 
-    #model.add(get_norm_layer())
-    #model.add(tf.keras.layers.Resizing(64, 64))
+    model.add(get_norm_layer())
+    model.add(tf.keras.layers.Resizing(64, 64))
 
     for gene in chromosome:
         gene = copy.deepcopy(gene)

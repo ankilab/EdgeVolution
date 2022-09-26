@@ -18,19 +18,42 @@ gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.05)
 sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
 
 # set weights data type
-#policy = tf.keras.mixed_precision.Policy('bfloat16')
-#tf.keras.mixed_precision.set_global_policy(policy)
+# policy = tf.keras.mixed_precision.Policy('bfloat16')
+# tf.keras.mixed_precision.set_global_policy(policy)
 
 # resolve args
 results_dir = sys.argv[1]
 gen_dir = sys.argv[2]
 nb_epochs = int(sys.argv[3])
 individual_dir = sys.argv[4]
-
+dataset = sys.argv[5]
 
 #########################################################################################
 # Load data
 #########################################################################################
+if dataset.startswith('sc_'):
+    if dataset.__contains__('ex_1'):
+        experiment = ('experiment_1', 'speech_commands_v0.01_tfrecords',
+                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
+                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'])
+    elif dataset.__contains__('ex_2'):
+        experiment = ('experiment_2', 'speech_commands_v0.02_tfrecords',
+                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
+                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'])
+    elif dataset.__contains__('ex_3'):
+        experiment = ('experiment_3', 'speech_commands_v0.01_tfrecords',
+                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
+                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                       'bed', 'bird', 'cat', 'dog', 'happy', 'house', 'marvin', 'sheila', 'tree', 'wow'])
+    elif dataset.__contains__('ex_4'):
+        experiment = ('experiment_4', 'speech_commands_v0.02_tfrecords',
+                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
+                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                       'bed', 'bird', 'cat', 'dog', 'happy', 'house', 'marvin', 'sheila', 'tree', 'wow'])
+    else:
+        raise ValueError('Specified Speech Commands experiment not found.')
+
+
 def prepare_dataset(ds):
     # take only specific classes (0 = 'down', 1 = 'go')
     ds = ds.filter(lambda img, label: label == 2 or label == 6)
@@ -84,7 +107,7 @@ def exp_scheduler(epoch, lr):
 
 
 lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=1)
-callbacks = [lr_callback] #, model_checkpoint_callback]
+callbacks = [lr_callback]  # , model_checkpoint_callback]
 
 # train
 # TODO remove model.save because it is being saved in model checkpoint
@@ -95,10 +118,10 @@ model.save(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_t
 #########################################################################################
 # Convert TF Model to TFLite Model
 #########################################################################################
-#model = load_tf_model(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_trained.h5")
+# model = load_tf_model(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_trained.h5")
 
 # TODO: use 200 mel spectrograms as representative dataset
-tflite_model = convert_to_tflite(model) #, representative_data=ds_train.batch(200))
+tflite_model = convert_to_tflite(model)  # , representative_data=ds_train.batch(200))
 
 # save TFLite model
 path_tflite_model = results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_tflite.tflite"
@@ -119,7 +142,7 @@ with open(path_tflite_model, "wb") as fp:
 #     output_data = tflite_model.get_tensor(output_details[0]['index'])
 
 # TODO compare normal model output and TFLite model output
-#test_acc = np.random.uniform(0.0, 1.0, 1)  # TODO --> placeholder
+# test_acc = np.random.uniform(0.0, 1.0, 1)  # TODO --> placeholder
 loss, test_acc = model.evaluate(ds_test.batch(64))
 
 #########################################################################################

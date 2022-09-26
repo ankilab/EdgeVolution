@@ -15,11 +15,12 @@ class GenePool:
     def get_random_chromosome(self):
         # create a gene sequence containing all layers of this random gene
         # add preprocessing layers (STFT, normalization and Resizing)
-        chromosome = [self._get_gene_with_random_parameters('STFT'), self._get_gene_with_random_parameters('NORM'),
-                      self._get_gene_with_random_parameters('RES')]
+        # chromosome = [self._get_gene_with_random_parameters('STFT'), self._get_gene_with_random_parameters('NORM'),
+                      # self._get_gene_with_random_parameters('RES')]
 
         # first layer after preprocessing layers is always 'C' or 'DC'
         gene = np.random.choice(['C', 'DC'])
+        chromosome = []
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
         for _ in range(1, np.random.choice(np.arange(1, self.params['max_nb_feature_layers'] + 1))):
@@ -116,7 +117,7 @@ class GenePool:
                     and chromosome_2[chr_2_split] in self._get_possible_genes(chromosome_1[chr_1_split + 1]):
 
                 new_chromosome_1 = chromosome_1[:chr_1_split:] + chromosome_2[chr_2_split::]
-                new_chromosome_2 = chromosome_2[:chr_2_split:] + chromosome_1[chr_1_split::]
+
                 break
             i += 1
 
@@ -195,8 +196,8 @@ class GenePool:
             return None
 
         # check if dropping the layer violates the rule set
-        possible_genes = self._get_possible_genes(previous_gene['layer'])
-        if following_gene['layer'] not in possible_genes:
+        rule_set_is_violated = self._check_rule_set_violation(previous_gene, following_gene)
+        if rule_set_is_violated:
             return None
 
         return 'drop'
@@ -239,6 +240,17 @@ class GenePool:
     ##################################################################################
     # Helper
     ##################################################################################
+    def _check_rule_set_violation(self, first_gene, second_gene):
+        """
+        Method that checks if the second given gene can follow after the first one.
+        @return: True, if the rule set is violated. False, if the rule set is not violated.
+        """
+        possible_genes = self._get_possible_genes(first_gene['layer'])
+        if second_gene['layer'] not in possible_genes:
+            return True
+        else:
+            return False
+
     def _get_possible_genes(self, previous_layer):
         """
         Method to apply the previously defined rule set (rule_set.txt) given the previous layer.

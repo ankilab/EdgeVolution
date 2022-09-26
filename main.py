@@ -2,6 +2,14 @@ from genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
 
 #################################
+# define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
+#################################
+SPEECH_COMMANDS_EXPERIMENTS = ["sc_ex_1", "sc_ex_2", "sc_ex_3", "sc_ex_4"]
+
+# select what experiment to run --> make sure the data loader is defined in train.py
+DATASET = SPEECH_COMMANDS_EXPERIMENTS[0]
+
+#################################
 # define ENAS hyper-parameters
 #################################
 NB_GENERATIONS = 10
@@ -31,7 +39,8 @@ MAX_MEMORY_FOOTPRINT = 900000  # in Bytes (900000 bytes --> 0.9 MB)
 MIN_INFERENCE_SPEED = 200  # in ms
 MAX_POWER_CONSUMPTION = 1.4  # in mJ --> TODO: find out a reasonable number
 
-params = {'generations': NB_GENERATIONS,
+params = {'dataset': DATASET,
+          'generations': NB_GENERATIONS,
           'population_size': POPULATION_SIZE,
           'nb_best_models_crossover': NB_BEST_MODELS_CROSSOVER,
           'mutation_rate': MUTATION_RATE,
@@ -55,6 +64,8 @@ def main():
 
     # save params
     my_saver.save_params(params)
+
+    prepare_dataset("speech_commands_1")
 
     # random init the population of the first generation
     my_ga.init_first_generation()
