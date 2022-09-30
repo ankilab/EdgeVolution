@@ -1,3 +1,0 @@
-[submodule "tflite/zephyr"]
-	path = tflite/zephyr
-	url = https://github.com/zephyrproject-rtos/zephyr.git
