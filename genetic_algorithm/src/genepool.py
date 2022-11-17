@@ -14,26 +14,34 @@ class GenePool:
 
     def get_random_chromosome(self):
         # create a gene sequence containing all layers of this random gene
-        # add preprocessing layers (STFT, normalization and Resizing)
-        # chromosome = [self._get_gene_with_random_parameters('STFT'), self._get_gene_with_random_parameters('NORM'),
-                      # self._get_gene_with_random_parameters('RES')]
+        # add first preprocessing layer (STFT) --> all following layers are defined through the ruleset + gene pool
 
-        # first layer after preprocessing layers is always 'C' or 'DC'
-        gene = np.random.choice(['C', 'DC'])
-        chromosome = []
-        chromosome.append(self._get_gene_with_random_parameters(gene))
+        rnd = np.random.randint(0, 100, 1)
+        #if rnd < 50:
+        if True:
+            gene = 'STFT'
+            chromosome = [self._get_gene_with_random_parameters(gene)]
+            gene = 'MAG'
+            chromosome.append(self._get_gene_with_random_parameters(gene))
+            gene = np.random.choice(['C', 'DC'])
+            chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        for _ in range(1, np.random.choice(np.arange(1, self.params['max_nb_feature_layers'] + 1))):
+        else:
+            pass
+            # TODO: 1D Conv
+
+        for _ in range(0, np.random.choice(np.arange(15, self.params['max_nb_feature_layers'] + 1)), 1):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
             # add current layer
             chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        gene = np.random.choice(['GAP', 'GMP', 'F'])
+        #gene = np.random.choice(['GAP', 'GMP', 'F'])
+        gene = np.random.choice(['GAP', 'GMP'])
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        for _ in range(1, np.random.choice(np.arange(1, self.params['max_nb_classification_layers'] + 1))):
+        for _ in range(0, np.random.choice(np.arange(3, self.params['max_nb_classification_layers'] + 1)), 1):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
@@ -76,6 +84,7 @@ class GenePool:
         choice_probabilities = choice_probabilities / np.sum(choice_probabilities)
 
         new_population = []
+        parents_names = []
         while len(new_population) < self.params['population_size']:
             # get random chromosome
             chromosome_1_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
@@ -91,12 +100,14 @@ class GenePool:
             with open(path + chromosome_2_name + '/chromosome.json') as f:
                 chromosome_2 = json.loads(f.read())
 
-            new_chromosome_1, new_chromosome_2 = self._crossover_chromosomes(chromosome_1, chromosome_2)
+            new_chromosome, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
 
-            if new_chromosome_1 is not None and new_chromosome_2 is not None:
-                new_population.append(new_chromosome_1)
-                new_population.append(new_chromosome_2)
-        return new_population
+            if new_chromosome is not None:
+                new_population.append(new_chromosome)
+                # save both parents names to be able to follow the whole evolutionary process later
+                parents_names.append((chromosome_1_name, chromosome_2_name, chr_1_split, chr_2_split))
+
+        return new_population, parents_names
 
     def _crossover_chromosomes(self, chromosome_1, chromosome_2):
         # get the indices where preprocessing ends and where the classification layers start
@@ -107,21 +118,39 @@ class GenePool:
         idx_end_2 = self._get_flatten_gap_gmp_index(chromosome_2)
 
         # get two random split points
+        if idx_start_1 is None or idx_end_1 is None:
+            print("None error (chr 1):", chromosome_1)
+            return None
+        if idx_start_2 is None or idx_end_2 is None:
+            print("None error (chr 2):", chromosome_2)
+            return None
+
         chr_1_split = np.random.randint(idx_start_1, idx_end_1)
         chr_2_split = np.random.randint(idx_start_2, idx_end_2)
 
-        new_chromosome_1, new_chromosome_2 = None, None
         i = 0
-        while i < 100:
-            if chromosome_1[chr_1_split] in self._get_possible_genes(chromosome_2[chr_2_split + 1]) \
-                    and chromosome_2[chr_2_split] in self._get_possible_genes(chromosome_1[chr_1_split + 1]):
-
-                new_chromosome_1 = chromosome_1[:chr_1_split:] + chromosome_2[chr_2_split::]
-
-                break
+        while True:
             i += 1
+            rule_set_is_violated = self._check_rule_set_violation(chromosome_1[chr_1_split], chromosome_2[chr_2_split + 1])
+            if not rule_set_is_violated:
+                break
+            elif i == 100:  # no split found --> chromosomes are not crossable
+                return None
+            else:
+                chr_1_split = np.random.randint(idx_start_1, idx_end_1)
+                chr_2_split = np.random.randint(idx_start_2, idx_end_2)
 
-        return new_chromosome_1, new_chromosome_2
+        # crossover chromosomes with determined splits
+        new_chromosome = chromosome_1[:chr_1_split:] + chromosome_2[chr_2_split+1:idx_end_2:]
+
+        # 50% chance of taking the 'second' part (i.e., classification layers) of the first chromosome,
+        # otherwise take it from the second chromosome
+        if np.random.randint(0, 100, 1) < 50:
+            new_chromosome += chromosome_1[idx_end_1::]
+        else:
+            new_chromosome += chromosome_2[idx_end_2::]
+
+        return new_chromosome, chr_1_split, chr_2_split+1
 
     @staticmethod
     def _get_first_conv_layer_index(chromosome):
@@ -150,11 +179,17 @@ class GenePool:
             if np.random.randint(0, 100) <= mutation_probability:
                 mutation = np.random.choice(mutations)
                 if mutation == 'drop':
-                    if idx == 0 or idx == len(chromosome) - 1:
-                        result = self._drop_gene(None, chromosome[idx], None)
-                    else:
-                        result = self._drop_gene(chromosome[idx - 1], chromosome[idx], chromosome[idx + 1])
+                    previous_gene = chromosome[idx - 1]
+                    current_gene = chromosome[idx]
+                    following_gene = None  # have to set it to None at this point (have to check if index [idx + 1] is out of range)
 
+                    # check if we have the first gene or the last gene
+                    if idx == 0:
+                        previous_gene = None
+                    elif not idx == len(chromosome) - 1:
+                        following_gene = chromosome[idx + 1]
+
+                    result = self._drop_gene(previous_gene, current_gene, following_gene)
                     if result == 'drop':
                         print(f"MUTATION: Removed Layer: {chromosome[idx]['f_name']}")
                         len_chromosome -= 1
@@ -164,9 +199,7 @@ class GenePool:
                         pass
                 elif mutation == 'add':
                     if idx == 0:
-                        gene_to_add = self._get_gene_to_add(None, None)
-                        chromosome = self._add_gene(chromosome, gene_to_add, idx)
-                        idx += 1
+                        # idx 0 is always pre-processing (STFT), so we won't add anything there since one layer is sufficient
                         continue
                     elif idx + 1 == len_chromosome:
                         gene_to_add = self._get_gene_to_add(chromosome[idx], None)
@@ -177,7 +210,7 @@ class GenePool:
                         print(f"MUTATION: Added Layer: {gene_to_add['f_name']}")
                         chromosome = self._add_gene(chromosome, gene_to_add, idx + 1)
                         idx += 1
-                elif mutation == 'params':
+                elif mutation == 'params' and idx != 0:
                     print(f"MUTATION: Mutated Layer: {chromosome[idx]['f_name']}")
                     mutated_gene = self._mutate_parameters(chromosome[idx])
                     chromosome = self._replace_gene(chromosome, mutated_gene, idx)
@@ -187,8 +220,12 @@ class GenePool:
         return chromosome
 
     def _drop_gene(self, previous_gene, current_gene, following_gene):
-        # this means that the first or last layer is affected --> they can be dropped always
-        if previous_gene is None or following_gene is None:
+        # this means that the first layer is affected --> don't drop it because it contains preprocessing
+        if previous_gene is None:
+            return None
+
+        # this means that the last layer is affected --> it can be dropped anyway
+        if following_gene is None:
             return 'drop'
 
         # don't drop GMP, GAP or Flatten layer

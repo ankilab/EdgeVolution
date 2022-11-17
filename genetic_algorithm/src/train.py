@@ -4,18 +4,29 @@ from tensorflow_addons.layers import InstanceNormalization
 import numpy as np
 import json
 import os
-import tensorflow_datasets as tfds
+import flammkuchen as fl
 
-from utils.convert_to_tflite import convert_to_tflite
+sys.path.insert(0, '../')
+
+from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
+from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
 from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
-from utils import norm_layer
+from genetic_algorithm.utils import norm_layer
+from datasets.get_datasets import get_datasets
 
 #########################################################################################
 # Some general configuration
 #########################################################################################
 # limit GPU memory consumption to enable parallel training of multiple neural networks
-gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.05)
-sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
+# --> Memory limit is not really 1024MB in practice...
+#gpus = tf.config.list_physical_devices('GPU')
+#tf.config.set_logical_device_configuration(gpus[0], [tf.config.LogicalDeviceConfiguration(memory_limit=1024)])
+
+# --> This is better, but we never know how many memory exactly is allocated
+# However, 24 GB should be enough to train 10 models in parallel, even if we have 10 huge models
+gpus = tf.config.list_physical_devices('GPU')
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
 
 # set weights data type
 # policy = tf.keras.mixed_precision.Policy('bfloat16')
@@ -25,48 +36,13 @@ sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_opti
 results_dir = sys.argv[1]
 gen_dir = sys.argv[2]
 nb_epochs = int(sys.argv[3])
-individual_dir = sys.argv[4]
-dataset = sys.argv[5]
+dataset = sys.argv[4]
+individual_dir = sys.argv[5]
 
 #########################################################################################
 # Load data
 #########################################################################################
-if dataset.startswith('sc_'):
-    if dataset.__contains__('ex_1'):
-        experiment = ('experiment_1', 'speech_commands_v0.01_tfrecords',
-                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
-                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'])
-    elif dataset.__contains__('ex_2'):
-        experiment = ('experiment_2', 'speech_commands_v0.02_tfrecords',
-                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
-                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'])
-    elif dataset.__contains__('ex_3'):
-        experiment = ('experiment_3', 'speech_commands_v0.01_tfrecords',
-                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
-                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                       'bed', 'bird', 'cat', 'dog', 'happy', 'house', 'marvin', 'sheila', 'tree', 'wow'])
-    elif dataset.__contains__('ex_4'):
-        experiment = ('experiment_4', 'speech_commands_v0.02_tfrecords',
-                      ['yes', 'no', 'up', 'down', 'left', 'right', 'on', 'off', 'stop', 'go',
-                       'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                       'bed', 'bird', 'cat', 'dog', 'happy', 'house', 'marvin', 'sheila', 'tree', 'wow'])
-    else:
-        raise ValueError('Specified Speech Commands experiment not found.')
-
-
-def prepare_dataset(ds):
-    # take only specific classes (0 = 'down', 1 = 'go')
-    ds = ds.filter(lambda img, label: label == 2 or label == 6)
-    ds = ds.map(lambda x, y: (tf.pad(x, [(0, 16000 - len(x))]), [1, 0] if y == 2 else [0, 1]))
-    return ds
-
-
-# TODO: specify dataset here
-dataset = tfds.load("speech_commands", data_dir='datasets/', split='train', as_supervised=True, download=True)
-ds_train = prepare_dataset(dataset)
-
-dataset = tfds.load("speech_commands", data_dir='datasets/', split='test', as_supervised=True, download=True)
-ds_test = prepare_dataset(dataset)
+ds_train, ds_val, ds_test = get_datasets(dataset)
 
 
 #########################################################################################
@@ -85,7 +61,6 @@ def load_tf_model(path):
 
 model_path = results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_untrained.h5"
 model = load_tf_model(model_path)
-os.remove(model_path)  # delete the untrained TF model
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               loss=tf.keras.losses.CategoricalCrossentropy(),
@@ -96,32 +71,48 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_trained.h5",
     monitor='val_accuracy',
     mode='max',
-    save_best_only=True)
+    save_best_only=True, save_weights_only=True)
 
 
 def exp_scheduler(epoch, lr):
-    if epoch < 3:
+    if epoch < 2:
+        return 0.01
+    elif epoch < 4:
         return 0.001
+    elif epoch < 6:
+        return 0.0001
     else:
         return lr * np.exp(-0.1)
 
 
 lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=1)
-callbacks = [lr_callback]  # , model_checkpoint_callback]
+callbacks = [lr_callback, model_checkpoint_callback]
 
 # train
-# TODO remove model.save because it is being saved in model checkpoint
-model.fit(ds_train.batch(64), callbacks=callbacks, epochs=nb_epochs, verbose=0)
+history = model.fit(ds_train.batch(128),
+                    validation_data=ds_val.batch(64),
+                    callbacks=callbacks,
+                    # verbose=1,
+                    epochs=nb_epochs)
 
-model.save(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_trained.h5")
+#########################################################################################
+# Save training history
+#########################################################################################
+save_path = results_dir + "/" + gen_dir + "/" + individual_dir + "/history.fl"
+fl.save(save_path, history.history)
 
 #########################################################################################
 # Convert TF Model to TFLite Model
 #########################################################################################
-# model = load_tf_model(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_trained.h5")
+model = load_tf_model(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_untrained.h5")
+model.load_weights(results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_trained.h5")
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+              loss=tf.keras.losses.CategoricalCrossentropy(),
+              metrics='accuracy')
 
 # TODO: use 200 mel spectrograms as representative dataset
-tflite_model = convert_to_tflite(model)  # , representative_data=ds_train.batch(200))
+tflite_model = substitute_tflite_layer(model)
+tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 6000, 1)))
 
 # save TFLite model
 path_tflite_model = results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_tflite.tflite"
@@ -142,7 +133,7 @@ with open(path_tflite_model, "wb") as fp:
 #     output_data = tflite_model.get_tensor(output_details[0]['index'])
 
 # TODO compare normal model output and TFLite model output
-# test_acc = np.random.uniform(0.0, 1.0, 1)  # TODO --> placeholder
+
 loss, test_acc = model.evaluate(ds_test.batch(64))
 
 #########################################################################################

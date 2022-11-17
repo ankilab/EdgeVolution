@@ -2,13 +2,14 @@ import os
 import time
 import json
 import csv
+import subprocess
 
 
 class Saver:
-    def __init__(self):
+    def __init__(self, experiment):
         if not os.path.exists("Results"):
             os.mkdir("Results")
-        self.results_dir = f"Results/ga_{time.strftime('%Y%m%d-%H%M%S')}"
+        self.results_dir = f"Results/ga_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}"
         os.mkdir(self.results_dir)
 
         self.random_names = []
@@ -38,6 +39,9 @@ class Saver:
             os.mkdir(p)
             self._save_chromosome_phenotype(chromosome_p, chromosome_p_tflite, p)
 
+            # convert tflite model to C-array
+            subprocess.call("xxd -i " + p + "/model_tflite_untrained.tflite > " + p + "/model_c_array_untrained.cc", shell=True)
+
     @staticmethod
     def _save_chromosome_genotype(chromosome, path):
         with open(path + '/chromosome.json', 'w') as f:
@@ -55,5 +59,14 @@ class Saver:
         with open(self.results_dir + r'/best_individual_each_generation.csv', 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(row)
+
+    def save_parents(self, gen_count, individuals_new_generation, parents_names):
+        for individual, (parent_1, parent_2, parent_1_split, parent_2_split) in zip(individuals_new_generation, parents_names):
+            # parent_1_split and parent_2_split are the idx where the chromosomes are split up
+            row = [f'Generation: {gen_count}', f'Parent_1: ({parent_1}, {parent_1_split})',
+                   f'Parent_2: ({parent_2}, {parent_2_split})', f'New_Individual: {individual}']
+            with open(self.results_dir + r'/crossover_parents.csv', 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(row)
 
 

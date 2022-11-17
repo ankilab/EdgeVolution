@@ -1,17 +1,22 @@
 import os.path
+import signal
 from subprocess import Popen
+
+import pandas as pd
 from coolname import generate_slug
 import json
 import numpy as np
+import time
+import subprocess
 
 from .src.genepool import GenePool
 from .src.translation import translate
-from utils.helper import grouper
 from utils.saver import Saver
 from .src.fitness import calculate_fitness
 
 from .utils.convert_to_tflite import convert_to_tflite
-from tflite.flash_tflite_model import flash_tflite_model
+from .utils.substitute_tflite_layer import substitute_tflite_layer
+from tools.measure_power_consumption import init_ppk2, stop_measuring
 
 
 class GeneticAlgorithm:
@@ -28,6 +33,7 @@ class GeneticAlgorithm:
         self.population_phenotype_tflite = None  # generated TFLite models
         self.generation_counter = None  # information in which generation we are currently
         self.population_next_generation = None  # contains all individuals for next generation (determined through selection, crossover and mutation)
+        self.parents_names = None  # list containing the chromosome names of the parents that yielded to a new chromosome
         self.best_models_current_generation = None  # contains the best models of the current generation
 
     def init_first_generation(self):
@@ -41,38 +47,126 @@ class GeneticAlgorithm:
         Determine models (dependent on the thresholds specified in main.py) that will be further evaluated. """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
         for individual in self.individuals_names:
+            # read h5 model memory footprint
+            model_path = path + individual + '/models/model_untrained.h5'
+            memory_footprint_h5 = os.path.getsize(model_path)
+
             # read TFLite model memory footprint
             tflite_model_path = path + individual + '/models/model_tflite_untrained.tflite'
-            memory_footprint = os.path.getsize(tflite_model_path)
-            d = {'memory_footprint': memory_footprint}
+            memory_footprint_tflite = os.path.getsize(tflite_model_path)
+
+            # read C-Array memory footprint
+            c_array_path = path + individual + '/models/model_c_array_untrained.cc'
+            memory_footprint_c_array = os.path.getsize(c_array_path)
+
+            d = {'memory_footprint_h5': memory_footprint_h5,
+                 'memory_footprint_tflite': memory_footprint_tflite,
+                 'memory_footprint_c_array': memory_footprint_c_array}
+
+            # delete the untrained TFLite model and C array
+            os.remove(tflite_model_path)
+            os.remove(c_array_path)
+
+            # take only the models into account that are below a certain threshold
+            if memory_footprint_tflite <= self.params['max_memory_footprint']:
+                self.preselected_individuals.append(individual)
+            else:
+                # set fitness directly to zero since it is not relevant anymore
+                d["fitness"] = 0
+
             with open(path + individual + '/results.json', 'w') as f:
                 json.dump(d, f, indent=2)
 
-            # delete the untrained TFLite model
-            os.remove(tflite_model_path)
-
-            # take only the models into account that are below a certain threshold
-            if memory_footprint <= self.params['max_memory_footprint']:
-                self.preselected_individuals.append(individual)
+        if len(self.preselected_individuals) == 0:
+            raise Exception("All models are too big in terms of file size. Therefore none of the generated models will"
+                            " be further evaluated. Think about adjusting your GA parameters.")
 
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
-        n_models = self.params['nb_models_trained_parallel']
-        for individuals in grouper(n_models, self.preselected_individuals):
-            command = 'python genetic_algorithm/src/train.py' + \
-                      f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]} ' \
-                      f' {self.params["dataset"]}'
-            procs = [Popen(command + ' ' + name, shell=True) for name in individuals if name is not None]
-            for p in procs:
-                p.wait()
+        max_procs = self.params['nb_models_trained_parallel']
+        procs = []
+        idx = 0
+        while idx < len(self.preselected_individuals):
+            procs = [p for p in procs if p.poll() is None]
+            if len(procs) < max_procs:
+                command = 'python genetic_algorithm/src/train.py' + \
+                          f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]}' + \
+                          f' {self.params["dataset"]} {self.preselected_individuals[idx]}'
+                procs.append(Popen(command, shell=True))
+                idx += 1
+            else:
+                time.sleep(10)
+
+        # make sure to wait until all processes are finished
+        for p in procs:
+            p.wait()
+
+    def calculate_energy_consumption(self, data_path):
+        data = pd.read_csv(data_path)
+        # get all power consumption measurements
+        values = data["Power Consumption"]
+
+        # we have to find the values that were measured during inference
+        # therefore, we calculate the gradient between all points
+        gradients = values[1::] - values[:-1:]
+
+        # get the index of the highest measured value
+        # --> get the indice of the highest gradients before and after the max value
+        max_val_idx = np.argmax(values)
+        start = np.argmax(gradients[0:max_val_idx]) + 1
+        end = np.argmin(gradients[max_val_idx::]) + max_val_idx
+
+        # the value with the highest gradient is
+        mean_power_consumption = np.mean(values[start:end+1])  # in mA
+        mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
+
+        # calculate energy consumption
+        with open(data_path.replace("power_measurements.csv", "results.json")) as f:
+            d = json.loads(f.read())
+
+        voltage = 3.3  # in V
+        inf_time = d["inference_time"]  # in ms
+        inf_time = inf_time * (10 ** -3)  # in s
+
+        energy_consumption = voltage * mean_power_consumption * inf_time  # in J
+        energy_consumption = energy_consumption * (10 ** 3)  # in mJ
+
+        # save to results.json
+        d["energy_consumption"] = float(energy_consumption)
+        with open(data_path.replace("power_measurements.csv", "results.json"), 'w') as f:
+            json.dump(d, f, indent=2)
 
     def evaluate_energy_consumption_and_inference_speed(self):
         """ Evaluate all preselected models on the MCU. """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+
+        # run this once, otherwise we might not be able to flash the microcontroller since it gets it's power from the PPK2
+        ppk2 = init_ppk2()
+        stop_measuring(ppk2)
+
         for individual in self.preselected_individuals:
-            # determine energy consumption and inference speed
-            flash_tflite_model(path + individual + '/models/model_tflite.tflite')
+            # flash tflite model
+            subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../" + path + individual + "/models/model_tflite.tflite"])
+            # TODO: remove this
+            # subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../tflite/tflite_model.tflite"])
+
+            # start measuring energy consumption
+            command = 'python tools/measure_power_consumption.py ' + path + individual + "/power_measurements.csv"
+            proc_energy = Popen(command, shell=True)
+
+            # get inference time from Serial port
+            command = 'python tools/measure_inference_time.py ' + path + individual
+            proc_inference = Popen(command, shell=True)
+
+            # wait for inference time measurement to finish
+            proc_inference.wait()
+
+            # wait for energy consumption measurement to finish
+            proc_energy.wait()
+
+            # calculate energy consumption
+            self.calculate_energy_consumption(path + individual + "/power_measurements.csv")
 
     def selection(self):
         # calculate fitness of all preselected models
@@ -82,6 +176,8 @@ class GeneticAlgorithm:
             with open(path + individual + '/results.json', 'r') as f:
                 results = json.loads(f.read())
                 fitness = calculate_fitness(results, self.params)
+
+                # save fitness together with the individual name to sort and select them later
                 models_with_fitness[f'{individual}'] = fitness
 
             # save fitness in results.json
@@ -99,11 +195,13 @@ class GeneticAlgorithm:
             [models_with_fitness[i][0] for i in range(self.params['nb_best_models_crossover']) if i < len(models_with_fitness)]
 
     def crossover(self):
-        self.population_next_generation = self.my_gene_pool.crossover(
+        """ Crossover the best chromosomes to get the population for the next generation. """
+        self.population_next_generation, self.parents_names = self.my_gene_pool.crossover(
             path=f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/',
             fittest_chromosomes=self.best_models_current_generation)
 
     def mutation(self):
+        """ Mutation of the population previously generated by crossover. """
         self.population_genotype = []
         for chromosome in self.population_next_generation:
             mutated_chromosome = self.my_gene_pool.mutate_chromosome(chromosome)
@@ -118,13 +216,31 @@ class GeneticAlgorithm:
         self.population_next_generation = []
 
         self._generate_individuals_names()
+        if self.parents_names is not None:
+            self.my_saver.save_parents(self.generation_counter, self.individuals_names, self.parents_names)
+            self.parents_names = None
 
         self.generation_counter = current_generation
 
         # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
         for chromosome in self.population_genotype:
-            model = translate(chromosome, self.params['input_shape'], self.params['nb_classes'])
-            tflite_model = convert_to_tflite(model)
+            try:
+                model = translate(chromosome, self.params['input_shape'], self.params['nb_classes'],
+                                  self.params['sample_rate'])
+            except:
+                raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")
+
+            try:
+                tflite_model = substitute_tflite_layer(model)
+            except:
+                raise ValueError(f"Error when substituting STFT and MAG layers. Chromosome: {chromosome}")
+
+            try:
+                tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
+                                                                                 self.params["input_shape"][1])))
+            except:
+                raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
+
             self.population_phenotype.append(model)
             self.population_phenotype_tflite.append(tflite_model)
 

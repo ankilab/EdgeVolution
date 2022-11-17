@@ -1,8 +1,14 @@
 [
 # 'layer': Abbreviation; 'f_name': TensorFlow function name; '<param_name>': TensorFlow functions parameters with [start, stop, step] or ['option1', 'option2']
-{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [128, 2048, 128], 'hop_length': [64, 1024, 64], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
-{'layer': 'NORM', 'f_name': 'get_norm_layer'},
-{'layer': 'RES', 'f_name': 'Resizing', 'height': [64, 64, 1], 'width': [64, 64, 1]},
+{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [256, 896, 64], 'hop_length': [96, 256, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
+{'layer': 'MAG', 'f_name': 'Magnitude()'},
+{'layer': 'MAG2DEC', 'f_name': 'MagnitudeToDecibel()'},
+
+{'layer': 'MEL', 'f_name': 'get_melspectrogram_layer', 'n_mels': [80, 80, 1], 'n_fft': [1024, 1024, 1], 'hop_length': [128, 128, 1], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last'], 'mel_f_min': [40, 40, 1], 'mel_f_max': [8000, 8000, 1]},
+
+
+# {'layer': 'NORM', 'f_name': 'get_norm_layer()'},
+# {'layer': 'RES', 'f_name': 'Resizing', 'height': [64, 64, 1], 'width': [64, 64, 1]},
 
 {'layer': 'C', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
 {'layer': 'DC','f_name': 'DepthwiseConv2D', 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
@@ -11,7 +17,7 @@
 {'layer': 'AP', 'f_name': 'AveragePooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
 {'layer': 'GAP', 'f_name': 'GlobalAveragePooling2D()'},
 {'layer': 'GMP', 'f_name': 'GlobalMaxPooling2D()'},
-{'layer': 'F', 'f_name': 'Flatten()'},
+# {'layer': 'F', 'f_name': 'Flatten()'},
 {'layer': 'BN', 'f_name': 'BatchNormalization()'},
 {'layer': 'IN', 'f_name': 'InstanceNormalization()'},
 {'layer': 'R', 'f_name': 'ReLU()'},

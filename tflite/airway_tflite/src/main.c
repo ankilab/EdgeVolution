@@ -17,7 +17,7 @@
 #include "main_functions.h"
 
 /* Increase number of loops to see full period of the sine curve */
-#define NUM_LOOPS 10
+#define NUM_LOOPS 1000
 
 /* This is the default main used on systems that have the standard C entry
  * point. Other devices (for example FreeRTOS or ESP32) that have different

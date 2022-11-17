@@ -1,17 +1,28 @@
 [
-# feature extraction layers ("not_allowed" after the layer)
-{'layer': 'C', 'not_allowed': ['D', 'GAP', 'GMP', 'F', 'DO']},
-{'layer': 'DC', 'not_allowed': ['D', 'GAP', 'GMP', 'F', 'DO']},
-{'layer': 'R', 'not_allowed': ['R', 'BN', 'IN', 'D', 'GAP', 'GMP', 'F', 'DO']},
-{'layer': 'BN', 'not_allowed': ['BN', 'IN', 'D', 'GAP', 'GMP', 'F', 'DO']},
-{'layer': 'IN', 'not_allowed': ['IN', 'BN', 'D', 'GAP', 'GMP', 'F', 'DO']},
-{'layer': 'MP', 'not_allowed': ['MP', 'AP', 'GAP', 'GMP', 'D', 'F', 'DO']},
-{'layer': 'AP', 'not_allowed': ['MP', 'AP', 'GAP', 'GMP', 'D', 'F', 'DO']},
+# preprocessing layers
+# {'layer': 'STFT', 'only_allowed': ['MAG']},
+# {'layer': 'MAG', 'only_allowed': ['MAG2DEC', 'C', 'DC']},
+
+{'layer': 'MEL', 'only_allowed': ['MAG2DEC']},
+{'layer': 'MAG2DEC', 'only_allowed': ['C', 'DC']},
+
+
+{'layer': 'NORM', 'only_allowed': []},
+{'layer': 'RES', 'only_allowed': []},
+
+# feature extraction layers
+{'layer': 'C', 'only_allowed': ['AP', 'MP', 'IN', 'BN', 'DC', 'C', 'R']},
+{'layer': 'DC', 'only_allowed': ['AP', 'MP', 'IN', 'BN', 'DC', 'C', 'R']},
+{'layer': 'R', 'only_allowed': ['AP', 'MP', 'DC', 'C']},
+{'layer': 'BN', 'only_allowed': ['AP', 'MP', 'R', 'DC', 'C']},
+{'layer': 'IN', 'only_allowed': ['AP', 'MP', 'R', 'DC', 'C']},
+{'layer': 'MP', 'only_allowed': ['IN', 'BN', 'R', 'DC', 'C']},
+{'layer': 'AP', 'only_allowed': ['IN', 'BN', 'R', 'DC', 'C']},
 
 # after GAP and GMP only Dense layer and Dropout are allowed
 {'layer': 'GAP', 'only_allowed': ['D', 'DO']},
 {'layer': 'GMP', 'only_allowed': ['D', 'DO']},
-{'layer': 'F', 'only_allowed': ['D', 'DO']},
+# {'layer': 'F', 'only_allowed': ['D', 'DO']},
 
 # Dense and Dropout layer only allowed after Flatten, GAP and GMP
 {'layer': 'DO', 'only_allowed': ['D']},
