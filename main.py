@@ -1,4 +1,5 @@
 import tensorflow as tf
+import multiprocessing
 
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
@@ -12,8 +13,8 @@ EXPERIMENT = "DEV_RUN"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
-SAMPLE_RATE = 16000
-INPUT_SHAPE = (6000, 1)
+SAMPLE_RATE = 16_000
+INPUT_SHAPE = (6_000, 1)
 NB_CLASSES = 12
 
 #################################
@@ -24,7 +25,7 @@ POPULATION_SIZE = 100
 NB_BEST_MODELS_CROSSOVER = 20  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
 
-MAX_NB_FEATURE_LAYERS = 50  # max number layers before GAP, GMP or Flatten layer in the first generation
+MAX_NB_FEATURE_LAYERS = 30  # max number layers before GAP, GMP or Flatten layer in the first generation
 MAX_NB_CLASSIFICATION_LAYERS = 6  # max number layers after GAP, GMP or Flatten layer in the first generation
 
 PATH_GENE_POOL = "gene_pool.txt"
@@ -33,13 +34,13 @@ PATH_RULE_SET = "rule_set.txt"
 #################################
 # define DNN training hyper-parameters
 #################################
-NB_EPOCHS = 15
-NB_MODELS_TRAINED_PARALLEL = 6
+NB_EPOCHS = 10
+MIN_FREE_SPACE_GPU = 5_000_000_000  # 5 GB
 
 #################################
 # define constraints
 #################################
-MAX_MEMORY_FOOTPRINT = 900000  # in Bytes (900000 bytes --> 0.9 MB)
+MAX_MEMORY_FOOTPRINT = 900_000  # in Bytes (900000 bytes --> 0.9 MB)
 MIN_INFERENCE_TIME = 300  # in ms
 MAX_ENERGY_CONSUMPTION = 3  # in mJ
 
@@ -56,7 +57,7 @@ params = {'dataset': DATASET,
           'input_shape': INPUT_SHAPE,
           'nb_classes': NB_CLASSES,
           'nb_epochs': NB_EPOCHS,
-          'nb_models_trained_parallel': NB_MODELS_TRAINED_PARALLEL,
+          'min_free_space_gpu': MIN_FREE_SPACE_GPU,
           'max_memory_footprint': MAX_MEMORY_FOOTPRINT,
           'max_inference_time': MIN_INFERENCE_TIME,
           'max_energy_consumption': MAX_ENERGY_CONSUMPTION}
@@ -82,11 +83,16 @@ def main():
         # Pre-selection of candidate chromosomes, which are trained on a GPU afterwards
         my_ga.evaluate_memory_footprint()
 
+        # Evaluate candidate models on MCU (i.e. flash them to MCU and measure objectives)
+        # this will start a process that is constantly running and evaluating an individual after training is finished
+        process = multiprocessing.Process(target=my_ga.evaluate_energy_consumption_and_inference_speed)
+        process.start()
+
         # train all neural networks that actually fit into MCU flash memory
         my_ga.train_neural_networks()
 
-        # Evaluate candidate models on MCU (i.e. flash them to MCU and measure objectives)
-        my_ga.evaluate_energy_consumption_and_inference_speed()
+        # wait for the process to finish
+        process.join(timeout=5)
 
         # determine the fitness for each model and select the best ones
         my_ga.selection()

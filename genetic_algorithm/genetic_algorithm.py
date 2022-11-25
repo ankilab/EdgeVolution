@@ -8,6 +8,7 @@ import json
 import numpy as np
 import time
 import subprocess
+import nvidia_smi
 
 from .src.genepool import GenePool
 from .src.translation import translate
@@ -64,7 +65,6 @@ class GeneticAlgorithm:
                  'memory_footprint_c_array': memory_footprint_c_array}
 
             # delete the untrained TFLite model and C array
-            os.remove(tflite_model_path)
             os.remove(c_array_path)
 
             # take only the models into account that are below a certain threshold
@@ -84,56 +84,70 @@ class GeneticAlgorithm:
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
-        max_procs = self.params['nb_models_trained_parallel']
+        min_free_space = self.params['min_free_space_gpu']
         procs = []
         idx = 0
+        nvidia_smi.nvmlInit()
+        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
         while idx < len(self.preselected_individuals):
             procs = [p for p in procs if p.poll() is None]
-            if len(procs) < max_procs:
+            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+
+            if info.free > min_free_space:
                 command = 'python genetic_algorithm/src/train.py' + \
                           f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]}' + \
                           f' {self.params["dataset"]} {self.preselected_individuals[idx]}'
                 procs.append(Popen(command, shell=True))
                 idx += 1
-            else:
-                time.sleep(10)
 
+            time.sleep(10)
+
+        nvidia_smi.nvmlShutdown()
         # make sure to wait until all processes are finished
         for p in procs:
             p.wait()
 
-    def calculate_energy_consumption(self, data_path):
-        data = pd.read_csv(data_path)
-        # get all power consumption measurements
-        values = data["Power Consumption"]
+    @staticmethod
+    def calculate_energy_consumption(data_path):
+        try:
+            # calculate energy consumption
+            with open(data_path.replace("power_measurements.csv", "results.json")) as f:
+                d = json.loads(f.read())
+        except Exception as e:
+            print(str(e))
+            return
 
-        # we have to find the values that were measured during inference
-        # therefore, we calculate the gradient between all points
-        gradients = values[1::] - values[:-1:]
+        try:
+            data = pd.read_csv(data_path)
+            # get all power consumption measurements
+            values = np.asarray(data["Power Consumption"])
 
-        # get the index of the highest measured value
-        # --> get the indice of the highest gradients before and after the max value
-        max_val_idx = np.argmax(values)
-        start = np.argmax(gradients[0:max_val_idx]) + 1
-        end = np.argmin(gradients[max_val_idx::]) + max_val_idx
+            # we have to find the values that were measured during inference
+            # therefore, we calculate the gradient between all points
+            gradients = values[1::] - values[:-1:]
 
-        # the value with the highest gradient is
-        mean_power_consumption = np.mean(values[start:end+1])  # in mA
-        mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
+            # get the index of the highest measured value
+            # --> get the indice of the highest gradients before and after the max value
+            max_val_idx = np.argmax(values)
+            start = np.argmax(gradients[0:max_val_idx]) + 1
+            end = np.argmin(gradients[max_val_idx::]) + max_val_idx
 
-        # calculate energy consumption
-        with open(data_path.replace("power_measurements.csv", "results.json")) as f:
-            d = json.loads(f.read())
+            # the value with the highest gradient is
+            mean_power_consumption = np.mean(values[start:end + 1])  # measured in uA
+            mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
 
-        voltage = 3.3  # in V
-        inf_time = d["inference_time"]  # in ms
-        inf_time = inf_time * (10 ** -3)  # in s
+            voltage = 3.3  # in V
+            inf_time = d["inference_time"]  # in ms
+            inf_time = inf_time * (10 ** -3)  # in s
 
-        energy_consumption = voltage * mean_power_consumption * inf_time  # in J
-        energy_consumption = energy_consumption * (10 ** 3)  # in mJ
+            energy_consumption = voltage * mean_power_consumption * inf_time  # in J
+            energy_consumption = energy_consumption * (10 ** 3)  # in mJ
+            d["energy_consumption"] = float(energy_consumption)
+            d["mean_power_consumption"] = float(mean_power_consumption)
+        except Exception as e:
+            d["energy_consumption"] = str(e)
 
         # save to results.json
-        d["energy_consumption"] = float(energy_consumption)
         with open(data_path.replace("power_measurements.csv", "results.json"), 'w') as f:
             json.dump(d, f, indent=2)
 
@@ -142,12 +156,18 @@ class GeneticAlgorithm:
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
         # run this once, otherwise we might not be able to flash the microcontroller since it gets it's power from the PPK2
-        ppk2 = init_ppk2()
-        stop_measuring(ppk2)
+        try:
+            ppk2 = init_ppk2()
+            stop_measuring(ppk2)
+        except:
+            pass
 
-        for individual in self.preselected_individuals:
+        for idx, individual in enumerate(self.preselected_individuals):
+            print(f"Evaluate energy of {individual} (index: {idx})")
+
             # flash tflite model
-            subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../" + path + individual + "/models/model_tflite.tflite"])
+            subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../" +
+                             path + individual + "/models/model_tflite_untrained.tflite"])
             # TODO: remove this
             # subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../tflite/tflite_model.tflite"])
 
@@ -163,10 +183,12 @@ class GeneticAlgorithm:
             proc_inference.wait()
 
             # wait for energy consumption measurement to finish
-            proc_energy.wait()
+            proc_energy.wait(timeout=5)
 
             # calculate energy consumption
             self.calculate_energy_consumption(path + individual + "/power_measurements.csv")
+
+            time.sleep(2)
 
     def selection(self):
         # calculate fitness of all preselected models

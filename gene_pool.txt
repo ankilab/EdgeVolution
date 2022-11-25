@@ -1,6 +1,6 @@
 [
 # 'layer': Abbreviation; 'f_name': TensorFlow function name; '<param_name>': TensorFlow functions parameters with [start, stop, step] or ['option1', 'option2']
-{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [256, 896, 64], 'hop_length': [96, 256, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
+{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [256, 512, 64], 'hop_length': [96, 256, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
 {'layer': 'MAG', 'f_name': 'Magnitude()'},
 {'layer': 'MAG2DEC', 'f_name': 'MagnitudeToDecibel()'},
 

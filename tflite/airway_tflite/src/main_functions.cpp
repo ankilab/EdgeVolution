@@ -77,7 +77,7 @@ void setup(void)
 		/* Give CPU resources to low priority threads. */
 		k_sleep(K_MSEC(100));
 	}
-	printk("I am here \n");
+
 	/*unsigned char *received = NULL;
 	int poll_in = 0;
 
@@ -106,9 +106,7 @@ void setup(void)
 	/* Map the model into a usable data structure. This doesn't involve any
 	 * copying or parsing, it's a very lightweight operation.
 	 */
-	printk("Trying to get model\n");
 	model = tflite::GetModel(g_model);
-	printk("Loading model successful \n");
 	if (model->version() != TFLITE_SCHEMA_VERSION) {
 		TF_LITE_REPORT_ERROR(error_reporter,
 						"Model provided is schema version %d not equal "

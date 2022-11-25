@@ -100,7 +100,10 @@ class GenePool:
             with open(path + chromosome_2_name + '/chromosome.json') as f:
                 chromosome_2 = json.loads(f.read())
 
-            new_chromosome, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
+            try:
+                new_chromosome, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
+            except:
+                continue
 
             if new_chromosome is not None:
                 new_population.append(new_chromosome)

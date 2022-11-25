@@ -55,7 +55,7 @@ class Saver:
             f.write(model_tflite_untrained)
 
     def save_best_individual(self, gen_count, best_individual):
-        row = [f'Generation: {gen_count}', best_individual[0], best_individual[1]]
+        row = [f'Generation_{gen_count}', best_individual[0], best_individual[1]]
         with open(self.results_dir + r'/best_individual_each_generation.csv', 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(row)

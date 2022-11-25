@@ -10,4 +10,4 @@ def calculate_fitness(results, params):
     except:
         # if key does not exist, the model was not trained --> there was something wrong with the model, so we omit it
         # for crossover following generations through giving it a bad fitness
-        return -1
+        return -12345

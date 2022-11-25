@@ -85,14 +85,24 @@ def exp_scheduler(epoch, lr):
         return lr * np.exp(-0.1)
 
 
-lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=1)
-callbacks = [lr_callback, model_checkpoint_callback]
+early_stopping = tf.keras.callbacks.EarlyStopping(
+    monitor="val_accuracy",
+    min_delta=0.5,
+    patience=3,
+    verbose=0,
+    mode="max",
+    baseline=None,
+    restore_best_weights=False,
+)
+
+lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=0)
+callbacks = [lr_callback, model_checkpoint_callback, early_stopping]
 
 # train
 history = model.fit(ds_train.batch(128),
                     validation_data=ds_val.batch(64),
                     callbacks=callbacks,
-                    # verbose=1,
+                    verbose=0,
                     epochs=nb_epochs)
 
 #########################################################################################
@@ -115,7 +125,7 @@ tflite_model = substitute_tflite_layer(model)
 tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 6000, 1)))
 
 # save TFLite model
-path_tflite_model = results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_tflite.tflite"
+path_tflite_model = results_dir + "/" + gen_dir + "/" + individual_dir + "/models/model_tflite_trained.tflite"
 with open(path_tflite_model, "wb") as fp:
     fp.write(tflite_model)
 

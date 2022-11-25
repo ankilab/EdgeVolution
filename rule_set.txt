@@ -1,10 +1,10 @@
 [
 # preprocessing layers
-# {'layer': 'STFT', 'only_allowed': ['MAG']},
-# {'layer': 'MAG', 'only_allowed': ['MAG2DEC', 'C', 'DC']},
+{'layer': 'STFT', 'only_allowed': ['MAG']},
+{'layer': 'MAG', 'only_allowed': ['C', 'DC']},
 
-{'layer': 'MEL', 'only_allowed': ['MAG2DEC']},
-{'layer': 'MAG2DEC', 'only_allowed': ['C', 'DC']},
+# {'layer': 'MEL', 'only_allowed': ['MAG2DEC']},
+# {'layer': 'MAG2DEC', 'only_allowed': ['C', 'DC']},
 
 
 {'layer': 'NORM', 'only_allowed': []},
