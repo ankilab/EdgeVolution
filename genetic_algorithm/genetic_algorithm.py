@@ -107,8 +107,7 @@ class GeneticAlgorithm:
         for p in procs:
             p.wait()
 
-    @staticmethod
-    def calculate_energy_consumption(data_path):
+    def calculate_energy_consumption(self, data_path):
         try:
             # calculate energy consumption
             with open(data_path.replace("power_measurements.csv", "results.json")) as f:
@@ -122,18 +121,18 @@ class GeneticAlgorithm:
             # get all power consumption measurements
             values = np.asarray(data["Power Consumption"])
 
-            # we have to find the values that were measured during inference
-            # therefore, we calculate the gradient between all points
-            gradients = values[1::] - values[:-1:]
-
-            # get the index of the highest measured value
-            # --> get the indice of the highest gradients before and after the max value
-            max_val_idx = np.argmax(values)
-            start = np.argmax(gradients[0:max_val_idx]) + 1
-            end = np.argmin(gradients[max_val_idx::]) + max_val_idx
+            threshold = self.params["power_measurement_threshold"]
+            start = None
+            end = None
+            for val in values:
+                if start is None and val > threshold:
+                    start = int(np.where(val == values)[0])
+                elif start is not None and val < threshold:
+                    end = int(np.where(val == values)[0])
+                    break
 
             # the value with the highest gradient is
-            mean_power_consumption = np.mean(values[start:end + 1])  # measured in uA
+            mean_power_consumption = np.mean(values[start:end])  # measured in uA
             mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
 
             voltage = 3.3  # in V
@@ -172,7 +171,8 @@ class GeneticAlgorithm:
             # subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../tflite/tflite_model.tflite"])
 
             # start measuring energy consumption
-            command = 'python tools/measure_power_consumption.py ' + path + individual + "/power_measurements.csv"
+            command = 'python tools/measure_power_consumption.py ' + path + individual + '/power_measurements.csv ' \
+                      + f'{self.params["power_measurement_nb_samples_average"]}'
             proc_energy = Popen(command, shell=True)
 
             # get inference time from Serial port

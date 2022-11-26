@@ -9,7 +9,7 @@ from utils.saver import Saver
 #################################
 DATASETS = ["speech_commands"]
 #EXPERIMENT = "fix_max_filesize"
-EXPERIMENT = "DEV_RUN"
+EXPERIMENT = "FIRST_COMPLETE_RUN"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
@@ -20,7 +20,7 @@ NB_CLASSES = 12
 #################################
 # define ENAS hyper-parameters
 #################################
-NB_GENERATIONS = 20
+NB_GENERATIONS = 40
 POPULATION_SIZE = 100
 NB_BEST_MODELS_CROSSOVER = 20  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
@@ -30,6 +30,13 @@ MAX_NB_CLASSIFICATION_LAYERS = 6  # max number layers after GAP, GMP or Flatten 
 
 PATH_GENE_POOL = "gene_pool.txt"
 PATH_RULE_SET = "rule_set.txt"
+
+# number of samples that will be averaged when measuring power consumption
+POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 2_000
+
+# threshold in mA that is used after the average filter was applied (i.e., value above 'threshold' is the start,
+# where inference started, the next value below 'threshold' is the end of inference)
+POWER_MEASUREMENT_THRESHOLD = 2200
 
 #################################
 # define DNN training hyper-parameters
@@ -52,6 +59,8 @@ params = {'dataset': DATASET,
           'mutation_rate': MUTATION_RATE,
           'max_nb_feature_layers': MAX_NB_FEATURE_LAYERS,
           'max_nb_classification_layers': MAX_NB_CLASSIFICATION_LAYERS,
+          'power_measurement_nb_samples_average': POWER_MEASUREMENT_NB_SAMPLES_AVERAGE,
+          'power_measurement_threshold': POWER_MEASUREMENT_THRESHOLD,
           'path_gene_pool': PATH_GENE_POOL,
           'path_rule_set': PATH_RULE_SET,
           'input_shape': INPUT_SHAPE,

@@ -5,12 +5,14 @@ import numpy as np
 import json
 import os
 import flammkuchen as fl
+from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
 
-sys.path.insert(0, '../')
+sys.path.insert(0, '.')
+sys.path.insert(0, '../.')
+sys.path.insert(0, '../../.')
 
 from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
 from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
-from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
 from genetic_algorithm.utils import norm_layer
 from datasets.get_datasets import get_datasets
 
