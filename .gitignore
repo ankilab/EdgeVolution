@@ -6,10 +6,9 @@ tflite/zephyr/
 tflite/build/
 tflite/log.log
 tiny_ml/
-measure*
 *pycache*
 Results/
-datasets/
+datasets/*dataset
 *utils/datasets.py
 *.cc
 *.tflite
@@ -20,3 +19,4 @@ test-pyserial.ipynb
 can-be-deleted-later.ipynb
 train-conv1d-network.ipynb
 train-resnet.ipynb
+/measure_energy_consumption.ipynb

@@ -10,7 +10,7 @@ from utils.loader import Loader
 #################################
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
-DATASETS = ["speech_commands"]
+DATASETS = ["speech_commands_dataset"]
 #EXPERIMENT = "fix_max_filesize"
 EXPERIMENT = "EXP_SC_1D_and_2D_4classes"
 
