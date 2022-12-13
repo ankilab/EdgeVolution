@@ -3,9 +3,9 @@ import sys
 from tensorflow_addons.layers import InstanceNormalization
 import numpy as np
 import json
-import os
 import flammkuchen as fl
 from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, '.')
 sys.path.insert(0, '../.')
@@ -44,7 +44,7 @@ individual_dir = sys.argv[5]
 #########################################################################################
 # Load data
 #########################################################################################
-ds_train, ds_val, ds_test = get_datasets(dataset)
+ds_train, ds_val, ds_test = get_datasets(dataset, classes_filter=[0, 2, 6, 8])
 
 
 #########################################################################################
@@ -98,13 +98,13 @@ early_stopping = tf.keras.callbacks.EarlyStopping(
 )
 
 lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=0)
-callbacks = [lr_callback, model_checkpoint_callback, early_stopping]
+callbacks = [lr_callback, model_checkpoint_callback]#, early_stopping]
 
 # train
 history = model.fit(ds_train.batch(128),
                     validation_data=ds_val.batch(64),
                     callbacks=callbacks,
-                    verbose=0,
+                    #verbose=0,
                     epochs=nb_epochs)
 
 #########################################################################################
@@ -123,7 +123,7 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               metrics='accuracy')
 
 # TODO: use 200 mel spectrograms as representative dataset
-tflite_model = substitute_tflite_layer(model)
+tflite_model = substitute_tflite_layer(model, (6000, 1))
 tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 6000, 1)))
 
 # save TFLite model
@@ -146,14 +146,14 @@ with open(path_tflite_model, "wb") as fp:
 
 # TODO compare normal model output and TFLite model output
 
-loss, test_acc = model.evaluate(ds_test.batch(64))
-
+#loss, test_acc = model.evaluate(ds_test.batch(64))
+best_val_acc = np.max(history.history['val_accuracy'])
 #########################################################################################
 # Save determined test accuracy in results.json
 #########################################################################################
 with open(results_dir + "/" + gen_dir + "/" + individual_dir + '/results.json') as f:
     d = json.loads(f.read())
 
-d["test_acc"] = float(test_acc)
+d["val_acc"] = float(best_val_acc)
 with open(results_dir + "/" + gen_dir + "/" + individual_dir + '/results.json', 'w') as f:
     json.dump(d, f, indent=2)

@@ -1,28 +1,35 @@
 import tensorflow as tf
 import multiprocessing
+import argparse
 
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
+from utils.loader import Loader
+
 
 #################################
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
 DATASETS = ["speech_commands"]
 #EXPERIMENT = "fix_max_filesize"
-EXPERIMENT = "FIRST_COMPLETE_RUN"
+EXPERIMENT = "EXP_SC_1D_and_2D_4classes"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
 SAMPLE_RATE = 16_000
 INPUT_SHAPE = (6_000, 1)
-NB_CLASSES = 12
+NB_CLASSES = 12  # Speech commands is a 12 classes problem
+CLASSES_FILTER = [0, 2, 6, 8]
+
+if CLASSES_FILTER is not None:
+    NB_CLASSES = len(CLASSES_FILTER)
 
 #################################
 # define ENAS hyper-parameters
 #################################
-NB_GENERATIONS = 40
-POPULATION_SIZE = 100
-NB_BEST_MODELS_CROSSOVER = 20  # specifies the number of models that will be used for crossover
+NB_GENERATIONS = 50
+POPULATION_SIZE = 20
+NB_BEST_MODELS_CROSSOVER = 10  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
 
 MAX_NB_FEATURE_LAYERS = 30  # max number layers before GAP, GMP or Flatten layer in the first generation
@@ -32,23 +39,23 @@ PATH_GENE_POOL = "gene_pool.txt"
 PATH_RULE_SET = "rule_set.txt"
 
 # number of samples that will be averaged when measuring power consumption
-POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 2_000
+POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 20
 
 # threshold in mA that is used after the average filter was applied (i.e., value above 'threshold' is the start,
 # where inference started, the next value below 'threshold' is the end of inference)
-POWER_MEASUREMENT_THRESHOLD = 2200
+POWER_MEASUREMENT_THRESHOLD = 3500  # in uA
 
-#################################
+######################################
 # define DNN training hyper-parameters
-#################################
+######################################
 NB_EPOCHS = 10
-MIN_FREE_SPACE_GPU = 5_000_000_000  # 5 GB
+MIN_FREE_SPACE_GPU = 4_000_000_000  # 6 GB
 
 #################################
 # define constraints
 #################################
 MAX_MEMORY_FOOTPRINT = 900_000  # in Bytes (900000 bytes --> 0.9 MB)
-MIN_INFERENCE_TIME = 300  # in ms
+MIN_INFERENCE_TIME = 1000  # in ms
 MAX_ENERGY_CONSUMPTION = 3  # in mJ
 
 params = {'dataset': DATASET,
@@ -72,21 +79,34 @@ params = {'dataset': DATASET,
           'max_energy_consumption': MAX_ENERGY_CONSUMPTION}
 
 
-def main():
+def main(continue_from=None):
     gpus = tf.config.list_physical_devices('GPU')
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
     my_saver = Saver(EXPERIMENT)
-    my_ga = GeneticAlgorithm(params, my_saver)
 
-    # save params
-    my_saver.save_params(params)
+    if continue_from['continue_from_ga_run'] is None:
+        my_ga = GeneticAlgorithm(params, my_saver)
+        # random init the population of the first generation
+        my_ga.init_first_generation()
+        gen_start = 1
 
-    # random init the population of the first generation
-    my_ga.init_first_generation()
+        # save params
+        my_saver.save_params(params)
+    else:
+        my_loader = Loader(continue_from)
+        params_ = my_loader.get_params()
 
-    for i_generation in range(1, NB_GENERATIONS+1):
+        gen_start = my_loader.get_gen_start()
+
+        my_ga = GeneticAlgorithm(params_, my_saver, my_loader)
+
+        # save params
+        my_saver.save_params(params_)
+        my_saver.save_continue_from(continue_from)
+
+    for i_generation in range(gen_start, NB_GENERATIONS+1):
         my_ga.prepare_generation(i_generation)
 
         # Pre-selection of candidate chromosomes, which are trained on a GPU afterwards
@@ -113,4 +133,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        prog='Evolutionary Neural Architecture Search',
+        description='This package runs an evolutionary neural architecture search to find constrained DNN architectures.'
+    )
+
+    parser.add_argument('continue_from_ga_run', nargs='?', default=None)
+    parser.add_argument('continue_from_generation', nargs='?', default=None)
+    args = parser.parse_args()
+
+    continue_from = {'continue_from_ga_run': args.continue_from_ga_run,
+                     'continue_from_generation': args.continue_from_generation}
+    main(continue_from)

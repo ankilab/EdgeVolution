@@ -2,7 +2,8 @@ import copy
 
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, BatchNormalization, GlobalAveragePooling2D, \
-    MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, ReLU, Flatten, Dropout, Resizing
+    MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, ReLU, Flatten, Dropout, Resizing, Conv1D, DepthwiseConv1D, \
+    GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D, GlobalMaxPooling1D
 from tensorflow_addons.layers import InstanceNormalization
 from ast import literal_eval
 

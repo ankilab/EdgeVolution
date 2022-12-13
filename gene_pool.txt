@@ -1,27 +1,41 @@
 [
 # 'layer': Abbreviation; 'f_name': TensorFlow function name; '<param_name>': TensorFlow functions parameters with [start, stop, step] or ['option1', 'option2']
-{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [256, 512, 64], 'hop_length': [96, 256, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
+
+# 1D layers
+{'layer': 'C_1D', 'f_name': 'Conv1D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
+{'layer': 'DC_1D','f_name': 'DepthwiseConv1D', 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
+{'layer': 'MP_1D', 'f_name': 'MaxPooling1D', 'pool_size':[2, 4, 1], 'padding':['same']},
+{'layer': 'AP_1D', 'f_name': 'AveragePooling1D', 'pool_size':[2, 4, 1], 'padding':['same']},
+{'layer': 'GAP_1D', 'f_name': 'GlobalAveragePooling1D()'},
+{'layer': 'GMP_1D', 'f_name': 'GlobalMaxPooling1D()'},
+{'layer': 'R_1D', 'f_name': 'ReLU()'},
+{'layer': 'BN_1D', 'f_name': 'BatchNormalization()'},
+{'layer': 'IN_1D', 'f_name': 'InstanceNormalization()'},
+
+# 2D preprocessing layers
+{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [64, 256, 32], 'hop_length': [128, 384, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
 {'layer': 'MAG', 'f_name': 'Magnitude()'},
-{'layer': 'MAG2DEC', 'f_name': 'MagnitudeToDecibel()'},
+# {'layer': 'MAG2DEC', 'f_name': 'MagnitudeToDecibel()'},
+# {'layer': 'MEL', 'f_name': 'get_melspectrogram_layer', 'n_mels': [80, 80, 1], 'n_fft': [1024, 1024, 1], 'hop_length': [128, 128, 1], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last'], 'mel_f_min': [40, 40, 1], 'mel_f_max': [8000, 8000, 1]},
 
-{'layer': 'MEL', 'f_name': 'get_melspectrogram_layer', 'n_mels': [80, 80, 1], 'n_fft': [1024, 1024, 1], 'hop_length': [128, 128, 1], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last'], 'mel_f_min': [40, 40, 1], 'mel_f_max': [8000, 8000, 1]},
+# 2D layers
+{'layer': 'C_2D', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
+{'layer': 'DC_2D','f_name': 'DepthwiseConv2D', 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
+{'layer': 'MP_2D', 'f_name': 'MaxPooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
+{'layer': 'AP_2D', 'f_name': 'AveragePooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
+{'layer': 'GAP_2D', 'f_name': 'GlobalAveragePooling2D()'},
+{'layer': 'GMP_2D', 'f_name': 'GlobalMaxPooling2D()'},
+{'layer': 'R_2D', 'f_name': 'ReLU()'},
+{'layer': 'BN_2D', 'f_name': 'BatchNormalization()'},
+{'layer': 'IN_2D', 'f_name': 'InstanceNormalization()'},
 
-
-# {'layer': 'NORM', 'f_name': 'get_norm_layer()'},
-# {'layer': 'RES', 'f_name': 'Resizing', 'height': [64, 64, 1], 'width': [64, 64, 1]},
-
-{'layer': 'C', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
-{'layer': 'DC','f_name': 'DepthwiseConv2D', 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding':['same']},
+# Universal layers
+{'layer': 'DO', 'f_name': 'Dropout', 'rate': [0.0, 0.5, 0.1]},
 {'layer': 'D', 'f_name': 'Dense', 'units': [16, 128, 8]},
-{'layer': 'MP', 'f_name': 'MaxPooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
-{'layer': 'AP', 'f_name': 'AveragePooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
-{'layer': 'GAP', 'f_name': 'GlobalAveragePooling2D()'},
-{'layer': 'GMP', 'f_name': 'GlobalMaxPooling2D()'},
-# {'layer': 'F', 'f_name': 'Flatten()'},
-{'layer': 'BN', 'f_name': 'BatchNormalization()'},
-{'layer': 'IN', 'f_name': 'InstanceNormalization()'},
-{'layer': 'R', 'f_name': 'ReLU()'},
-{'layer': 'DO', 'f_name': 'Dropout', 'rate': [0.0, 1.0, 0.1]}
+
+# {'layer': 'FLAT', 'f_name': 'Flatten()'},
+# {'layer': 'NORM', 'f_name': 'get_norm_layer()'},
+# {'layer': 'RES', 'f_name': 'Resizing', 'height': [64, 64, 1], 'width': [64, 64, 1]}
 ]
 
 

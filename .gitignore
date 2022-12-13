@@ -18,3 +18,5 @@ tests-resnet.ipynb
 tests-tflite.ipynb
 test-pyserial.ipynb
 can-be-deleted-later.ipynb
+train-conv1d-network.ipynb
+train-resnet.ipynb

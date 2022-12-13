@@ -13,6 +13,7 @@ import nvidia_smi
 from .src.genepool import GenePool
 from .src.translation import translate
 from utils.saver import Saver
+from utils.loader import Loader
 from .src.fitness import calculate_fitness
 
 from .utils.convert_to_tflite import convert_to_tflite
@@ -21,21 +22,24 @@ from tools.measure_power_consumption import init_ppk2, stop_measuring
 
 
 class GeneticAlgorithm:
-    def __init__(self, params: dict, saver: Saver):
+    def __init__(self, params: dict, saver: Saver, loader: Loader=None):
         self.params = params
         self.my_saver = saver
         self.my_gene_pool = GenePool(params)
 
         # variables that change after each generation
-        self.individuals_names = None  # randomly created names for all individuals within one generation
-        self.preselected_individuals = None  # preselected individuals (names) after accuracy/memory footprint determination
-        self.population_genotype = None  # dicts containing all individuals with its properties
-        self.population_phenotype = None  # generated TF models
-        self.population_phenotype_tflite = None  # generated TFLite models
-        self.generation_counter = None  # information in which generation we are currently
-        self.population_next_generation = None  # contains all individuals for next generation (determined through selection, crossover and mutation)
-        self.parents_names = None  # list containing the chromosome names of the parents that yielded to a new chromosome
-        self.best_models_current_generation = None  # contains the best models of the current generation
+        if loader is None:
+            self.individuals_names = None  # randomly created names for all individuals within one generation
+            self.preselected_individuals = None  # preselected individuals (names) after accuracy/memory footprint determination
+            self.population_genotype = None  # dicts containing all individuals with its properties
+            self.population_phenotype = None  # generated TF models
+            self.population_phenotype_tflite = None  # generated TFLite models
+            self.generation_counter = None  # information in which generation we are currently
+            self.population_next_generation = None  # contains all individuals for next generation (determined through selection, crossover and mutation)
+            self.parents_names = None  # list containing the chromosome names of the parents that yielded to a new chromosome
+            self.best_models_current_generation = None  # contains the best models of the current generation
+        else:
+            pass
 
     def init_first_generation(self):
         self.population_genotype = []
@@ -100,7 +104,7 @@ class GeneticAlgorithm:
                 procs.append(Popen(command, shell=True))
                 idx += 1
 
-            time.sleep(10)
+            time.sleep(15)
 
         nvidia_smi.nvmlShutdown()
         # make sure to wait until all processes are finished
@@ -167,8 +171,6 @@ class GeneticAlgorithm:
             # flash tflite model
             subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../" +
                              path + individual + "/models/model_tflite_untrained.tflite"])
-            # TODO: remove this
-            # subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../tflite/tflite_model.tflite"])
 
             # start measuring energy consumption
             command = 'python tools/measure_power_consumption.py ' + path + individual + '/power_measurements.csv ' \
@@ -214,7 +216,8 @@ class GeneticAlgorithm:
         self.my_saver.save_best_individual(self.generation_counter, models_with_fitness[0])
 
         self.best_models_current_generation = \
-            [models_with_fitness[i][0] for i in range(self.params['nb_best_models_crossover']) if i < len(models_with_fitness)]
+            [models_with_fitness[i][0] for i in range(self.params['nb_best_models_crossover']) if
+             i < len(models_with_fitness)]
 
     def crossover(self):
         """ Crossover the best chromosomes to get the population for the next generation. """
@@ -251,17 +254,17 @@ class GeneticAlgorithm:
                                   self.params['sample_rate'])
             except:
                 raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")
-
+            model.save("test_model.h5")
             try:
-                tflite_model = substitute_tflite_layer(model)
+                tflite_model = substitute_tflite_layer(model, self.params["input_shape"])
             except:
                 raise ValueError(f"Error when substituting STFT and MAG layers. Chromosome: {chromosome}")
 
-            try:
-                tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
-                                                                                 self.params["input_shape"][1])))
-            except:
-                raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
+            # try:
+            tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
+                                                                                   self.params["input_shape"][1])))
+            # except:
+            # raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
 
             self.population_phenotype.append(model)
             self.population_phenotype_tflite.append(tflite_model)

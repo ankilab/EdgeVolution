@@ -2,11 +2,12 @@ import tensorflow as tf
 from kapre import STFT, Magnitude, STFTTflite, MagnitudeTflite
 
 
-def substitute_tflite_layer(model):
+def substitute_tflite_layer(model, input_shape):
     """ Preprocessing layers are critical on MCUs since some TF ops (e.g. RANGE) are not implemented for
     TFLite-micro. Therefore, these layers need to be replaced with special implementations to be able to deploy the
     model. """
     model_with_tflite_layers = tf.keras.Sequential()
+    model_with_tflite_layers.add(tf.keras.Input(shape=input_shape))
 
     for layer in model.layers:
         if type(layer) == STFT:

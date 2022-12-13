@@ -1,30 +1,38 @@
 [
-# preprocessing layers
+# 1D layers
+{'layer': 'C_1D', 'only_allowed': ['AP_1D', 'MP_1D', 'IN_1D', 'BN_1D', 'DC_1D', 'C_1D', 'R_1D']},
+{'layer': 'DC_1D', 'only_allowed': ['AP_1D', 'MP_1D', 'IN_1D', 'BN_1D', 'DC_1D', 'C_1D', 'R_1D']},
+{'layer': 'MP_1D', 'only_allowed': ['IN_1D', 'BN_1D', 'R_1D', 'DC_1D', 'C_1D']},
+{'layer': 'AP_1D', 'only_allowed': ['IN_1D', 'BN_1D', 'R_1D', 'DC_1D', 'C_1D']},
+{'layer': 'GAP_1D', 'only_allowed': ['D', 'DO']},
+{'layer': 'GMP_1D', 'only_allowed': ['D', 'DO']},
+{'layer': 'R_1D', 'only_allowed': ['AP_1D', 'MP_1D', 'DC_1D', 'C_1D']},
+{'layer': 'BN_1D', 'only_allowed': ['AP_1D', 'MP_1D', 'R_1D', 'DC_1D', 'C_1D']},
+{'layer': 'IN_1D', 'only_allowed': ['AP_1D', 'MP_1D', 'R_1D', 'DC_1D', 'C_1D']},
+
+# 2D preprocessing layers
 {'layer': 'STFT', 'only_allowed': ['MAG']},
-{'layer': 'MAG', 'only_allowed': ['C', 'DC']},
-
+{'layer': 'MAG', 'only_allowed': ['C_2D', 'DC_2D']},
 # {'layer': 'MEL', 'only_allowed': ['MAG2DEC']},
-# {'layer': 'MAG2DEC', 'only_allowed': ['C', 'DC']},
+# {'layer': 'MAG2DEC', 'only_allowed': ['C_2D', 'DC_2D']},
 
+# 2D layers
+{'layer': 'C_2D', 'only_allowed': ['AP_2D', 'MP_2D', 'IN_2D', 'BN_2D', 'DC_2D', 'C_2D', 'R_2D']},
+{'layer': 'DC_2D', 'only_allowed': ['AP_2D', 'MP_2D', 'IN_2D', 'BN_2D', 'DC_2D', 'C_2D', 'R_2D']},
+{'layer': 'MP_2D', 'only_allowed': ['IN_2D', 'BN_2D', 'R_2D', 'DC_2D', 'C_2D']},
+{'layer': 'AP_2D', 'only_allowed': ['IN_2D', 'BN_2D', 'R_2D', 'DC_2D', 'C_2D']},
+{'layer': 'GAP_2D', 'only_allowed': ['D', 'DO']},
+{'layer': 'GMP_2D', 'only_allowed': ['D', 'DO']},
+{'layer': 'R_2D', 'only_allowed': ['AP_2D', 'MP_2D', 'DC_2D', 'C_2D']},
+{'layer': 'BN_2D', 'only_allowed': ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']},
+{'layer': 'IN_2D', 'only_allowed': ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']},
 
-{'layer': 'NORM', 'only_allowed': []},
-{'layer': 'RES', 'only_allowed': []},
-
-# feature extraction layers
-{'layer': 'C', 'only_allowed': ['AP', 'MP', 'IN', 'BN', 'DC', 'C', 'R']},
-{'layer': 'DC', 'only_allowed': ['AP', 'MP', 'IN', 'BN', 'DC', 'C', 'R']},
-{'layer': 'R', 'only_allowed': ['AP', 'MP', 'DC', 'C']},
-{'layer': 'BN', 'only_allowed': ['AP', 'MP', 'R', 'DC', 'C']},
-{'layer': 'IN', 'only_allowed': ['AP', 'MP', 'R', 'DC', 'C']},
-{'layer': 'MP', 'only_allowed': ['IN', 'BN', 'R', 'DC', 'C']},
-{'layer': 'AP', 'only_allowed': ['IN', 'BN', 'R', 'DC', 'C']},
-
-# after GAP and GMP only Dense layer and Dropout are allowed
-{'layer': 'GAP', 'only_allowed': ['D', 'DO']},
-{'layer': 'GMP', 'only_allowed': ['D', 'DO']},
-# {'layer': 'F', 'only_allowed': ['D', 'DO']},
-
-# Dense and Dropout layer only allowed after Flatten, GAP and GMP
+# Classification layers
 {'layer': 'DO', 'only_allowed': ['D']},
 {'layer': 'D', 'only_allowed': ['DO']},
+
+# Currently not used
+# {'layer': 'FLAT', 'only_allowed': ['D', 'DO']},
+# {'layer': 'NORM', 'only_allowed': []},
+# {'layer': 'RES', 'only_allowed': []}
 ]

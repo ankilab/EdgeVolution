@@ -17,18 +17,16 @@ class GenePool:
         # add first preprocessing layer (STFT) --> all following layers are defined through the ruleset + gene pool
 
         rnd = np.random.randint(0, 100, 1)
-        #if rnd < 50:
-        if True:
+        if rnd < 50:
             gene = 'STFT'
             chromosome = [self._get_gene_with_random_parameters(gene)]
             gene = 'MAG'
             chromosome.append(self._get_gene_with_random_parameters(gene))
-            gene = np.random.choice(['C', 'DC'])
+            gene = np.random.choice(['C_2D', 'DC_2D'])
             chromosome.append(self._get_gene_with_random_parameters(gene))
-
         else:
-            pass
-            # TODO: 1D Conv
+            gene = np.random.choice(['C_1D', 'DC_1D'])
+            chromosome = [self._get_gene_with_random_parameters(gene)]
 
         for _ in range(0, np.random.choice(np.arange(15, self.params['max_nb_feature_layers'] + 1)), 1):
             possible_genes = self._get_possible_genes(gene)  # check rule set
@@ -37,8 +35,10 @@ class GenePool:
             # add current layer
             chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        #gene = np.random.choice(['GAP', 'GMP', 'F'])
-        gene = np.random.choice(['GAP', 'GMP'])
+        if rnd < 50:
+            gene = np.random.choice(['GAP_2D', 'GMP_2D'])
+        else:
+            gene = np.random.choice(['GAP_1D', 'GMP_1D'])
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
         for _ in range(0, np.random.choice(np.arange(3, self.params['max_nb_classification_layers'] + 1)), 1):
@@ -123,10 +123,10 @@ class GenePool:
         # get two random split points
         if idx_start_1 is None or idx_end_1 is None:
             print("None error (chr 1):", chromosome_1)
-            return None
+            return None, None, None
         if idx_start_2 is None or idx_end_2 is None:
             print("None error (chr 2):", chromosome_2)
-            return None
+            return None, None, None
 
         chr_1_split = np.random.randint(idx_start_1, idx_end_1)
         chr_2_split = np.random.randint(idx_start_2, idx_end_2)
@@ -144,7 +144,7 @@ class GenePool:
                 chr_2_split = np.random.randint(idx_start_2, idx_end_2)
 
         # crossover chromosomes with determined splits
-        new_chromosome = chromosome_1[:chr_1_split:] + chromosome_2[chr_2_split+1:idx_end_2:]
+        new_chromosome = chromosome_1[:chr_1_split+1:] + chromosome_2[chr_2_split+1:idx_end_2:]
 
         # 50% chance of taking the 'second' part (i.e., classification layers) of the first chromosome,
         # otherwise take it from the second chromosome
@@ -157,16 +157,16 @@ class GenePool:
 
     @staticmethod
     def _get_first_conv_layer_index(chromosome):
-        """ Iterate over all genes and return the index where layer C or DC is. """
+        """ Iterate over all genes and return the index where first layer C or DC is. """
         for idx, gene in enumerate(chromosome):
-            if gene['layer'] == 'C' or gene['layer'] == 'DC':
+            if 'C' in gene['layer'] or 'DC' in gene['layer']:
                 return idx
 
     @staticmethod
     def _get_flatten_gap_gmp_index(chromosome):
         """ Iterate over all genes and return the index where layer F, GAP or GMP is. """
         for idx, gene in enumerate(chromosome):
-            if gene['layer'] == 'F' or gene['layer'] == 'GAP' or gene['layer'] == 'GMP':
+            if 'FLAT' in gene['layer'] or 'GAP' in gene['layer'] or 'GMP' in gene['layer']:
                 return idx
 
     ##################################################################################
@@ -201,10 +201,7 @@ class GenePool:
                     else:  # in this case the gene can't be dropped because of resulting rule set violation
                         pass
                 elif mutation == 'add':
-                    if idx == 0:
-                        # idx 0 is always pre-processing (STFT), so we won't add anything there since one layer is sufficient
-                        continue
-                    elif idx + 1 == len_chromosome:
+                    if idx + 1 == len_chromosome:
                         gene_to_add = self._get_gene_to_add(chromosome[idx], None)
                     else:
                         gene_to_add = self._get_gene_to_add(chromosome[idx], chromosome[idx + 1])
@@ -232,7 +229,7 @@ class GenePool:
             return 'drop'
 
         # don't drop GMP, GAP or Flatten layer
-        if current_gene['layer'] == 'GMP' or current_gene['layer'] == 'GAP' or current_gene['layer'] == 'F':
+        if 'GMP' in current_gene['layer'] or 'GAP' in current_gene['layer'] or 'FLAT' in current_gene['layer']:
             return None
 
         # check if dropping the layer violates the rule set
@@ -243,9 +240,6 @@ class GenePool:
         return 'drop'
 
     def _get_gene_to_add(self, current_gene, following_gene):
-        if current_gene is None:
-            return self._get_gene_with_random_parameters(np.random.choice(['C', 'DC']))
-
         # get all possible genes that can follow the current gene and select one randomly
         random_gene = np.random.choice(self._get_possible_genes(current_gene['layer']))
 
