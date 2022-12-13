@@ -254,17 +254,17 @@ class GeneticAlgorithm:
                                   self.params['sample_rate'])
             except:
                 raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")
-            model.save("test_model.h5")
+
             try:
                 tflite_model = substitute_tflite_layer(model, self.params["input_shape"])
             except:
                 raise ValueError(f"Error when substituting STFT and MAG layers. Chromosome: {chromosome}")
 
-            # try:
-            tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
+            try:
+                tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
                                                                                    self.params["input_shape"][1])))
-            # except:
-            # raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
+            except:
+                raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
 
             self.population_phenotype.append(model)
             self.population_phenotype_tflite.append(tflite_model)

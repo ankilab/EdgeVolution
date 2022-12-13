@@ -10,7 +10,7 @@ from utils.loader import Loader
 #################################
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
-DATASETS = ["speech_commands_dataset"]
+DATASETS = ["speech_commands", "motion_sense_accelerometer"]
 #EXPERIMENT = "fix_max_filesize"
 EXPERIMENT = "EXP_SC_1D_and_2D_4classes"
 
@@ -25,7 +25,7 @@ if CLASSES_FILTER is not None:
     NB_CLASSES = len(CLASSES_FILTER)
 
 #################################
-# define ENAS hyper-parameters
+# define EvoNAS hyper-parameters
 #################################
 NB_GENERATIONS = 50
 POPULATION_SIZE = 20

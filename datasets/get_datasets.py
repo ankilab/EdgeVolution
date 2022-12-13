@@ -5,14 +5,14 @@ from scipy import signal
 
 
 def get_datasets(dataset, samples=6_000, classes_filter=None):
-    if dataset == "speech_commands_dataset":
+    if dataset == "speech_commands":
         """
         [0: 'down', 1: 'go', 2: 'left', 3: 'no', 4: 'off', 5: 'on', 6: 'right', 7: 'stop', 8: 'up', 9: 'yes', 
         10: '_silence_', 11: '_unknown_']
         """
-        ds_train = tfds.load("speech_commands_dataset", data_dir='datasets/', split='train', as_supervised=True, download=True)
-        ds_val = tfds.load("speech_commands_dataset", data_dir='datasets/', split='validation', as_supervised=True, download=True)
-        ds_test = tfds.load("speech_commands_dataset", data_dir='datasets/', split='test', as_supervised=True, download=True)
+        ds_train = tfds.load("speech_commands", data_dir='datasets/', split='train', as_supervised=True, download=True)
+        ds_val = tfds.load("speech_commands", data_dir='datasets/', split='validation', as_supervised=True, download=True)
+        ds_test = tfds.load("speech_commands", data_dir='datasets/', split='test', as_supervised=True, download=True)
 
         nb_classes = 12
 
