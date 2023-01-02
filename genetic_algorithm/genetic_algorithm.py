@@ -27,19 +27,21 @@ class GeneticAlgorithm:
         self.my_saver = saver
         self.my_gene_pool = GenePool(params)
 
-        # variables that change after each generation
+        # define all variables that change after each generation
         if loader is None:
-            self.individuals_names = None  # randomly created names for all individuals within one generation
-            self.preselected_individuals = None  # preselected individuals (names) after accuracy/memory footprint determination
             self.population_genotype = None  # dicts containing all individuals with its properties
-            self.population_phenotype = None  # generated TF models
-            self.population_phenotype_tflite = None  # generated TFLite models
-            self.generation_counter = None  # information in which generation we are currently
-            self.population_next_generation = None  # contains all individuals for next generation (determined through selection, crossover and mutation)
-            self.parents_names = None  # list containing the chromosome names of the parents that yielded to a new chromosome
-            self.best_models_current_generation = None  # contains the best models of the current generation
         else:
-            pass
+            # load all genotypes --> each of them will get a new name but that's the easiest solution I found for now
+            self.population_genotype = loader.load_population_genotype()
+
+        self.individuals_names = None  # randomly created names for all individuals within one generation
+        self.preselected_individuals = None  # preselected individuals (names) after accuracy/memory footprint determination
+        self.parents_names = None  # list containing the chromosome names of the parents that yielded to a new chromosome
+        self.population_phenotype = None  # generated TF models
+        self.population_phenotype_tflite = None  # generated TFLite models
+        self.generation_counter = None  # information in which generation we are currently
+        self.population_next_generation = None  # contains all individuals for next generation (determined through selection, crossover and mutation)
+        self.best_models_current_generation = None  # contains the best models of the current generation
 
     def init_first_generation(self):
         self.population_genotype = []

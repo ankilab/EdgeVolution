@@ -28,7 +28,7 @@ if CLASSES_FILTER is not None:
 # define EvoNAS hyper-parameters
 #################################
 NB_GENERATIONS = 50
-POPULATION_SIZE = 20
+POPULATION_SIZE = 100
 NB_BEST_MODELS_CROSSOVER = 10  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
 
@@ -43,19 +43,19 @@ POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 20
 
 # threshold in mA that is used after the average filter was applied (i.e., value above 'threshold' is the start,
 # where inference started, the next value below 'threshold' is the end of inference)
-POWER_MEASUREMENT_THRESHOLD = 3500  # in uA
+POWER_MEASUREMENT_THRESHOLD = 4000  # in uA
 
 ######################################
 # define DNN training hyper-parameters
 ######################################
 NB_EPOCHS = 10
-MIN_FREE_SPACE_GPU = 4_000_000_000  # 6 GB
+MIN_FREE_SPACE_GPU = 6_000_000_000  # 6 GB
 
 #################################
 # define constraints
 #################################
 MAX_MEMORY_FOOTPRINT = 900_000  # in Bytes (900000 bytes --> 0.9 MB)
-MIN_INFERENCE_TIME = 1000  # in ms
+MIN_INFERENCE_TIME = 300  # in ms
 MAX_ENERGY_CONSUMPTION = 3  # in mJ
 
 params = {'dataset': DATASET,
@@ -104,7 +104,6 @@ def main(continue_from=None):
 
         # save params
         my_saver.save_params(params_)
-        my_saver.save_continue_from(continue_from)
 
     for i_generation in range(gen_start, NB_GENERATIONS+1):
         my_ga.prepare_generation(i_generation)

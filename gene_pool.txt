@@ -36,6 +36,9 @@
 # {'layer': 'FLAT', 'f_name': 'Flatten()'},
 # {'layer': 'NORM', 'f_name': 'get_norm_layer()'},
 # {'layer': 'RES', 'f_name': 'Resizing', 'height': [64, 64, 1], 'width': [64, 64, 1]}
+
+# {'layer': 'RESNET_BLOCK', 'f_name': 'get_resnet_block()', 'n_filters': [32, 1024, 32]},
 ]
+
 
 

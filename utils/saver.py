@@ -75,7 +75,5 @@ class Saver:
                 writer = csv.writer(f)
                 writer.writerow(row)
 
-    def save_continue_from(self, continue_from):
-        pass
 
 

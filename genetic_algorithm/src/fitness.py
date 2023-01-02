@@ -1,10 +1,10 @@
 
 
 def calculate_fitness(results, params):
-    a = 0.4  # weight test_acc
-    b = 0.2  # weight memory_footprint_tflite
-    c = 0.2  # weight inference_time
-    d = 0.2  # weight energy_consumption
+    a = 1/2  # weight test_acc
+    b = 1/6  # weight memory_footprint_tflite
+    c = 1/6  # weight inference_time
+    d = 1/6  # weight energy_consumption
     try:
         fitness = a * results['val_acc'] + \
                   b * (1 - (results["memory_footprint_tflite"] / params["max_memory_footprint"])) + \
