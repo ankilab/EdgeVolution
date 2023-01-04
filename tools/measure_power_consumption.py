@@ -13,11 +13,11 @@ def init_ppk2():
     i = 0
     while True:
         try:
-            _ppk2.get_modifiers()
-            _ppk2.use_ampere_meter()  # set ampere meter mode
-            _ppk2.set_source_voltage(3300)
-            _ppk2.toggle_DUT_power("ON")  # enable DUT power
-            _ppk2.start_measuring()  # start measuring
+            _ppk2.get_modifiers(); time.sleep(0.1)
+            _ppk2.use_ampere_meter(); time.sleep(0.1)  # set ampere meter mode
+            _ppk2.set_source_voltage(3300); time.sleep(0.1)
+            _ppk2.toggle_DUT_power("ON"); time.sleep(0.1)  # enable DUT power
+            _ppk2.start_measuring(); time.sleep(0.1)  # start measuring
             break
         except:
             print("Trying to connect to PPK2.\n")
@@ -28,7 +28,7 @@ def init_ppk2():
             if i == 10_000:
                 print("Left power measurement infinity loop.")
                 break
-        time.sleep(0.01)
+        time.sleep(0.1)
 
     return _ppk2
 
@@ -71,6 +71,7 @@ def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterati
                             max_iterations = 50
                     except Exception as e:
                         print(f"Error when loading results.json in power measurements: {str(e)}")
+            time.sleep(0.1)
 
 
 def stop_measuring(_ppk2):
@@ -81,7 +82,7 @@ def stop_measuring(_ppk2):
         except:
             print("Trying to stop measuring with PPK2.\n")
             pass
-        time.sleep(0.01)
+        time.sleep(0.1)
 
 
 if __name__ == "__main__":
