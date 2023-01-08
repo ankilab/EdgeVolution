@@ -9,6 +9,7 @@ import numpy as np
 import time
 import subprocess
 import nvidia_smi
+from multiprocessing import Pool
 
 from .src.genepool import GenePool
 from .src.translation import translate
@@ -102,7 +103,7 @@ class GeneticAlgorithm:
             if info.free > min_free_space:
                 command = 'python genetic_algorithm/src/train.py' + \
                           f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]}' + \
-                          f' {self.params["dataset"]} {self.preselected_individuals[idx]}'
+                          f' {self.params["dataset"]} {self.preselected_individuals[idx]} {self.params["classes_filter"]}'
                 procs.append(Popen(command, shell=True))
                 idx += 1
 
@@ -234,6 +235,10 @@ class GeneticAlgorithm:
             mutated_chromosome = self.my_gene_pool.mutate_chromosome(chromosome)
             self.population_genotype.append(mutated_chromosome)
 
+
+    def _process_model_conversion(self, model):
+
+
     def prepare_generation(self, current_generation: int):
         self.individuals_names = []
         self.population_phenotype = []
@@ -248,6 +253,10 @@ class GeneticAlgorithm:
             self.parents_names = None
 
         self.generation_counter = current_generation
+
+        d = {}
+        pool = Pool(os.cpu_count())
+        pool.map(self._process_model_conversion, )
 
         # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
         for chromosome in self.population_genotype:
@@ -264,7 +273,7 @@ class GeneticAlgorithm:
 
             try:
                 tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
-                                                                                   self.params["input_shape"][1])))
+                                                                                 self.params["input_shape"][1])))
             except:
                 raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
 

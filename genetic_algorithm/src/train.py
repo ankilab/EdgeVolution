@@ -6,6 +6,7 @@ import json
 import flammkuchen as fl
 from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
 import matplotlib.pyplot as plt
+import ast
 
 sys.path.insert(0, '.')
 sys.path.insert(0, '../.')
@@ -40,11 +41,12 @@ gen_dir = sys.argv[2]
 nb_epochs = int(sys.argv[3])
 dataset = sys.argv[4]
 individual_dir = sys.argv[5]
+classes_filter = sys.argv[6]
 
 #########################################################################################
 # Load data
 #########################################################################################
-ds_train, ds_val, ds_test = get_datasets(dataset, classes_filter=[0, 2, 6, 8])
+ds_train, ds_val, ds_test = get_datasets(dataset, classes_filter=ast.literal_eval(classes_filter))
 
 
 #########################################################################################

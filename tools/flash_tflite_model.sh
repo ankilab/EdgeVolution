@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# activate python environment
-conda activate airway
-
 cd "$(dirname "$0")"
 
 python3 convert_to_c_array_and_insert_into_cpp.py $1 '../tflite/airway_tflite/src/model.cpp'

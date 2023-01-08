@@ -122,8 +122,7 @@ void setup(void)
 	static tflite::AllOpsResolver resolver;
 
 	/* Build an interpreter to run the model with. */
-	static tflite::MicroInterpreter static_interpreter(
-		model, resolver, tensor_arena, kTensorArenaSize);
+	static tflite::MicroInterpreter static_interpreter(model, resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);
 	interpreter = &static_interpreter;
 
 	/* Allocate memory from the tensor_arena for the model's tensors. */

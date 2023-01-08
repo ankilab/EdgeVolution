@@ -11,8 +11,7 @@ from utils.loader import Loader
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
 DATASETS = ["speech_commands", "motion_sense_accelerometer"]
-#EXPERIMENT = "fix_max_filesize"
-EXPERIMENT = "EXP_SC_1D_and_2D_4classes"
+EXPERIMENT = "SC_1D_4classes"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
@@ -27,8 +26,8 @@ if CLASSES_FILTER is not None:
 #################################
 # define EvoNAS hyper-parameters
 #################################
-NB_GENERATIONS = 50
-POPULATION_SIZE = 100
+NB_GENERATIONS = 1
+POPULATION_SIZE = 2
 NB_BEST_MODELS_CROSSOVER = 10  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
 
@@ -71,6 +70,7 @@ params = {'dataset': DATASET,
           'path_gene_pool': PATH_GENE_POOL,
           'path_rule_set': PATH_RULE_SET,
           'input_shape': INPUT_SHAPE,
+          'classes_filter': CLASSES_FILTER,
           'nb_classes': NB_CLASSES,
           'nb_epochs': NB_EPOCHS,
           'min_free_space_gpu': MIN_FREE_SPACE_GPU,

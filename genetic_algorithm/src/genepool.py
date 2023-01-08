@@ -13,32 +13,26 @@ class GenePool:
             self.rule_set = literal_eval(f.read())
 
     def get_random_chromosome(self):
-        # create a gene sequence containing all layers of this random gene
-        # add first preprocessing layer (STFT) --> all following layers are defined through the ruleset + gene pool
+        """ Create a gene sequence containing all layers of this random gene. """
 
-        rnd = np.random.randint(0, 100, 1)
-        if rnd < 50:
-            gene = 'STFT'
-            chromosome = [self._get_gene_with_random_parameters(gene)]
-            gene = 'MAG'
-            chromosome.append(self._get_gene_with_random_parameters(gene))
-            gene = np.random.choice(['C_2D', 'DC_2D'])
-            chromosome.append(self._get_gene_with_random_parameters(gene))
-        else:
-            gene = np.random.choice(['C_1D', 'DC_1D'])
-            chromosome = [self._get_gene_with_random_parameters(gene)]
+        # get one of the possible starting genes (which are defined in rule_set.txt)
+        gene = self._get_start_gene()
+        chromosome = [self._get_gene_with_random_parameters(gene)]
 
-        for _ in range(0, np.random.choice(np.arange(15, self.params['max_nb_feature_layers'] + 1)), 1):
+        for _ in range(0, np.random.choice(np.arange(5, self.params['max_nb_feature_layers'] + 1)), 1):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
             # add current layer
             chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        if rnd < 50:
+        # check in the previous gene if we have a 1D or 2D network
+        if '2D' in gene:
             gene = np.random.choice(['GAP_2D', 'GMP_2D'])
-        else:
+        elif '1D' in gene:
             gene = np.random.choice(['GAP_1D', 'GMP_1D'])
+        else:
+            raise ValueError("Couldn't determine if the architecture is 1D or 2D.")
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
         for _ in range(0, np.random.choice(np.arange(3, self.params['max_nb_classification_layers'] + 1)), 1):
@@ -49,6 +43,11 @@ class GenePool:
             chromosome.append(self._get_gene_with_random_parameters(gene))
 
         return chromosome
+
+    def _get_start_gene(self):
+        for rule in self.rule_set:
+            if rule['layer'] == 'Start':
+                return np.random.choice(rule['start_with'])
 
     def _get_gene_with_random_parameters(self, target_gene: str) -> dict:
         """ Method to get random parameters for a given gene. """
@@ -287,19 +286,20 @@ class GenePool:
 
     def _get_possible_genes(self, previous_layer):
         """
-        Method to apply the previously defined rule set (rule_set.txt) given the previous layer.
+        Method to apply the previously defined rule set (rule_set.txt) to find a layer
+        that can follow after a given previous layer.
         """
         if type(previous_layer) == dict:
             raise ValueError(f"Parameter 'previous_layer' has to be a layer abbreviation like 'C' or 'GMP'. "
                              f"Received {previous_layer} instead.")
 
-        for r in self.rule_set:
-            if r['layer'] == previous_layer:
-                if 'only_allowed' in r.keys():
-                    return r['only_allowed']
-                elif 'not_allowed' in r.keys():
-                    not_allowed = [d['not_allowed'] for d in self.rule_set if d['layer'] == previous_layer][0]
-                    return [d['layer'] for d in self.gene_pool if d['layer'] not in not_allowed]
+        for rule in self.rule_set:
+            if rule['layer'] == previous_layer:
+                if 'allowed_after' in rule.keys():
+                    return rule['allowed_after']
+                elif 'not_allowed_after' in rule.keys():
+                    not_allowed_after = [r['not_allowed_after'] for r in self.rule_set if r['layer'] == previous_layer][0]
+                    return [g['layer'] for g in self.gene_pool if g['layer'] not in not_allowed_after]
 
-        # return all layers if there is no entry in the rule set
-        return [d['layer'] for d in self.gene_pool]
+        # return all layers of the gene pool if there is no entry in the rule set
+        return [g['layer'] for g in self.gene_pool]
