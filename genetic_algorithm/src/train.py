@@ -40,9 +40,9 @@ for gpu in gpus:
 parser = argparse.ArgumentParser()
 parser.add_argument("--results_dir", type=str)
 parser.add_argument("--gen_dir", type=str)
+parser.add_argument("--individual_dir", type=str)
 parser.add_argument("--nb_epochs", type=int)
 parser.add_argument("--dataset", type=str)
-parser.add_argument("--individual_dir", type=str)
 parser.add_argument("--classes_filter", type=int, nargs="*")
 
 args = parser.parse_args()

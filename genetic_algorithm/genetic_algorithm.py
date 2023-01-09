@@ -101,13 +101,13 @@ class GeneticAlgorithm:
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
             if info.free > min_free_space:
-                command = ['python', 'genetic_algorithm/src/train.py',
-                           f'--results_dir {self.my_saver.results_dir}',
-                           f'--gen_dir Generation_{self.generation_counter}',
-                           f'--nb_epochs {self.params["nb_epochs"]}',
-                           f'--dataset {self.params["dataset"]}',
-                           f'--individual_dir {self.preselected_individuals[idx]}',
-                           f'--classes_filter {self.params["classes_filter"]}']
+                command = 'python genetic_algorithm/src/train.py ' + \
+                           f'--results_dir {self.my_saver.results_dir} ' + \
+                           f'--gen_dir Generation_{self.generation_counter} ' + \
+                           f'--individual_dir {self.preselected_individuals[idx]} ' + \
+                           f'--nb_epochs {self.params["nb_epochs"]} ' + \
+                           f'--dataset {self.params["dataset"]} ' + \
+                           f'--classes_filter ' + ' '.join(str(i) for i in self.params["classes_filter"])
                 procs.append(Popen(command, shell=True))
                 idx += 1
 

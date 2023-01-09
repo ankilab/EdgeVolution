@@ -26,8 +26,8 @@ if CLASSES_FILTER is not None:
 #################################
 # define EvoNAS hyper-parameters
 #################################
-NB_GENERATIONS = 1
-POPULATION_SIZE = 2
+NB_GENERATIONS = 50
+POPULATION_SIZE = 100
 NB_BEST_MODELS_CROSSOVER = 10  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
 
