@@ -18,7 +18,7 @@ DATASET = DATASETS[0]
 SAMPLE_RATE = 16_000
 INPUT_SHAPE = (6_000, 1)
 NB_CLASSES = 12  # Speech commands is a 12 classes problem
-CLASSES_FILTER = [0, 2, 6, 8]
+CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
 
 if CLASSES_FILTER is not None:
     NB_CLASSES = len(CLASSES_FILTER)

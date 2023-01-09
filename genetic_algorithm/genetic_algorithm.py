@@ -101,9 +101,13 @@ class GeneticAlgorithm:
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
             if info.free > min_free_space:
-                command = 'python genetic_algorithm/src/train.py' + \
-                          f' {self.my_saver.results_dir} Generation_{self.generation_counter} {self.params["nb_epochs"]}' + \
-                          f' {self.params["dataset"]} {self.preselected_individuals[idx]} {self.params["classes_filter"]}'
+                command = ['python', 'genetic_algorithm/src/train.py',
+                           f'--results_dir {self.my_saver.results_dir}',
+                           f'--gen_dir Generation_{self.generation_counter}',
+                           f'--nb_epochs {self.params["nb_epochs"]}',
+                           f'--dataset {self.params["dataset"]}',
+                           f'--individual_dir {self.preselected_individuals[idx]}',
+                           f'--classes_filter {self.params["classes_filter"]}']
                 procs.append(Popen(command, shell=True))
                 idx += 1
 
@@ -237,7 +241,7 @@ class GeneticAlgorithm:
 
 
     def _process_model_conversion(self, model):
-
+        pass
 
     def prepare_generation(self, current_generation: int):
         self.individuals_names = []
@@ -254,9 +258,9 @@ class GeneticAlgorithm:
 
         self.generation_counter = current_generation
 
-        d = {}
-        pool = Pool(os.cpu_count())
-        pool.map(self._process_model_conversion, )
+        #d = {}
+        #pool = Pool(os.cpu_count())
+        #pool.map(self._process_model_conversion, )
 
         # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
         for chromosome in self.population_genotype:
