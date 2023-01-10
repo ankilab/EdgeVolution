@@ -49,8 +49,6 @@ args = parser.parse_args()
 #########################################################################################
 # Load data
 #########################################################################################
-# TODO
-#ds_train, ds_val, ds_test = get_datasets(dataset, classes_filter=ast.literal_eval(classes_filter))
 ds_train, ds_val, ds_test = get_datasets(args.dataset, classes_filter=args.classes_filter)
 
 

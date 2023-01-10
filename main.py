@@ -38,7 +38,7 @@ PATH_GENE_POOL = "gene_pool.txt"
 PATH_RULE_SET = "rule_set.txt"
 
 # number of samples that will be averaged when measuring power consumption
-POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 20
+POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 50
 
 # threshold in mA that is used after the average filter was applied (i.e., value above 'threshold' is the start,
 # where inference started, the next value below 'threshold' is the end of inference)
