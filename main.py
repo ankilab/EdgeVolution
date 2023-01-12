@@ -11,7 +11,7 @@ from utils.loader import Loader
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
 DATASETS = ["speech_commands", "motion_sense_accelerometer"]
-EXPERIMENT = "SC_1D_4classes"
+EXPERIMENT = "sc_1d_4classes"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
@@ -26,8 +26,8 @@ if CLASSES_FILTER is not None:
 #################################
 # define EvoNAS hyper-parameters
 #################################
-NB_GENERATIONS = 50
-POPULATION_SIZE = 100
+NB_GENERATIONS = 25
+POPULATION_SIZE = 150
 NB_BEST_MODELS_CROSSOVER = 10  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 10  # in percent
 
@@ -38,7 +38,7 @@ PATH_GENE_POOL = "gene_pool.txt"
 PATH_RULE_SET = "rule_set.txt"
 
 # number of samples that will be averaged when measuring power consumption
-POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 50
+POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 100
 
 # threshold in mA that is used after the average filter was applied (i.e., value above 'threshold' is the start,
 # where inference started, the next value below 'threshold' is the end of inference)
@@ -53,9 +53,9 @@ MIN_FREE_SPACE_GPU = 6_000_000_000  # 6 GB
 #################################
 # define constraints
 #################################
-MAX_MEMORY_FOOTPRINT = 900_000  # in Bytes (900000 bytes --> 0.9 MB)
-MIN_INFERENCE_TIME = 300  # in ms
-MAX_ENERGY_CONSUMPTION = 3  # in mJ
+MAX_MEMORY_FOOTPRINT = 800_000  # in Bytes (800000 bytes --> 0.8 MB)
+MAX_INFERENCE_TIME = 200  # in ms
+MAX_ENERGY_CONSUMPTION = 2  # in mJ
 
 params = {'dataset': DATASET,
           'sample_rate': SAMPLE_RATE,
@@ -75,7 +75,7 @@ params = {'dataset': DATASET,
           'nb_epochs': NB_EPOCHS,
           'min_free_space_gpu': MIN_FREE_SPACE_GPU,
           'max_memory_footprint': MAX_MEMORY_FOOTPRINT,
-          'max_inference_time': MIN_INFERENCE_TIME,
+          'max_inference_time': MAX_INFERENCE_TIME,
           'max_energy_consumption': MAX_ENERGY_CONSUMPTION}
 
 

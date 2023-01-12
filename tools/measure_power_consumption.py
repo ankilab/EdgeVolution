@@ -65,12 +65,13 @@ def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterati
                     try:
                         d = json.loads(f.read())
                         if "inference_time" in d.keys():
-                            # this means inference time was measured, so we want this process to end
-                            # 10 more iterations will be measured until we leave the while loop
+                            # this means inference time was measured, so we want this process to end;
+                            # 50 more iterations will be measured until we leave the while loop
                             i = 0
                             max_iterations = 50
                     except Exception as e:
-                        print(f"Error when loading results.json in power measurements: {str(e)}")
+                        with open(save_dir.replace("power_measurements.csv", "error_log.txt"), 'a') as file:
+                            file.write(f"10020: Fatal error when loading results.json in power measurements: {str(e)} \n")
             time.sleep(0.1)
 
 
