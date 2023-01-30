@@ -4,7 +4,7 @@ import argparse
 import csv
 import json
 import numpy as np
-
+import signal
 
 def init_ppk2():
     ppk2s_connected = PPK2_MP.list_devices()
@@ -33,15 +33,24 @@ def init_ppk2():
     return _ppk2
 
 
+def _timeout_handler():
+    raise Exception("end of time")
+
+
 def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterations=None):
     """ Measures the power consumption and saves all values to a .csv file at the given location. """
     i = 0
+    signal.signal(signal.SIGALRM, _timeout_handler)
     with open(save_dir, "w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow(['Timestamp', 'Power Consumption'])
 
         while True:
             try:
+                # define a timeout for get_data method in [s] to avoid being stucked in an endless loop
+                signal.alarm(5)
+
+                # call get_data and try to receive data from PPK2
                 read_data = _ppk2.get_data()
                 if read_data != b'':
                     samples = _ppk2.get_samples(read_data)

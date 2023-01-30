@@ -31,7 +31,7 @@ def get_datasets(dataset, samples=6_000, classes_filter=None):
             return data, label
                     
         def _prepare_dataset(ds):
-            if classes_filter is not None:
+            if len(classes_filter) != 0:
                 ds = ds.filter(_predicate)
                 ds = ds.map(lambda x, y: (tf.py_function(_resample_func, [x, samples], Tout=tf.float32), tf.one_hot(tf.where(tf.equal(y, classes_filter))[0], len(classes_filter))[0]))
             else:

@@ -11,16 +11,18 @@ from utils.loader import Loader
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
 DATASETS = ["speech_commands", "motion_sense_accelerometer"]
-EXPERIMENT = "sc_1d_4classes"
+EXPERIMENT = "sc_2d_12classes"
+# EXPERIMENT = "test"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
 SAMPLE_RATE = 16_000
 INPUT_SHAPE = (6_000, 1)
 NB_CLASSES = 12  # Speech commands is a 12 classes problem
-CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
+#CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
+CLASSES_FILTER = []  # empty --> all classes are used
 
-if CLASSES_FILTER is not None:
+if len(CLASSES_FILTER) != 0:
     NB_CLASSES = len(CLASSES_FILTER)
 
 #################################

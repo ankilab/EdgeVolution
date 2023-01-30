@@ -29,4 +29,4 @@ class Loader:
         return population_genotype
 
     def get_gen_start(self) -> int:
-        return int(self.generation)
+        return int(self.generation) + 1

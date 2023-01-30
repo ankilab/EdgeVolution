@@ -1,8 +1,8 @@
 [
 # specify options for first layer of the network --> determines whether to use 1D or 2D layers --> 'start_with'
-# {'layer': 'Start', 'start_with': ['STFT']},  # --> start with this to use 2D layers
-{'layer': 'Start', 'start_with': ['C_1D', 'DC_1D']},  # --> start with this to use 1D layers
-# {'layer': 'Start', 'start_with': ['STFT', 'C_1D', 'DC_1D']},  # --> start with this to both
+{'layer': 'Start', 'start_with': ['STFT']},  # --> start with this to use 2D layers
+# {'layer': 'Start', 'start_with': ['C_1D', 'DC_1D']},  # --> start with this to use 1D layers
+#{'layer': 'Start', 'start_with': ['STFT', 'C_1D', 'DC_1D']},  # --> start with this to use both
 
 # specify rules for all following layers after the starting layer --> 'allowed_after'
 # 1D layers

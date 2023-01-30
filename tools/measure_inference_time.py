@@ -25,10 +25,10 @@ def read_inference_time(save_dir=None):
 
     max_iterations_counter = 0
     max_iterations = 200
-    while len(measured_values) < 1:
-        time.sleep(0.1)
-        try:
-            with serial.Serial(port, 115200, timeout=1) as ser:
+    with serial.Serial(port, 115200, timeout=1) as ser:
+        while len(measured_values) < 1:
+            time.sleep(0.1)
+            try:
                 line = ser.readline()
                 if line != b'':
                     if "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
@@ -38,13 +38,13 @@ def read_inference_time(save_dir=None):
                         measured_values.append(inf_time)
                     else:
                         print(str(line))
-            if max_iterations_counter > max_iterations:
-                measured_values.append("Max iterations reached")
-            else:
-                max_iterations_counter = max_iterations_counter + 1
-        except Exception as e:
-            print(str(e))
-            pass
+                if max_iterations_counter > max_iterations:
+                    measured_values.append("Max iterations reached")
+                else:
+                    max_iterations_counter = max_iterations_counter + 1
+            except Exception as e:
+                print(str(e))
+                pass
 
     if save_dir is not None:
         # save the measured value to results.json
