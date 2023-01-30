@@ -8,6 +8,7 @@ import pandas as pd
 import re
 from pathlib import Path
 
+
 def get_datasets(dataset, samples=6_000, classes_filter=None):
     def _predicate(x, label, allowed_labels=classes_filter):
         allowed_labels = tf.constant(allowed_labels)
@@ -27,7 +28,7 @@ def get_datasets(dataset, samples=6_000, classes_filter=None):
         nb_classes = 12
 
         def _prepare_dataset(ds, normalize=True):
-            if classes_filter is not None:
+            if len(classes_filter) != 0:
                 ds = ds.filter(_predicate)
                 ds = ds.map(lambda x, y: (tf.py_function(_resample_func, [x, samples], Tout=tf.float32), tf.one_hot(tf.where(tf.equal(y, classes_filter))[0], len(classes_filter))[0]))
             else:
