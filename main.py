@@ -11,7 +11,7 @@ from utils.loader import Loader
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
 DATASETS = ["speech_commands", "motion_sense_accelerometer"]
-EXPERIMENT = "sc_2d_12classes"
+EXPERIMENT = "sc_2d_4classes_selection50_mutation20"
 # EXPERIMENT = "test"
 
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
@@ -19,8 +19,8 @@ DATASET = DATASETS[0]
 SAMPLE_RATE = 16_000
 INPUT_SHAPE = (6_000, 1)
 NB_CLASSES = 12  # Speech commands is a 12 classes problem
-#CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
-CLASSES_FILTER = []  # empty --> all classes are used
+CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
+# CLASSES_FILTER = []  # empty --> all classes are used
 
 if len(CLASSES_FILTER) != 0:
     NB_CLASSES = len(CLASSES_FILTER)
@@ -30,8 +30,8 @@ if len(CLASSES_FILTER) != 0:
 #################################
 NB_GENERATIONS = 25
 POPULATION_SIZE = 150
-NB_BEST_MODELS_CROSSOVER = 10  # specifies the number of models that will be used for crossover
-MUTATION_RATE = 10  # in percent
+NB_BEST_MODELS_CROSSOVER = 50  # specifies the number of models that will be used for crossover
+MUTATION_RATE = 20  # in percent
 
 MAX_NB_FEATURE_LAYERS = 30  # max number layers before GAP, GMP or Flatten layer in the first generation
 MAX_NB_CLASSIFICATION_LAYERS = 6  # max number layers after GAP, GMP or Flatten layer in the first generation

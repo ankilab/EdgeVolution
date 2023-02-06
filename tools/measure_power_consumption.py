@@ -6,9 +6,10 @@ import json
 import numpy as np
 import signal
 
+
 def init_ppk2():
     ppk2s_connected = PPK2_MP.list_devices()
-    _ppk2 = PPK2_MP(ppk2s_connected[0])
+    _ppk2 = PPK2_MP(port=ppk2s_connected[0], buffer_seconds=2); time.sleep(0.1)
 
     i = 0
     while True:
@@ -33,8 +34,8 @@ def init_ppk2():
     return _ppk2
 
 
-def _timeout_handler():
-    raise Exception("end of time")
+def _timeout_handler(signal_number, current_stack):
+    raise Exception(f"end of time; signal number: {signal_number}, current stack: {current_stack}")
 
 
 def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterations=None):
@@ -43,7 +44,8 @@ def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterati
     signal.signal(signal.SIGALRM, _timeout_handler)
     with open(save_dir, "w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow(['Timestamp', 'Power Consumption'])
+        #writer.writerow(['Timestamp', 'Power Consumption'])
+        writer.writerow(['Power Consumption'])
 
         while True:
             try:
@@ -55,9 +57,10 @@ def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterati
                 if read_data != b'':
                     samples = _ppk2.get_samples(read_data)
 
-                    t = time.time()
+                    #t = time.time()
                     for i in range(0, len(samples), nb_samples_average):
-                        writer.writerow([t, np.mean(samples[i:i + nb_samples_average])])
+                        #writer.writerow([t, np.mean(samples[i:i + nb_samples_average])])
+                        writer.writerow([np.mean(samples[i:i + nb_samples_average])])
             except:
                 print("Get data is not working")
                 _ppk2 = init_ppk2()
