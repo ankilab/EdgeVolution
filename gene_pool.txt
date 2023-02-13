@@ -31,7 +31,7 @@
 
 # Universal layers
 {'layer': 'DO', 'f_name': 'Dropout', 'rate': [0.0, 0.5, 0.1]},
-{'layer': 'D', 'f_name': 'Dense', 'units': [16, 128, 8]},
+{'layer': 'D', 'f_name': 'Dense', 'units': [16, 128, 8], 'activation': ['relu']},
 
 # {'layer': 'FLAT', 'f_name': 'Flatten()'},
 # {'layer': 'NORM', 'f_name': 'get_norm_layer()'},
