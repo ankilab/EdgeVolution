@@ -109,7 +109,7 @@ callbacks = [lr_callback, model_checkpoint_callback]#, early_stopping]
 history = model.fit(ds_train.batch(128),
                     validation_data=ds_val.batch(64),
                     callbacks=callbacks,
-                    #verbose=0,
+                    verbose=0,
                     epochs=args.nb_epochs)
 
 #########################################################################################

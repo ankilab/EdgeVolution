@@ -192,10 +192,13 @@ class GeneticAlgorithm:
             proc_inference.wait()
 
             # wait for energy consumption measurement to finish
-            proc_energy.wait(timeout=5)
+            try:
+                proc_energy.wait(timeout=30)
 
-            # calculate energy consumption
-            self.calculate_energy_consumption(path + individual + "/power_measurements.csv")
+                # calculate energy consumption
+                self.calculate_energy_consumption(path + individual + "/power_measurements.csv")
+            except:
+                pass
 
             time.sleep(2)
 
