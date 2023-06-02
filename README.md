@@ -10,13 +10,13 @@ On Linux, the `install.sh` script should automatically install all the requireme
 
 * Python X.X installed
 
-* You have installed the at least version 14.0 or greater of Microsoft Visual C++. Download [Installer] (https://aka.ms/vs/17/release/vs_BuildTools.exe) (C++ x64/x86 build tools and Windows 10/11 SDK).
+* You have installed the at least version 14.0 or greater of Microsoft Visual C++. Download [Installer](https://aka.ms/vs/17/release/vs_BuildTools.exe) (C++ x64/x86 build tools and Windows 10/11 SDK).
 
-* Install xxd and add it to PATH. Downloaded [here] (https://sourceforge.net/projects/xxd-for-windows/files/latest/download).
+* Install xxd and add it to PATH. Downloaded [here](https://sourceforge.net/projects/xxd-for-windows/files/latest/download).
 
 * Install ffprobe and ffmpeg and add them PATH. Download for example [here] (https://ffmpeg.org/download.html)
 
-* Download the [nrf-toolchain] (https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-desktop)
+* Download the [nrf-toolchain](https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-desktop)
 
 * Install west make sure west is accessible globally (not just in virtual env)
 ```
@@ -32,13 +32,13 @@ To install EvoNAS, follow these steps:
 git clone https://github.com/ankilab/EvoNAS
 ```
 
-# Linux
+### Linux
 `install.sh` should automatically install all dependencies
 ```
 cd ./EvoNAS
 sudo ./install.sh
 ```
-# Windows
+### Windows
 For windows, manual installation is possible.
 
 * Install requirements in virtual environment
@@ -61,10 +61,10 @@ dos2unix flash_tflite_model.sh
 
 * Zephyr as described in wiki #TODO, but change protobuf version to 3.20.0 instead of 3.20.3
 
-* Install zephyr SDK according to [this tutorial] (https://docs.zephyrproject.org/3.2.0/develop/toolchains/zephyr_sdk.html). 
+* Install zephyr SDK according to [this tutorial](https://docs.zephyrproject.org/3.2.0/develop/toolchains/zephyr_sdk.html). 
 Manually download and extract SDK to C:/Program Files/zephyr-sdk-0.15.0 or in Powershell: 
 
-````
+```
 cd "C:/Program Files"
 wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.0/zephyr-sdk-0.15.0_windows-x86_64.zip
 unzip zephyr-sdk-0.15.0_windows-x86_64.zip
@@ -100,7 +100,7 @@ Alternatively see the GitHub documentation on [creating a pull request](https://
 
 ## Contact
 
-If you want to contact me you can reach me at <your_email@address.com>.
+If you want to contact me you can create a github issue.
 
 ## License
 
