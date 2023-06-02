@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Check if nrfjprog is already installed
-command -v nrfjprog &>/dev/null
+command -v nrfjprog >/dev/null
 nrfjprog_installed=$?
 
 if ! [ $nrfjprog_installed -eq 0 ]; then
@@ -80,7 +80,7 @@ chmod +x $activation_script
 
 
 # install requirements
-# pip install -r requirements.txt TODO: uncomment
+pip install -r requirements.txt
 
 
 
@@ -115,6 +115,7 @@ if  ! [ $west_installed -eq 0 ]; then
 
     cmake --version
     dtc --version
+    pip install west
 else
     echo "West dependencies already set up."
 
