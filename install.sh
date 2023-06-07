@@ -4,7 +4,7 @@
 command -v nrfjprog >/dev/null
 nrfjprog_installed=$?
 
-if ! [ $nrfjprog_installed -eq 0 ]; then
+if ! [ $nrfjprog_installed -eq 1]; then
     echo "installing nrf jprog"
     wget "https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-21-0/nrf-command-line-tools-10.21.0_linux-amd64.tar.gz"
     tar xvf nrf-command-line-tools-10.21.0_linux-amd64.tar.gz
@@ -12,21 +12,43 @@ if ! [ $nrfjprog_installed -eq 0 ]; then
 
     rm nrf-command-line-tools-10.21.0_linux-amd64.tar.gz
     rm -r -f nrf-command-line-tools/
-    
 
-    # Define the path variable
+    # readme txt containted in 
+    rm Readme.txt
+
+
+    segger_dir=/opt/SEGGER
+
+    # create new directory and copy the extracted binaries
+    sudo mkdir -p $segger_dir    
+    sudo tar xf JLink_Linux_V780c_x86_64.tgz
+
+    sudo cp -a JLink_Linux_V780c_x86_64 $segger_dir
+    sudo chmod aw $segger_dir/JLink_Linux_V780c_x86_64
+
+    # delete remaining files
+    rm JLink_Linux_V780c_x86_64.tgz
+    sudo chmod 777 JLink_Linux_V780c_x86_64/
+    rm -r -f JLink_Linux_V780c_x86_64/
+
+    # add variables to PATH
+
+    # Define the path variable    
+    segger_path=$segger_dir/JLink_Linux_V780c_x86_64
     nrf_path="/opt/nrf-command-line-tools/bin"
 
+    # this makes path variable accessible for next login
+    echo export PATH=$PATH:$nrf_path:$segger_path >> ~/.profile
 
-    echo export PATH=$PATH:$nrf_path:$ >> ~/.bashrc
+    # this makes path variable accessible in current script
+    export PATH=$PATH:$nrf_path:$segger_path
 
-    # # Update the current shell session with the new path variable
-    # does not work, does not set path nrfjprog
-    #. ~/.bashrc
+    echo "$nrf_path was automatically added to PATH variable in ~/.profile"  
+    echo "$segger_path was automatically added to PATH variable in ~/.profile"  
 
 
 fi
-
+exit
 
 # Check if Python is already installed
 command -v python3 >/dev/null
