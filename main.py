@@ -7,6 +7,12 @@ from utils.saver import Saver
 from utils.loader import Loader
 
 
+# add all boards to array. if only one specific board required, have only one element in list
+BOARDS = [
+    #{"model" : "nrf52840dk_nrf52840", "snr": "1050242564"},
+    {"model" : "nrf52833dk_nrf52833", "snr": "685756103"},
+]
+
 #################################
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
 #################################
@@ -78,7 +84,8 @@ params = {'dataset': DATASET,
           'min_free_space_gpu': MIN_FREE_SPACE_GPU,
           'max_memory_footprint': MAX_MEMORY_FOOTPRINT,
           'max_inference_time': MAX_INFERENCE_TIME,
-          'max_energy_consumption': MAX_ENERGY_CONSUMPTION}
+          'max_energy_consumption': MAX_ENERGY_CONSUMPTION,
+          'boards' : BOARDS}
 
 
 def main(continue_from=None):

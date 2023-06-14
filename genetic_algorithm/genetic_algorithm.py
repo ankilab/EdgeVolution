@@ -175,30 +175,41 @@ class GeneticAlgorithm:
         for idx, individual in enumerate(self.preselected_individuals):
             print(f"Evaluate energy of {individual} (index: {idx})")
 
-            # flash tflite model
-            subprocess.call(['bash', '-i', './tools/flash_tflite_model.sh', "../" +
-                             path + individual + "/models/model_tflite_untrained.tflite"])
+            # flash tflite model on individual board
+            if len(self.params["boards"]) > 0:                
+                for board in self.params["boards"]:
+                    tflite_path = "../" +path + individual + "/models/model_tflite_untrained.tflite"
+                    cpp_path = '../tflite/airway_tflite/src/model.cpp'
+                    flasher_path = './tools/flash_tflite_model.sh'
+                    subprocess.call(['bash', '-i',flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
 
-            # start measuring energy consumption
-            command = 'python tools/measure_power_consumption.py ' + path + individual + '/power_measurements.csv ' \
-                      + f'{self.params["power_measurement_nb_samples_average"]}'
-            proc_energy = Popen(command, shell=True)
 
-            # get inference time from Serial port
-            command = 'python tools/measure_inference_time.py ' + path + individual
-            proc_inference = Popen(command, shell=True)
+                    # start measuring energy consumption
+                    command = 'python tools/measure_power_consumption.py ' + path + individual + '/power_measurements.csv ' \
+                            + f'{self.params["power_measurement_nb_samples_average"]}'
+                    proc_energy = Popen(command, shell=True)
 
-            # wait for inference time measurement to finish
-            proc_inference.wait()
+                    # get inference time from Serial port
+                    command = 'python tools/measure_inference_time.py ' + path + individual + " " + board["model"] + " " + board["snr"]
+                    proc_inference = Popen(command, shell=True)
 
-            # wait for energy consumption measurement to finish
-            try:
-                proc_energy.wait(timeout=30)
+                    # wait for inference time measurement to finish
+                    proc_inference.wait()
 
-                # calculate energy consumption
-                self.calculate_energy_consumption(path + individual + "/power_measurements.csv")
-            except:
-                pass
+                    # wait for energy consumption measurement to finish
+                    try:
+                        proc_energy.wait(timeout=30)
+
+                        # calculate energy consumption
+                        self.calculate_energy_consumption(path + individual + "/power_measurements.csv")
+                    except:
+                        pass
+
+
+
+            else: # no boards 
+                raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')
+          
 
             time.sleep(2)
 

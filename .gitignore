@@ -3,7 +3,7 @@ tflite/bootloader/
 tflite/modules/
 tflite/tools/
 tflite/zephyr/
-tflite/build/
+tflite/build*
 tflite/log.log
 tiny_ml/
 *pycache*
