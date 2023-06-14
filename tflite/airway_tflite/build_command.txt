@@ -1,2 +1,0 @@
-west build -b nrf52840dk_nrf52840 src/main.c
-west flash

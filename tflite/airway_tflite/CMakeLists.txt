@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(tensorflow_hello_world)
+project(EvoNAS_tflite_micro)
 
 # These samples use local static initialization. Since Zephyr doesn't support the
 # C++ ABI for thread-safe initialization of local statics and the constructors don't
