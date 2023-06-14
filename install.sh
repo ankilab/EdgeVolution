@@ -17,34 +17,29 @@ if ! [ $nrfjprog_installed -eq 1]; then
     rm Readme.txt
 
 
-    segger_dir=/opt/SEGGER
 
-    # create new directory and copy the extracted binaries
-    sudo mkdir -p $segger_dir    
-    sudo tar xf JLink_Linux_V780c_x86_64.tgz
+    # install jlink segger
+    wget  --post-data="accept_license_agreement=accepted&submit=Download+software" https://www.segger.com/downloads/jlink/JLink_Linux_V788f_x86_64.deb
 
-    sudo cp -a JLink_Linux_V780c_x86_64 $segger_dir
-    sudo chmod aw $segger_dir/JLink_Linux_V780c_x86_64
-
-    # delete remaining files
+    sudo dpkg JLink_Linux_V788f_x86_64.deb
+    rm JLink_Linux_V788f_x86_64.deb
+    
+    # this file gets automatically installed from nrfjprog but can not be installed correctly
     rm JLink_Linux_V780c_x86_64.tgz
-    sudo chmod 777 JLink_Linux_V780c_x86_64/
-    rm -r -f JLink_Linux_V780c_x86_64/
+
 
     # add variables to PATH
 
     # Define the path variable    
-    segger_path=$segger_dir/JLink_Linux_V780c_x86_64
     nrf_path="/opt/nrf-command-line-tools/bin"
 
     # this makes path variable accessible for next login
-    echo export PATH=$PATH:$nrf_path:$segger_path >> ~/.profile
+    echo export PATH=$PATH:$nrf_path >> ~/.profile
 
     # this makes path variable accessible in current script
-    export PATH=$PATH:$nrf_path:$segger_path
+    export PATH=$PATH:$nrf_path
 
     echo "$nrf_path was automatically added to PATH variable in ~/.profile"  
-    echo "$segger_path was automatically added to PATH variable in ~/.profile"  
 
 
 fi
@@ -143,23 +138,24 @@ else
 
 fi
 
-
-
 # now install zephyr sdk
-sdk="/opt/zephyr_sdk"
+sdk="/opt/zephyr-sdk-0.16.1"
 
 # Check if the directory exists
 if ! [ -d "$sdk" ]; then
+    echo $(pwd)
+
     echo "creating zepyhr sdk"
-    mkdir $sdk
-    cd $sdk
+    sudo mkdir $sdk
+    echo $(pwd)
     wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.1/zephyr-sdk-0.16.1_linux-x86_64.tar.xz
     wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.1/sha256.sum | shasum --check --ignore-missing
 
-    tar xvf zephyr-sdk-0.16.1_linux-x86_64.tar.xz
-    cd zephyr-sdk-0.16.1
+    sudo tar xvf zephyr-sdk-0.16.1_linux-x86_64.tar.xz -C /opt
+    rm zephyr-sdk-0.16.1_linux-x86_64.tar.xz
+    cd sdk
     ./setup.sh
-
+    ls
 else
 
     echo "Zephyr SDK already installed."
