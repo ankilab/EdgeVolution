@@ -33,11 +33,46 @@ git clone https://github.com/ankilab/EvoNAS
 ```
 
 ### Linux
-`install.sh` should automatically install all dependencies
+* `install.sh` should automatically install all dependencies
 ```
 cd ./EvoNAS
-sudo ./install.sh
+./install.sh
 ```
+* Add path variables and device permissions manually
+In order to properly use the toolchain, it is required to set the following PATH variables. Please add the following line to your .profile, .bashrc or other preferred shell configuration file: 
+```export PATH="<path/to/add>:$PATH"" ```
+
+Next, add the permissions for the plugged in power profiler kits and the development kits:
+First, list all the idProduct of the kits having the idVendor (1366) of JLink programmer:
+```
+lsusb |sed -n 's/.*1366:\([0-9]*\).*/\1/p'
+```
+As *root* add a file named 50-nrf-access.rules to /etc/udev/rules.d. For every `<idProduct>` add the following line to this file:
+```
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="<idProduct>", MODE="0777"
+```
+Repeat the same for the power profiler kits using the idVendor 1915. If there are problems to get the ids, use `lsusb` to see all connected devices. It should output something like this:
+```
+Bus 001 Device 007: ID 1915:c00a Nordic Semiconductor ASA PPK2
+```
+
+
+
+* Add path variables and device permissions automatically
+This manipulates the users device permissions and shell config files automatically. This script will tamper the users shell config files. Please run `./add_env_and_permissions.sh`
+
+
+* Manually add these paths to you Path or run script 
+#TODO add path and the path adding script
+
+
+or using udev rule zephyr
+
+Install udev rules, which allow you to flash most Zephyr boards as a regular user:
+
+
+* Relogin to apply changes.
+
 ### Windows
 For windows, manual installation is possible.
 
@@ -84,7 +119,41 @@ To use EvoNAS, follow these steps:
 ```
 python main.py
 ```
+## Debugging boards
 
+To debug a NRF development kit board, follow these steps according this [tutorial](https://www.youtube.com/watch?v=zcMCaODyISo&list=PLx_tBuQ_KSqEt7NK-H7Lu78lT2OijwIMl&index=1):
+
+* Download the nrf connect desktop tool [here](https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-desktop).
+* Install the tool chain manager via the desktop tool
+* Install the nRF Connect SDK via tool chain manager
+* Install the VS Code extension by clicking the VS Code button next to the installed nRF Connect SDK in the tool chain manager
+* Add `c_cpp_properties.json` to `.vscode` directory to include paths for autocompletion.
+
+```
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
+```
+* Open folder EvoNAS in VS Code
+* Run nRF Connect extension in VS Code
+* On the WELCOME tab, click on `Open an existing application`
+* Select ./tflite/airway_tflite 
+* On the APPLICATIONS tab, click on the second icon next to airway_tflite which adds a build configuration `Open an existing application`
+* Select which board type to debug, use `prj.conf` as configuration and keep build as directory name. (NOTE: choosing a build directory outside of airway_tflite via ../ does not save the build configuration)
+* A build should have been started. The board can now be debugged using the Debug button in the ACTIONS tab. Make sure that the board appears in the CONNECTED DEVICES tab. When hooked up to the power profiler, the power profiler needs to be lit in blue in order to flash the kit properly. 
 
 ## Contributing to EvoNAS
 To contribute to EvoNAS, follow these steps:

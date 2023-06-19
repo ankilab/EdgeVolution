@@ -27,20 +27,13 @@ if ! [ $nrfjprog_installed -eq 1]; then
     # this file gets automatically installed from nrfjprog but can not be installed correctly
     rm JLink_Linux_V780c_x86_64.tgz
 
-
-    # add variables to PATH
+    # add variables to PATH temporarily
 
     # Define the path variable    
     nrf_path="/opt/nrf-command-line-tools/bin"
 
-    # this makes path variable accessible for next login
-    echo export PATH=$PATH:$nrf_path >> ~/.profile
-
     # this makes path variable accessible in current script
     export PATH=$PATH:$nrf_path
-
-    echo "$nrf_path was automatically added to PATH variable in ~/.profile"  
-
 
 fi
 exit
@@ -184,4 +177,3 @@ else
     echo "Local zephyr directory already set up." 
 
 fi 
-west build -b nrf52840dk_nrf52840 airway_tflite/

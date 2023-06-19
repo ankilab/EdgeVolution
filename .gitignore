@@ -3,6 +3,7 @@ tflite/bootloader/
 tflite/modules/
 tflite/tools/
 tflite/zephyr/
+tflite/airway_tflite/build
 tflite/build*
 tflite/log.log
 tiny_ml/
