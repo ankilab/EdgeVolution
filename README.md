@@ -19,57 +19,46 @@ On Linux, the `install.sh` script should automatically install all the requireme
 * Download the [nrf-toolchain](https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-desktop)
 
 * Install west make sure west is accessible globally (not just in virtual env)
-```
-pip install west
-```
+    ```
+    pip install west
+    ```
 
 ## Installing EvoNAS
 
 To install EvoNAS, follow these steps:
 
 * Clone the github repository.
-``` 
-git clone https://github.com/ankilab/EvoNAS
-```
+    ``` 
+    git clone https://github.com/ankilab/EvoNAS
+    ```
 
 ### Linux
+Follow these steps for Linux:
 * `install.sh` should automatically install all dependencies
-```
-cd ./EvoNAS
-./install.sh
-```
-* Add path variables and device permissions manually
-In order to properly use the toolchain, it is required to set the following PATH variables. Please add the following line to your .profile, .bashrc or other preferred shell configuration file: 
-```export PATH="<path/to/add>:$PATH"" ```
+    ```
+    cd ./EvoNAS
+    ./install.sh
+    ```
+* Add path variables and device permissions automatically.
+  This manipulates the users device permissions and shell config files automatically. This script will tamper the users shell config files. Please run `./add_env_and_permissions.sh`
+    
+* (Optional) Add path variables and device permissions manually: 
+    In order to properly use the toolchain, it is required to set the following PATH variables. Please add the following line to your .profile, .bashrc or other preferred shell configuration file: 
+    ```export PATH="<path/to/add>:$PATH"" ```
 
-Next, add the permissions for the plugged in power profiler kits and the development kits:
-First, list all the idProduct of the kits having the idVendor (1366) of JLink programmer:
-```
-lsusb |sed -n 's/.*1366:\([0-9]*\).*/\1/p'
-```
-As *root* add a file named 50-nrf-access.rules to /etc/udev/rules.d. For every `<idProduct>` add the following line to this file:
-```
-SUBSYSTEM=="usb", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="<idProduct>", MODE="0777"
-```
-Repeat the same for the power profiler kits using the idVendor 1915. If there are problems to get the ids, use `lsusb` to see all connected devices. It should output something like this:
-```
-Bus 001 Device 007: ID 1915:c00a Nordic Semiconductor ASA PPK2
-```
-
-
-
-* Add path variables and device permissions automatically
-This manipulates the users device permissions and shell config files automatically. This script will tamper the users shell config files. Please run `./add_env_and_permissions.sh`
-
-
-* Manually add these paths to you Path or run script 
-#TODO add path and the path adding script
-
-
-or using udev rule zephyr
-
-Install udev rules, which allow you to flash most Zephyr boards as a regular user:
-
+    Next, add the permissions for the plugged in power profiler kits and the development kits:
+    First, list all the idProduct of the kits having the idVendor (1366) of JLink programmer:
+    ```
+    lsusb |sed -n 's/.*1366:\([0-9]*\).*/\1/p'
+    ```
+    As *root* add a file named 50-nrf-access.rules to /etc/udev/rules.d. For every `<idProduct>` add the following line to this file:
+    ```
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="<idProduct>", MODE="0777"
+    ```
+    Repeat the same for the power profiler kits using the idVendor 1915. If there are problems to get the ids, use `lsusb` to see all connected devices. It should output something like this:
+    ```
+    Bus 001 Device 007: ID 1915:c00a Nordic Semiconductor ASA PPK2
+    ```
 
 * Relogin to apply changes.
 
@@ -77,40 +66,36 @@ Install udev rules, which allow you to flash most Zephyr boards as a regular use
 For windows, manual installation is possible.
 
 * Install requirements in virtual environment
-
-```
-# create virtual environment
-python -m venv .env 
-
-# activate virtual environment
-.\.env\Scripts\activate
-
-pip install -r requirements.txt
-```
+    ```
+    # create virtual environment
+    python -m venv .env 
+    
+    # activate virtual environment
+    .\.env\Scripts\activate
+    
+    pip install -r requirements.txt
+    ```
 
 * Convert "flash_tflite_model.sh" to unix via wsl:
-``` 
-cd ./tools
-dos2unix flash_tflite_model.sh
-```
+    ``` 
+    cd ./tools
+    dos2unix flash_tflite_model.sh
+    ```
 
 * Zephyr as described in wiki #TODO, but change protobuf version to 3.20.0 instead of 3.20.3
 
-* Install zephyr SDK according to [this tutorial](https://docs.zephyrproject.org/3.2.0/develop/toolchains/zephyr_sdk.html). 
-Manually download and extract SDK to C:/Program Files/zephyr-sdk-0.15.0 or in Powershell: 
-
-```
-cd "C:/Program Files"
-wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.0/zephyr-sdk-0.15.0_windows-x86_64.zip
-unzip zephyr-sdk-0.15.0_windows-x86_64.zip
-```
-
-Then:
-```
-cd "C:/Program Files/zephyr-sdk-0.15.0"
-./setup.sh
-
-```
+* Install zephyr SDK according to [this tutorial](https://docs.zephyrproject.org/3.2.0/develop/toolchains/zephyr_sdk.html). Manually download and extract SDK to C:/Program Files/zephyr-sdk-0.15.0 or in Powershell: 
+    ```
+    cd "C:/Program Files"
+    wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.0/zephyr-sdk-0.15.0_windows-x86_64.zip
+    unzip zephyr-sdk-0.15.0_windows-x86_64.zip
+    ```
+    Then:
+    ```
+    cd "C:/Program Files/zephyr-sdk-0.15.0"
+    ./setup.sh
+    
+    ```
 
 ## Using EvoNAS
 
@@ -128,25 +113,24 @@ To debug a NRF development kit board, follow these steps according this [tutoria
 * Install the nRF Connect SDK via tool chain manager
 * Install the VS Code extension by clicking the VS Code button next to the installed nRF Connect SDK in the tool chain manager
 * Add `c_cpp_properties.json` to `.vscode` directory to include paths for autocompletion.
-
-```
-{
-    "configurations": [
-        {
-            "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64"
-        }
-    ],
-    "version": 4
-}
-```
+    ```
+    {
+        "configurations": [
+            {
+                "name": "Linux",
+                "includePath": [
+                    "${workspaceFolder}/**"
+                ],
+                "defines": [],
+                "compilerPath": "/usr/bin/gcc",
+                "cStandard": "c17",
+                "cppStandard": "gnu++17",
+                "intelliSenseMode": "linux-gcc-x64"
+            }
+        ],
+        "version": 4
+    }
+    ```
 * Open folder EvoNAS in VS Code
 * Run nRF Connect extension in VS Code
 * On the WELCOME tab, click on `Open an existing application`
