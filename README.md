@@ -119,6 +119,18 @@ To use EvoNAS, follow these steps:
 ```
 python main.py
 ```
+## Updating tflite-micro
+
+As zephyr automatically installs its cached tflite micro version, a custom zephyr repo will be maintained. 
+
+instead of west init
+
+mkdir my-workspace
+cd my-workspace
+git clone https://github.com/stefandnfr/zephyr zephyr
+west init -l zephyr
+
+
 ## Debugging boards
 
 To debug a NRF development kit board, follow these steps according this [tutorial](https://www.youtube.com/watch?v=zcMCaODyISo&list=PLx_tBuQ_KSqEt7NK-H7Lu78lT2OijwIMl&index=1):
