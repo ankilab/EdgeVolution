@@ -108,13 +108,13 @@ python main.py
 
 As zephyr automatically installs its cached tflite micro version, a custom zephyr repo will be maintained. 
 
-instead of west init
-
+Instead of west init please run:
+```
 mkdir my-workspace
 cd my-workspace
 git clone https://github.com/stefandnfr/zephyr zephyr
 west init -l zephyr
-
+```
 
 ## Debugging boards
 
