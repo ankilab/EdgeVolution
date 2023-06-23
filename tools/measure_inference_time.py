@@ -44,22 +44,101 @@ def get_nrf_port(board, timeout_in_ms = 2000):
         max_iterations_counter += 1
     raise RuntimeError("Could not find the port to listen to")
 
+
+def save_to_dir(board, save_dir,measured_values):
+    """ 
+    save_to_dir saves the measured values of the serial connection to the result.json under the key inference_information in the save_dir directory. 
+    structure of "inference_information" is expected to be this:
+    "inference_information" : {
+                "board_1" : [board_1_information],
+                "board_2: : [board_2_information],
+                ....
+    }
+
+    :param board: dict containing information about board {"model": <board_model>, "snr": <snr_as_string>}
+    :param save_dir: expects a directory path that already contains a result.json containing key vale pairs.
+    :param measured_values: a list containing all the measured information.
+
+
+    :return: None. Writes the serial input of the board to result.json.
+
+    :raises: RunTimeError if the information of the board is already contained in result.json
+    """ 
+    # read the values of results.json
+    with open(save_dir + '/results.json') as f:
+        results = json.loads(f.read())
+
+    # board snr should be unique id that serves as key for the information
+    id = board["snr"]
+
+    # get previous inference information if exists
+    inference_information = {}
+    if "inference_information" in results:
+
+        #get old information
+        inference_information = results["inference_information"]
+
+        # inference information of specified board should not already be contained beforehand
+        if id in inference_information:
+            raise RuntimeError("result.json already contains information of the specified board")
+        
+    # format output  
+    try:
+        # measured value will always be length 1 so average will not work. See FIXME in read_inference_time 
+        inference_time = np.mean(measured_values)
+    except:
+        inference_time = measured_values
+
+    # append new information for board with id
+    inference_information[id] = inference_time
+
+    # append all inference_information (old and new) to the key
+    results["inference_information"] = inference_information
+
+    # save it to output
+    with open(save_dir + '/results.json', 'w') as f:
+        json.dump(results, f, indent=2)
+
+
+
 def read_inference_time(board, save_dir=None):
+    """ 
+    read_inference_time starts a serial connection to the specific board and fetches the inference time and saves it optionally to save_dir else prints it to console.
+
+    :param board: dict containing information about board {"model": <board_model>, "snr": <snr_as_string>}
+    :param save_dir (optional): if provided, it expects a directory path that already contains a result.json containing key vale pairs.
+
+    :return: None. Writes the serial input of the board to json or prints it to console.
+    """ 
+
+    # getting port for the specific board
     port = None
     try:
         port = get_nrf_port(board)
     except RuntimeError as e:
-        print(str(e))
+        raise NotImplementedError("add proper handling when the board can not be found")
 
     measured_values = []
 
     if port:
         max_iterations_counter = 0
         max_iterations = 40
+
+        # connecting to port
         with serial.Serial(port, 115200, timeout=0) as ser:
+
+            # FIXME: len(measured_values) can never greater than one, and such only reads one measured value. Not sure if intended or bug.
             while len(measured_values) < 1:
                 time.sleep(0.1)
                 try:
+                    # increase stop criterion counter first before reading
+                    if max_iterations_counter > max_iterations:
+                        measured_values.append("Max iterations reached")
+                        continue # this avoids the rare case that at max_iterations reached and it reads one value, thus appending two measured values. maybe rethink the whole structure
+
+                    else:
+                        max_iterations_counter = max_iterations_counter + 1
+
                     line = ser.readline()
                     if line != b'':
                         if "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
@@ -69,26 +148,16 @@ def read_inference_time(board, save_dir=None):
                             measured_values.append(inf_time)
                         else:
                             print(str(line))
-                    if max_iterations_counter > max_iterations:
-                        measured_values.append("Max iterations reached")
-                    else:
-                        max_iterations_counter = max_iterations_counter + 1
+
                 except Exception as e:
                     print(str(e))
                     pass
     else:
         measured_values.append("Could not find the port of board. Please connect board. ")
 
+    # save output to directory or print it
     if save_dir is not None:
-        # save the measured value to results.json
-        with open(save_dir + '/results.json') as f:
-            d = json.loads(f.read())
-        try:
-            d["inference_time"] = np.mean(measured_values)
-        except:
-            d["inference_time"] = measured_values
-        with open(save_dir + '/results.json', 'w') as f:
-            json.dump(d, f, indent=2)
+        save_to_dir(board, save_dir,measured_values)
     else:
         print(measured_values)
 

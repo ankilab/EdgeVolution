@@ -9,7 +9,7 @@ import signal
 
 def init_ppk2():
     ppk2s_connected = PPK2_MP.list_devices()
-    _ppk2 = PPK2_MP(port=ppk2s_connected[0], buffer_seconds=2); time.sleep(0.1)
+    _ppk2 = PPK2_MP(port=ppk2s_connected[0], buffer_max_size_seconds=2); time.sleep(0.1)
 
     i = 0
     while True:
@@ -38,11 +38,20 @@ def _timeout_handler(signal_number, current_stack):
     raise Exception(f"end of time; signal number: {signal_number}, current stack: {current_stack}")
 
 
-def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterations=None):
+def measure_power_nrf(_ppk2, save_dir: str, board_snr:str, nb_samples_average: int, max_iterations=None):
     """ Measures the power consumption and saves all values to a .csv file at the given location. """
     i = 0
     signal.signal(signal.SIGALRM, _timeout_handler)
-    with open(save_dir, "w") as csv_file:
+
+    # get paths FIXME: make paths more robust for e.g. Windows 
+    power_measurement_file_name = "power_measurements_" + board_snr +".csv"
+    csv_path = save_dir + "/" + power_measurement_file_name
+    error_log_path = save_dir + "/" + "error_log_" + board_snr + ".txt"
+
+    results_path = save_dir + "/" + "results.json"
+
+
+    with open(csv_path, "w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         #writer.writerow(['Timestamp', 'Power Consumption'])
         writer.writerow(['Power Consumption'])
@@ -73,16 +82,17 @@ def measure_power_nrf(_ppk2, save_dir: str, nb_samples_average: int, max_iterati
                 if i > max_iterations:
                     break
             else:
-                with open(save_dir.replace("power_measurements.csv", "results.json")) as f:
+                with open(results_path) as f:
                     try:
-                        d = json.loads(f.read())
-                        if "inference_time" in d.keys():
-                            # this means inference time was measured, so we want this process to end;
-                            # 50 more iterations will be measured until we leave the while loop
-                            i = 0
-                            max_iterations = 50
+                        results = json.loads(f.read())
+                        if "inference_information" in results:
+                            if board_snr in results["inference_information"]:
+                                # this means inference time of this board was measured, so we want this process to end;
+                                # 50 more iterations will be measured until we leave the while loop
+                                i = 0
+                                max_iterations = 50
                     except Exception as e:
-                        with open(save_dir.replace("power_measurements.csv", "error_log.txt"), 'a') as file:
+                        with open(error_log_path, 'a') as file:
                             file.write(f"10020: Fatal error when loading results.json in power measurements: {str(e)} \n")
             time.sleep(0.1)
 
@@ -103,10 +113,12 @@ if __name__ == "__main__":
         prog='MeasurePower',
         description='This script measures the power consumption of the NRF52840 microcontroller.')
 
-    parser.add_argument('save_dir', nargs='?', default='../tflite/power_measurements.csv')
+    parser.add_argument('save_dir', nargs='?', default='./tflite')
+    parser.add_argument('board_snr', nargs='?', default=None)
     parser.add_argument('nb_samples_average', nargs='?', default="2000")
+
     args = parser.parse_args()
 
     ppk2 = init_ppk2()
-    measure_power_nrf(ppk2, args.save_dir, int(args.nb_samples_average))
+    measure_power_nrf(ppk2, args.save_dir,args.board_snr, int(args.nb_samples_average),1000)
     stop_measuring(ppk2)
