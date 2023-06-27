@@ -84,10 +84,11 @@ def save_to_dir(board, save_dir,measured_values):
         
     # format output  
     try:
-        # measured value will always be length 1 so average will not work. See FIXME in read_inference_time 
+        # measured value will always be length 1 so average will not do anything except unpacking value from list. See FIXME in read_inference_time 
         inference_time = np.mean(measured_values)
     except:
-        inference_time = measured_values
+        # FIXME: the [0] needs to be used as currently it provides a list with one element
+        inference_time = measured_values[0]
 
     # append new information for board with id
     inference_information[id] = inference_time

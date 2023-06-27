@@ -138,8 +138,7 @@ class GeneticAlgorithm:
             raise ValueError("board_snr does not exist in inference information")
         
         # raises valueError if not possible to be converted to float
-        # FIXME: the [0] needs to be used as currently it provides a list with one element
-        value = float(results["inference_information"][board_snr][0])
+        value = float(results["inference_information"][board_snr])
 
         # return the inference time of the provided board_snr
         return value
