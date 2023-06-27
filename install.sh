@@ -21,7 +21,7 @@ if ! [ $nrfjprog_installed -eq 1]; then
     # install jlink segger
     wget  --post-data="accept_license_agreement=accepted&submit=Download+software" https://www.segger.com/downloads/jlink/JLink_Linux_V788f_x86_64.deb
 
-    sudo dpkg JLink_Linux_V788f_x86_64.deb
+    sudo dpkg -i JLink_Linux_V788f_x86_64.deb
     rm JLink_Linux_V788f_x86_64.deb
     
     # this file gets automatically installed from nrfjprog but can not be installed correctly
@@ -36,7 +36,6 @@ if ! [ $nrfjprog_installed -eq 1]; then
     export PATH=$PATH:$nrf_path
 
 fi
-exit
 
 # Check if Python is already installed
 command -v python3 >/dev/null
