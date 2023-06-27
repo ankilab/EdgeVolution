@@ -114,6 +114,7 @@ mkdir my-workspace
 cd my-workspace
 git clone https://github.com/stefandnfr/zephyr zephyr
 west init -l zephyr
+west update
 ```
 
 ## Debugging boards
