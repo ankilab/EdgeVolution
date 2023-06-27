@@ -187,7 +187,7 @@ class GeneticAlgorithm:
         return information 
 
 
-    def calculate_energy_consumption(self, board_snr, data_dir):
+    def calculate_energy_consumption(self, board_snr:str, data_dir:str):
         """ 
         calculate_energy_consumption reads the energy measurements from the correct csv, averages it and then integrates it over inference time 
 
@@ -256,16 +256,32 @@ class GeneticAlgorithm:
         with open(results_path, 'w') as f:
             json.dump(results, f, indent=2)
 
+    def reset_ppks(self, boards: list[dict]):
+        """ 
+        reset_ppks resets all connected ppks by starting and stopping measuring to provide power to the MCU. 
+        
+        :param boards: all boards that are connected with their corresponding power profiler kits.
+
+        :return: None
+
+        :raises: RuntimeError if there corresponding ppk is not found or multiple with same serial number are connected.  
+        """
+        # iterate over boards
+        for board in boards:
+
+            # initializing connection and starting to measure
+            ppk2 = init_ppk2(board["ppk"])
+
+            # stop measuring
+            stop_measuring(ppk2)
+
+
     def evaluate_energy_consumption_and_inference_speed(self):
         """ Evaluate all preselected models on the MCU. """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
         # run this once, otherwise we might not be able to flash the microcontroller since it gets it's power from the PPK2
-        try:
-            ppk2 = init_ppk2()
-            stop_measuring(ppk2)
-        except:
-            pass
+        self.reset_ppks(self.params["boards"])
 
         for idx, individual in enumerate(self.preselected_individuals):
             print(f"Evaluate energy of {individual} (index: {idx})")
@@ -280,12 +296,13 @@ class GeneticAlgorithm:
 
 
                     # start measuring energy consumption
-                    # FIXME: improve command argument readability
-                    command = 'python tools/measure_power_consumption.py ' + path + individual + ' ' + board["snr"] + ' ' + f'{self.params["power_measurement_nb_samples_average"]}'
+                    args = ['python tools/measure_power_consumption.py', path + individual, board["snr"], board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
+                    command = " ".join(args) # joining args separated by space
                     proc_energy = Popen(command, shell=True)
 
                     # get inference time from Serial port
-                    command = 'python tools/measure_inference_time.py ' + path + individual + " " + board["model"] + " " + board["snr"]
+                    args = ['python tools/measure_inference_time.py', path + individual, board["model"], board["snr"]]
+                    command = " ".join(args) # joining args separated by space
                     proc_inference = Popen(command, shell=True)
 
                     # wait for inference time measurement to finish
@@ -299,8 +316,6 @@ class GeneticAlgorithm:
                         self.calculate_energy_consumption(board["snr"], path + individual)
                     except:
                         pass
-
-
 
             else: # no boards 
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')

@@ -6,11 +6,10 @@ from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
 from utils.loader import Loader
 
-
 # add all boards to array. if only one specific board required, have only one element in list
 BOARDS = [
-    #{"model" : "nrf52840dk_nrf52840", "snr": "1050242564"},
-    {"model" : "nrf52833dk_nrf52833", "snr": "685756103"},
+    {"model" : "nrf52840dk_nrf52840", "snr": "1050242564", "ppk": "FEA55411"},
+    #{"model" : "nrf52833dk_nrf52833", "snr": "685756103"},
 ]
 
 #################################
