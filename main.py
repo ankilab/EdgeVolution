@@ -9,7 +9,9 @@ from utils.loader import Loader
 # add all boards to array. if only one specific board required, have only one element in list
 BOARDS = [
     {"model" : "nrf52840dk_nrf52840", "snr": "1050242564", "ppk": "FEA55411"},
-    #{"model" : "nrf52833dk_nrf52833", "snr": "685756103"},
+    {"model" : "nrf52840dk_nrf52840", "snr": "1050283223", "ppk": "FAFD344C"},
+    {"model" : "nrf52833dk_nrf52833", "snr": "685756103", "ppk": "None"},
+    {"model" : "nrf5340dk_nrf5340_cpuapp", "snr": "1050006605", "ppk": "None"},
 ]
 
 #################################

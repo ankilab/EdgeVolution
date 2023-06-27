@@ -256,49 +256,35 @@ class GeneticAlgorithm:
         with open(results_path, 'w') as f:
             json.dump(results, f, indent=2)
 
-    def reset_ppks(self, boards: list[dict]):
-        """ 
-        reset_ppks resets all connected ppks by starting and stopping measuring to provide power to the MCU. 
-        
-        :param boards: all boards that are connected with their corresponding power profiler kits.
-
-        :return: None
-
-        :raises: RuntimeError if there corresponding ppk is not found or multiple with same serial number are connected.  
-        """
-        # iterate over boards
-        for board in boards:
-
-            # initializing connection and starting to measure
-            ppk2 = init_ppk2(board["ppk"])
-
-            # stop measuring
-            stop_measuring(ppk2)
-
 
     def evaluate_energy_consumption_and_inference_speed(self):
         """ Evaluate all preselected models on the MCU. """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
-        # run this once, otherwise we might not be able to flash the microcontroller since it gets it's power from the PPK2
-        self.reset_ppks(self.params["boards"])
-
         for idx, individual in enumerate(self.preselected_individuals):
             print(f"Evaluate energy of {individual} (index: {idx})")
 
             # flash tflite model on individual board
-            if len(self.params["boards"]) > 0:                
+            if len(self.params["boards"]) > 0:       
                 for board in self.params["boards"]:
                     tflite_path = "../" +path + individual + "/models/model_tflite_untrained.tflite"
                     cpp_path = '../tflite/airway_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
+
+                    # start measuring
+                    ppk2 = init_ppk2(board["ppk"])
+                    time.sleep(1)
                     subprocess.call(['bash', '-i',flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
+                    time.sleep(1)
 
+                    # if no ppk connected, measuring the power consumption is not possible
+                    if ppk2 is not None:
+                        stop_measuring(ppk2)
 
-                    # start measuring energy consumption
-                    args = ['python tools/measure_power_consumption.py', path + individual, board["snr"], board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
-                    command = " ".join(args) # joining args separated by space
-                    proc_energy = Popen(command, shell=True)
+                        # start measuring energy consumption
+                        args = ['python tools/measure_power_consumption.py', path + individual, board["snr"], board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
+                        command = " ".join(args) # joining args separated by space
+                        proc_energy = Popen(command, shell=True)
 
                     # get inference time from Serial port
                     args = ['python tools/measure_inference_time.py', path + individual, board["model"], board["snr"]]
@@ -308,14 +294,16 @@ class GeneticAlgorithm:
                     # wait for inference time measurement to finish
                     proc_inference.wait()
 
-                    # wait for energy consumption measurement to finish
-                    try:
-                        proc_energy.wait(timeout=30)
+                    # if no ppk connected, measuring the power consumption is not possible
+                    if ppk2 is not None:
+                        # wait for energy consumption measurement to finish
+                        try:
+                            proc_energy.wait(timeout=30)
 
-                        # calculate energy consumption
-                        self.calculate_energy_consumption(board["snr"], path + individual)
-                    except:
-                        pass
+                            # calculate energy consumption
+                            self.calculate_energy_consumption(board["snr"], path + individual)
+                        except:
+                            pass
 
             else: # no boards 
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')

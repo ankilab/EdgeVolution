@@ -47,7 +47,7 @@ def init_ppk2(ppk_serial:str, timeout_in_s = 10):
     """ 
     init_ppk2 initializes the ppk and starts measuring.
 
-    :param ppk_serial: serial number of the power profiler that is connected to the board to be measured.
+    :param ppk_serial: serial number of the power profiler that is connected to the board to be measured or "None" if no ppk connected.
     :param timeout_in_s: timeout to stop trying after unsuccessful initialization
 
     :return: ppk2 connection
@@ -55,6 +55,10 @@ def init_ppk2(ppk_serial:str, timeout_in_s = 10):
     :raises: RuntimeError if there corresponding ppk is not found or multiple with same serial number are connected.  
     """ 
 
+    # returns if there is no ppk supposed to be connected
+    if ppk_serial == "None":
+        return None
+    
     # get connected ppk by serial number
     connected_ppk2_port = get_ppk_port(ppk_serial)
 
@@ -122,11 +126,13 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
     :param _ppk2: ppk connection
     :param save_dir: directory where to save the csv file, read result.json and optionally save error log text file
     :param board_snr: snr of board connected to ppk to map measured data to a specific board
-    :param ppk_serial: serial number of the power profiler that is connected to the board to be measured.
+    :param ppk_serial: serial number of the power profiler that is connected to the board to be measured or "None" if no ppk connected.
     :param nb_samples_average: window size of average sampling 
     :param max_iterations (optional): stopping criterion for sampling
     
-    return: None
+    :return: None
+
+    :raises: RuntimeError if no ppk is provided. 
     """
 
     # init iterations counter
@@ -167,8 +173,11 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
                         writer.writerow([np.mean(samples[i:i + nb_samples_average])])
             except:
                 print("Get data is not working")
-                # init ppk again
+                # init ppk again. serial should be valid
                 _ppk2 = init_ppk2(ppk_serial)
+
+                if _ppk2 is None:
+                    raise RuntimeError("ppk initialization returns None, this might be due to not having a ppk serial number associated")
                 time.sleep(1)
                 continue
 
@@ -243,7 +252,7 @@ if __name__ == "__main__":
 
     parser.add_argument('save_dir', nargs='?', default='./tflite', help="directory where to save the csv file, read result.json and optionally save error log text file")
     parser.add_argument('board_snr', nargs='?', default=None, help="snr of board connected to ppk to map measured data to a specific board")
-    parser.add_argument('ppk_serial', nargs='?', default=None, help="serial number of the power profiler that is connected to the board to be measured.")
+    parser.add_argument('ppk_serial', nargs='?', default=None, help="serial number of the power profiler that is connected to the board to be measured or 'None' if no ppk connected.")
     parser.add_argument('nb_samples_average', nargs='?', default="2000", help="window size of average sampling ")
 
     # parse arguments
@@ -252,8 +261,10 @@ if __name__ == "__main__":
     # initializing connection and starting to measure
     ppk2 = init_ppk2(args.ppk_serial)
 
-    # writing measures to csv file
-    measure_power_nrf(ppk2, args.save_dir,args.board_snr, args.ppk_serial, int(args.nb_samples_average),1000)
+    # if ppk_serial is "None", no connection is expected, thus ppk2 is also None.
+    if ppk2 is not None:
+        # writing measures to csv file
+        measure_power_nrf(ppk2, args.save_dir,args.board_snr, args.ppk_serial, int(args.nb_samples_average),1000)
 
-    # stop measuring
-    stop_measuring(ppk2)
+        # stop measuring
+        stop_measuring(ppk2)

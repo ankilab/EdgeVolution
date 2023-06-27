@@ -24,4 +24,4 @@ echo "Value of CONFIG_USB_DEVICE_PRODUCT changed to '$name'"
 west build -b $board_type airway_tflite/ --build-dir build-$board_type
 
 # flash the given board
-west flash --dev-id $board_snr --build-dir build-$board_type
+west flash --recover --dev-id $board_snr --build-dir build-$board_type
