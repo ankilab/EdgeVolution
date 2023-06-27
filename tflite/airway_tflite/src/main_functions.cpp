@@ -16,17 +16,15 @@
 
 #include "main_functions.h"
 
-#include <tensorflow/lite/micro/all_ops_resolver.h>
 #include "constants.h"
 #include "model.hpp"
-#include "output_handler.hpp"
-#include <tensorflow/lite/micro/micro_error_reporter.h>
-#include <tensorflow/lite/micro/micro_interpreter.h>
-#include <tensorflow/lite/micro/system_setup.h>
-#include <tensorflow/lite/schema/schema_generated.h>
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+#include <tensorflow/lite/micro/kernels/micro_ops.h>
 
-#include <math.h> 
-#include <stdint.h>  
+#include <math.h>
+#include <stdint.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
@@ -37,9 +35,11 @@
 #define LED0_NODE DT_ALIAS(led0)
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
+
+
 /* Globals, used for compatibility with Arduino-style sketches. */
 namespace {
-	tflite::ErrorReporter *error_reporter = nullptr;
+	// tflite::ErrorReporter *error_reporter = nullptr;
 	const tflite::Model *model = nullptr;
 	tflite::MicroInterpreter *interpreter = nullptr;
 	TfLiteTensor *input = nullptr;
@@ -51,6 +51,7 @@ namespace {
 }  /* namespace */
 
 uint8_t setup_failed = 1;
+
 
 /* The name of this function is important for Arduino compatibility. */
 void setup(void)
@@ -78,60 +79,116 @@ void setup(void)
 		k_sleep(K_MSEC(100));
 	}
 
-	/*unsigned char *received = NULL;
-	int poll_in = 0;
 
-	while (received == NULL) {
-		while (!poll_in) {
-			poll_in = uart_poll_in(dev, &received);
-		}
-		printk("waiting\n");
-		k_sleep(K_MSEC(100));
-	} 
-
-	while (true) {
-		printk("Received stop\n");
-	}*/
-	
-
-	/* Set up logging. Google style is to avoid globals or statics because of
-	 * lifetime uncertainty, but since this has a trivial destructor it's okay.
-	 * NOLINTNEXTLINE(runtime-global-variables)
-	 */
-
-	static tflite::MicroErrorReporter micro_error_reporter;
-
-	error_reporter = &micro_error_reporter;
-
-	/* Map the model into a usable data structure. This doesn't involve any
-	 * copying or parsing, it's a very lightweight operation.
-	 */
 	model = tflite::GetModel(g_model);
 	if (model->version() != TFLITE_SCHEMA_VERSION) {
-		TF_LITE_REPORT_ERROR(error_reporter,
-						"Model provided is schema version %d not equal "
-						"to supported version %d.",
-						model->version(), TFLITE_SCHEMA_VERSION);
 		printk("Version error");
 		return;
 	}
 
-	/* This pulls in all the operation implementations we need.
-	 * NOLINTNEXTLINE(runtime-global-variables)
-	 */
-	static tflite::AllOpsResolver resolver;
+	tflite::MicroMutableOpResolver<95> op_resolver;
+	op_resolver.AddAbs();
+	op_resolver.AddAdd();
+	op_resolver.AddAddN();	
+	op_resolver.AddArgMax();
+	op_resolver.AddArgMin();
+	op_resolver.AddAssignVariable();
+	op_resolver.AddAveragePool2D();
+	op_resolver.AddBatchToSpaceNd();
+	op_resolver.AddBroadcastArgs();
+	op_resolver.AddBroadcastTo();
+	op_resolver.AddCallOnce();
+	op_resolver.AddCast();
+	op_resolver.AddCeil();
+	op_resolver.AddCircularBuffer();
+	op_resolver.AddConcatenation();
+	op_resolver.AddConv2D();
+	op_resolver.AddCos();
+	op_resolver.AddCumSum();
+	op_resolver.AddDepthToSpace();
+	op_resolver.AddDepthwiseConv2D();
+	op_resolver.AddDequantize();
+	op_resolver.AddDetectionPostprocess();
+	op_resolver.AddDiv();
+	op_resolver.AddElu();
+	op_resolver.AddEqual();
+	op_resolver.AddExp();
+	op_resolver.AddExpandDims();
+	op_resolver.AddFill();
+	op_resolver.AddFloor();
+	op_resolver.AddFloorDiv();
+	op_resolver.AddFloorMod();
+	op_resolver.AddFullyConnected();
+	op_resolver.AddGather();
+	op_resolver.AddGatherNd();
+	op_resolver.AddGreater();
+	op_resolver.AddGreaterEqual();
+	op_resolver.AddHardSwish();
+	op_resolver.AddIf();
+	op_resolver.AddL2Normalization();
+	op_resolver.AddL2Pool2D();
+	op_resolver.AddLeakyRelu();
+	op_resolver.AddLess();
+	op_resolver.AddLessEqual();
+	op_resolver.AddLog();
+	op_resolver.AddLogicalAnd();
+	op_resolver.AddLogicalNot();
+	op_resolver.AddLogicalOr();
+	op_resolver.AddLogistic();
+	op_resolver.AddLogSoftmax();
+	op_resolver.AddMaximum();
+	op_resolver.AddMaxPool2D();
+	op_resolver.AddMirrorPad();
+	op_resolver.AddMean();
+	op_resolver.AddMinimum();
+	op_resolver.AddMul();
+	op_resolver.AddNeg();
+	op_resolver.AddNotEqual();
+	op_resolver.AddPack();
+	op_resolver.AddPad();
+	op_resolver.AddPadV2();
+	op_resolver.AddPrelu();
+	op_resolver.AddQuantize();
+	op_resolver.AddReadVariable();
+	op_resolver.AddReduceMax();
+	op_resolver.AddRelu();
+	op_resolver.AddRelu6();
+	op_resolver.AddReshape();
+	op_resolver.AddResizeBilinear();
+	op_resolver.AddResizeNearestNeighbor();
+	op_resolver.AddRound();
+	op_resolver.AddRsqrt();
+	op_resolver.AddSelectV2();
+	op_resolver.AddShape();
+	op_resolver.AddSin();
+	op_resolver.AddSlice();
+	op_resolver.AddSoftmax();
+	op_resolver.AddSpaceToBatchNd();
+	op_resolver.AddSpaceToDepth();
+	op_resolver.AddSplit();
+	op_resolver.AddSplitV();
+	op_resolver.AddSqueeze();
+	op_resolver.AddSqrt();
+	op_resolver.AddSquare();
+	op_resolver.AddSquaredDifference();
+	op_resolver.AddStridedSlice();
+	op_resolver.AddSub();
+	op_resolver.AddSum();
+	op_resolver.AddSvdf();
+	op_resolver.AddTanh();
+	op_resolver.AddTransposeConv();
+	op_resolver.AddTranspose();
+	op_resolver.AddUnpack();
+	op_resolver.AddVarHandle();
+	op_resolver.AddWhile();
+	op_resolver.AddZerosLike();
 
-	/* Build an interpreter to run the model with. */
-	static tflite::MicroInterpreter static_interpreter(model, resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);
+
+	static tflite::MicroInterpreter static_interpreter(model, op_resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);
 	interpreter = &static_interpreter;
 
 	/* Allocate memory from the tensor_arena for the model's tensors. */
-	TfLiteStatus allocate_status = interpreter->AllocateTensors();
-	if (allocate_status != kTfLiteOk) {
-		TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
-		printk("AllocateTensors error\n");
-		return;
-	}
+	interpreter->AllocateTensors();
 
 	/* Obtain pointers to the model's input and output tensors. */
 	input = interpreter->input(0);
@@ -154,20 +211,11 @@ void loop(void)
 	int64_t time_stamp;
 	int64_t milliseconds_spent;
 
-  	for(int i=0; i < iterations; i++){ 
+  	for(int i=0; i < iterations; i++){;
 		// start time measurement
 		time_stamp = k_uptime_get();
 
-    	// fill input array with data
-    	/*for (int j = 0; j < 16000; j++){
-			//printf("%d\n", j);
-      		input->data.f[j] = ((float)rand()/(float)(RAND_MAX)) * 1.0;
-		}*/
-
-
-		/* Run inference, and report any error */
 		TfLiteStatus invoke_status = interpreter->Invoke();
-
 		if (invoke_status != kTfLiteOk) {
 			printk("Invoke error\n");
 			return;
@@ -178,28 +226,7 @@ void loop(void)
 
 		printf("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
 		k_sleep(K_SECONDS(5));
-	
-		/* Obtain the quantized output from model's output tensor */
-		/*int8_t y_quantized = output->data.int8[0];
 
-		/* Dequantize the output from integer to floating-point */
-		/*float y = (y_quantized - output->params.zero_point) * output->params.scale;
 
-		const char *ySign = (y < 0) ? "-" : "";
-		float yVal = (y < 0) ? -y : y;
-		int yInt1 = yVal;
-		float yFrac = yVal - yInt1;
-		int yInt2 = trunc(yFrac * 1000);
-
-		printf("%s%d.%04d\n", ySign, yInt1, yInt2);*/
 	}
-	//all_times = all_times / iterations;
-	//printf("%d%d\n", (int32_t)(all_times >> 32), (int32_t)(all_times));
-
-	/*float yVal = (all_times < 0) ? -all_times : all_times;
-	int yInt1 = yVal;
-	float yFrac = yVal - yInt1;
-	int yInt2 = trunc(yFrac * 1000);
-
-	printf("%d.%04d\n", yInt1, yInt2);*/
 }
