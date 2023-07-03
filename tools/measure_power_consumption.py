@@ -147,6 +147,7 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
     error_log_path = save_dir + "/" + "error_log_" + board_snr + ".txt"
     results_path = save_dir + "/" + "results.json"
 
+    max_iterations = None
     # open csv to write power measurements
     with open(csv_path, "w") as csv_file:
 
@@ -169,8 +170,8 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
                     samples = _ppk2.get_samples(read_data)
 
                     # write averaged samples to csv file
-                    for i in range(0, len(samples), nb_samples_average):
-                        writer.writerow([np.mean(samples[i:i + nb_samples_average])])
+                    for ii in range(0, len(samples), nb_samples_average):
+                        writer.writerow([np.mean(samples[ii:ii + nb_samples_average])])
             except:
                 print("Get data is not working")
                 # init ppk again. serial should be valid
@@ -202,9 +203,11 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
                             if board_snr in results["inference_information"]:
                                 # this means inference time of this board was measured, so we want this process to end;
                                 # 50 more iterations will be measured until we leave the while loop
+                                print("read the inference information, now iterating 20 times more")
                                 i = 0
                                 max_iterations = 50
                     except Exception as e:
+                        print(str(e))
                         with open(error_log_path, 'a') as file:
                             file.write(f"10020: Fatal error when loading results.json in power measurements: {str(e)} \n")
             time.sleep(0.1)
