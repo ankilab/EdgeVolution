@@ -4,7 +4,7 @@ import serial.tools.list_ports
 import json
 import numpy as np
 import argparse
-
+import re
 
 def get_nrf_port(board, timeout_in_ms = 2000):
     """ 
@@ -44,8 +44,47 @@ def get_nrf_port(board, timeout_in_ms = 2000):
         max_iterations_counter += 1
     raise RuntimeError("Could not find the port to listen to")
 
+def set_result_value_for_board(board_snr, category, value, results):
+    """ 
+    update_or_set_result_value checks if the board information is already available and appends it to the dict
+    structure of "<type>_information" is expected to be this:
+    "<type>_information" : {
+                "board_1" : [board_1_information],
+                "board_2: : [board_2_information],
+                ....
+    }
 
-def save_to_dir(board, save_dir,measured_values):
+    :param board_snr: string containing information the board snr
+    :param category: string that specifies the type of results key. e.g. "energy_information" or "mean_power_information"
+    :param value: the value that will be added to the information for the category
+    :param result: the current data that has already been saved
+
+    :raises: RuntimeError if the category with board_snr is already set
+    :return: dictionary with updated information
+    """ 
+    
+    # board snr should be unique id that serves as key for the information
+    id = board_snr
+
+    # get previous category information if exists
+    information = {}
+    if category in results:
+
+        #get old information of category
+        information = results[category]
+
+        # inference information of specified board should not already be contained beforehand
+        if id in information:
+            raise RuntimeError(f"result.json already contains {category} of the specified board {board_snr}")
+        
+
+    # append new information for board with id
+    information[id] = value
+
+    # return the updated information
+    return information 
+
+def save_to_dir(board, save_dir,measured_values,tensor_arena_size):
     """ 
     save_to_dir saves the measured values of the serial connection to the result.json under the key inference_information in the save_dir directory. 
     structure of "inference_information" is expected to be this:
@@ -58,6 +97,7 @@ def save_to_dir(board, save_dir,measured_values):
     :param board: dict containing information about board {"model": <board_model>, "snr": <snr_as_string>}
     :param save_dir: expects a directory path that already contains a result.json containing key vale pairs.
     :param measured_values: a list containing all the measured information.
+    :param tensor_arena_size: int containing the size of the tensor arena on the mcu.
 
 
     :return: None. Writes the serial input of the board to result.json.
@@ -71,17 +111,7 @@ def save_to_dir(board, save_dir,measured_values):
     # board snr should be unique id that serves as key for the information
     id = board["snr"]
 
-    # get previous inference information if exists
-    inference_information = {}
-    if "inference_information" in results:
 
-        #get old information
-        inference_information = results["inference_information"]
-
-        # inference information of specified board should not already be contained beforehand
-        if id in inference_information:
-            raise RuntimeError("result.json already contains information of the specified board")
-        
     # format output  
     try:
         # measured value will always be length 1 so average will not do anything except unpacking value from list. See FIXME in read_inference_time 
@@ -90,11 +120,13 @@ def save_to_dir(board, save_dir,measured_values):
         # FIXME: the [0] needs to be used as currently it provides a list with one element
         inference_time = measured_values[0]
 
-    # append new information for board with id
-    inference_information[id] = inference_time
-
     # append all inference_information (old and new) to the key
-    results["inference_information"] = inference_information
+    results["inference_information"] = set_result_value_for_board(id,"inference_information",inference_time, results)
+
+    # append all tensorsize_information (old and new) to the key
+    results["tensorsize_information"] = set_result_value_for_board(id,"tensorsize_information",tensor_arena_size, results)
+
+
 
     # save it to output
     with open(save_dir + '/results.json', 'w') as f:
@@ -120,10 +152,10 @@ def read_inference_time(board, save_dir=None):
         raise NotImplementedError("add proper handling when the board can not be found")
 
     measured_values = []
-
+    tensor_arena_size = 0
     if port:
         max_iterations_counter = 0
-        max_iterations = 40
+        max_iterations = 600
 
         # connecting to port
         with serial.Serial(port, 115200, timeout=0) as ser:
@@ -134,6 +166,7 @@ def read_inference_time(board, save_dir=None):
                 try:
                     # increase stop criterion counter first before reading
                     if max_iterations_counter > max_iterations:
+                        print("max iterations reached")
                         measured_values.append("Max iterations reached")
                         continue # this avoids the rare case that at max_iterations reached and it reads one value, thus appending two measured values. maybe rethink the whole structure
 
@@ -145,8 +178,13 @@ def read_inference_time(board, save_dir=None):
                         if "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
                             measured_values.append(str(line))
                         elif "InfTime" in str(line):
-                            inf_time = int(line[9:-3:])
+                            print("inftime")
+                            number = re.findall(r'\d+', str(line))[0]
+                            inf_time = int(number)
+                            print("read inf time:" + str(inf_time))
                             measured_values.append(inf_time)
+                        elif "size" in str(line):
+                            tensor_arena_size = int(re.findall(r'\d+', str(line))[0])
                         else:
                             print(str(line))
 
@@ -158,7 +196,7 @@ def read_inference_time(board, save_dir=None):
 
     # save output to directory or print it
     if save_dir is not None:
-        save_to_dir(board, save_dir,measured_values)
+        save_to_dir(board, save_dir,measured_values,tensor_arena_size)
     else:
         print(measured_values)
 

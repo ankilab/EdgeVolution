@@ -190,9 +190,8 @@ void setup(void)
 	/* Allocate memory from the tensor_arena for the model's tensors. */
 	interpreter->AllocateTensors();
 
-	/* Obtain pointers to the model's input and output tensors. */
-	input = interpreter->input(0);
-	output = interpreter->output(0);
+	size_t size = interpreter->arena_used_bytes();
+	printk("size : %d \n", size);
 
 	setup_failed = 0;
 }
