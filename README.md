@@ -110,11 +110,15 @@ As zephyr automatically installs its cached tflite micro version, a custom zephy
 
 Instead of west init please run:
 ```
-mkdir my-workspace
-cd my-workspace
-git clone https://github.com/stefandnfr/zephyr zephyr
+cd tflite
+git clone https://github.com/<user>dnfr/zephyr zephyr
 west init -l zephyr
 west update
+cd modules/lib/tflite-micro
+git submodule init
+git submodule update # this might take a while until displayed
+cd ./../../../..
+
 ```
 
 ## Debugging boards
@@ -151,6 +155,13 @@ To debug a NRF development kit board, follow these steps according this [tutoria
 * On the APPLICATIONS tab, click on the second icon next to airway_tflite which adds a build configuration `Open an existing application`
 * Select which board type to debug, use `prj.conf` as configuration and keep build as directory name. (NOTE: choosing a build directory outside of airway_tflite via ../ does not save the build configuration)
 * A build should have been started. The board can now be debugged using the Debug button in the ACTIONS tab. Make sure that the board appears in the CONNECTED DEVICES tab. When hooked up to the power profiler, the power profiler needs to be lit in blue in order to flash the kit properly. 
+
+### Workaround
+For some reason, the nrf connect plugin does not include the modules located in tflite/modules. It seems to locate the the wrong zephyr base (not the one in ./tflite/zephyr), even though it is set. When copying the build command of the nRF Connect VS Code extension by right clicking the build in the APPLICATIONS tab, and manually running the command, it seems to run fine. Build the source then via this command, e.g.:
+```
+west build --build-dir /home/<user>/EvoNAS_bump/tflite/build /home/<user>/EvoNAS_bump/tflite --pristine --board nrf52840dk_nrf52840 -- -DNCS_TOOLCHAIN_VERSION:STRING="NONE" -DDTC_OVERLAY_FILE:STRING="/home/<user>/EvoNAS_bump/tflite/app.overlay" -DCONF_FILE:STRING="/home/<user>/EvoNAS_bump/tflite/prj.conf"
+```
+Now, you can use the Debug under ACTIONS in order to create a launch.json. In the Debug tab of VS Code, now this launch json can be selected to properly debug the code. 
 
 ## Contributing to EvoNAS
 To contribute to EvoNAS, follow these steps:
