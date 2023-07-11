@@ -60,6 +60,9 @@ class Saver:
         with open(path / 'model_tflite_untrained.tflite', 'wb') as f:
             f.write(model_tflite_untrained)
 
+        subprocess.call(f"python test/get_ops.py {path}/model_tflite_untrained.tflite test/model_visualization.html",shell=True)
+        subprocess.call(f"python test/flite_visualize.py {path}/model_tflite_untrained.tflite test/model_visualization.html",shell=True)
+
     def save_best_individual(self, gen_count, best_individual):
         row = [f'Generation_{gen_count}', best_individual[0], best_individual[1]]
         with open(self.results_dir / r'best_individual_each_generation.csv', 'a', newline='') as f:

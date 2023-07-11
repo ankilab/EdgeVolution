@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-#include "main_functions.h"
-#include "show_ops.h"
 
-/* Increase number of loops to see full period of the sine curve */
-#define NUM_LOOPS 1000
+#ifndef TENSORFLOW_PRINT_OPERATIONS_H_
+#define TENSORFLOW_PRINT_OPERATIONS_H_
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int main(int argc, char *argv[])
-{
-	print_ops();
-	return 0;
+
+void print_ops(void);
+
+
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* TENSORFLOW_PRINT_OPERATIONS_H_ */
