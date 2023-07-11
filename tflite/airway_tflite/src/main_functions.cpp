@@ -42,8 +42,6 @@ namespace {
 	// tflite::ErrorReporter *error_reporter = nullptr;
 	const tflite::Model *model = nullptr;
 	tflite::MicroInterpreter *interpreter = nullptr;
-	TfLiteTensor *input = nullptr;
-	TfLiteTensor *output = nullptr;
 
 	//constexpr int kTensorArenaSize = 170 * 1024;
 	constexpr int kTensorArenaSize = 230 * 1024;
@@ -86,105 +84,40 @@ void setup(void)
 		return;
 	}
 
-	tflite::MicroMutableOpResolver<95> op_resolver;
-	op_resolver.AddAbs();
-	op_resolver.AddAdd();
-	op_resolver.AddAddN();	
-	op_resolver.AddArgMax();
-	op_resolver.AddArgMin();
-	op_resolver.AddAssignVariable();
-	op_resolver.AddAveragePool2D();
-	op_resolver.AddBatchToSpaceNd();
-	op_resolver.AddBroadcastArgs();
-	op_resolver.AddBroadcastTo();
-	op_resolver.AddCallOnce();
-	op_resolver.AddCast();
-	op_resolver.AddCeil();
-	op_resolver.AddCircularBuffer();
-	op_resolver.AddConcatenation();
-	op_resolver.AddConv2D();
-	op_resolver.AddCos();
-	op_resolver.AddCumSum();
-	op_resolver.AddDepthToSpace();
-	op_resolver.AddDepthwiseConv2D();
-	op_resolver.AddDequantize();
-	op_resolver.AddDetectionPostprocess();
-	op_resolver.AddDiv();
-	op_resolver.AddElu();
-	op_resolver.AddEqual();
-	op_resolver.AddExp();
-	op_resolver.AddExpandDims();
-	op_resolver.AddFill();
-	op_resolver.AddFloor();
-	op_resolver.AddFloorDiv();
-	op_resolver.AddFloorMod();
-	op_resolver.AddFullyConnected();
-	op_resolver.AddGather();
-	op_resolver.AddGatherNd();
-	op_resolver.AddGreater();
-	op_resolver.AddGreaterEqual();
-	op_resolver.AddHardSwish();
-	op_resolver.AddIf();
-	op_resolver.AddL2Normalization();
-	op_resolver.AddL2Pool2D();
-	op_resolver.AddLeakyRelu();
-	op_resolver.AddLess();
-	op_resolver.AddLessEqual();
-	op_resolver.AddLog();
-	op_resolver.AddLogicalAnd();
-	op_resolver.AddLogicalNot();
-	op_resolver.AddLogicalOr();
-	op_resolver.AddLogistic();
-	op_resolver.AddLogSoftmax();
-	op_resolver.AddMaximum();
-	op_resolver.AddMaxPool2D();
-	op_resolver.AddMirrorPad();
-	op_resolver.AddMean();
-	op_resolver.AddMinimum();
-	op_resolver.AddMul();
-	op_resolver.AddNeg();
-	op_resolver.AddNotEqual();
-	op_resolver.AddPack();
-	op_resolver.AddPad();
-	op_resolver.AddPadV2();
-	op_resolver.AddPrelu();
-	op_resolver.AddQuantize();
-	op_resolver.AddReadVariable();
-	op_resolver.AddReduceMax();
-	op_resolver.AddRelu();
-	op_resolver.AddRelu6();
-	op_resolver.AddReshape();
-	op_resolver.AddResizeBilinear();
-	op_resolver.AddResizeNearestNeighbor();
-	op_resolver.AddRound();
-	op_resolver.AddRsqrt();
-	op_resolver.AddSelectV2();
-	op_resolver.AddShape();
-	op_resolver.AddSin();
-	op_resolver.AddSlice();
-	op_resolver.AddSoftmax();
-	op_resolver.AddSpaceToBatchNd();
-	op_resolver.AddSpaceToDepth();
-	op_resolver.AddSplit();
-	op_resolver.AddSplitV();
-	op_resolver.AddSqueeze();
-	op_resolver.AddSqrt();
-	op_resolver.AddSquare();
-	op_resolver.AddSquaredDifference();
-	op_resolver.AddStridedSlice();
-	op_resolver.AddSub();
-	op_resolver.AddSum();
-	op_resolver.AddSvdf();
-	op_resolver.AddTanh();
-	op_resolver.AddTransposeConv();
-	op_resolver.AddTranspose();
-	op_resolver.AddUnpack();
-	op_resolver.AddVarHandle();
-	op_resolver.AddWhile();
-	op_resolver.AddZerosLike();
+
+	// Create OpResolver class with up to 26 kernel support.
+	using KeywordOpResolver = tflite::MicroMutableOpResolver<26>;
+
+	KeywordOpResolver* op_resolver = new KeywordOpResolver();
+	op_resolver->AddFullyConnected();
+	op_resolver->AddReshape();
+	op_resolver->AddSoftmax();
+	op_resolver->AddTranspose();
+	op_resolver->AddSlice();
+	op_resolver->AddGather();
+	op_resolver->AddMul();
+	op_resolver->AddPack();
+	op_resolver->AddSum();
+	op_resolver->AddQuantize();
+	op_resolver->AddDequantize();
+	op_resolver->AddDepthwiseConv2D();
+	op_resolver->AddMaxPool2D();
+	op_resolver->AddAdd();
+	op_resolver->AddConv2D();
+	op_resolver->AddSquaredDifference();
+	op_resolver->AddRsqrt();
+	op_resolver->AddSub();
+	op_resolver->AddSqrt();
+	op_resolver->AddSquare();
+	op_resolver->AddMean();
+	op_resolver->AddReduceMax();
+	op_resolver->AddAveragePool2D();
+	op_resolver->AddExpandDims();
+	op_resolver->AddShape();
+	op_resolver->AddConcatenation();
 
 
-	static tflite::MicroInterpreter static_interpreter(model, op_resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);
+	static tflite::MicroInterpreter static_interpreter(model, *op_resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);
 	interpreter = &static_interpreter;
 
 	/* Allocate memory from the tensor_arena for the model's tensors. */
@@ -194,38 +127,44 @@ void setup(void)
 	printk("size : %d \n", size);
 
 	setup_failed = 0;
-}
 
-/* The name of this function is important for Arduino compatibility. */
-void loop(void)
-{	
 	if (setup_failed){
 		printk("Setup failed\n");
 		return;
 	}
 
-	short iterations = 5;
-
 	int64_t all_times = 0;
 	int64_t time_stamp;
 	int64_t milliseconds_spent;
 
-  	for(int i=0; i < iterations; i++){;
-		// start time measurement
-		time_stamp = k_uptime_get();
 
-		TfLiteStatus invoke_status = interpreter->Invoke();
-		if (invoke_status != kTfLiteOk) {
+	// start time measurement
+	time_stamp = k_uptime_get();
+	printk("now invoking...\n");
+
+	TfLiteStatus invoke_status = interpreter->Invoke();
+	if (invoke_status != kTfLiteOk) {
 			printk("Invoke error\n");
 			return;
-		}
-
-		milliseconds_spent = k_uptime_delta(&time_stamp);
-		all_times += milliseconds_spent;
-
-		printf("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
-		k_sleep(K_SECONDS(5));
-
-
 	}
+
+	milliseconds_spent = k_uptime_delta(&time_stamp);
+	all_times += milliseconds_spent;
+	printk("Time: %d\n", (int32_t)(milliseconds_spent));
+	printk("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
+	k_sleep(K_SECONDS(5));
+
+
+
+	delete[] op_resolver;
+
+
+}
+
+/* The name of this function is important for Arduino compatibility. */
+void loop(void)
+{	
+
+
+
 }
