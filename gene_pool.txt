@@ -10,7 +10,7 @@
 {'layer': 'GMP_1D', 'f_name': 'GlobalMaxPooling1D()'},
 {'layer': 'R_1D', 'f_name': 'ReLU()'},
 {'layer': 'BN_1D', 'f_name': 'BatchNormalization()'},
-{'layer': 'IN_1D', 'f_name': 'InstanceNormalization()'},
+#{'layer': 'IN_1D', 'f_name': 'InstanceNormalization()'},
 
 # 2D preprocessing layers
 {'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [64, 256, 32], 'hop_length': [128, 384, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
@@ -27,7 +27,7 @@
 {'layer': 'GMP_2D', 'f_name': 'GlobalMaxPooling2D()'},
 {'layer': 'R_2D', 'f_name': 'ReLU()'},
 {'layer': 'BN_2D', 'f_name': 'BatchNormalization()'},
-{'layer': 'IN_2D', 'f_name': 'InstanceNormalization()'},
+#{'layer': 'IN_2D', 'f_name': 'InstanceNormalization()'},
 
 # Universal layers
 {'layer': 'DO', 'f_name': 'Dropout', 'rate': [0.0, 0.5, 0.1]},

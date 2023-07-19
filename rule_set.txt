@@ -1,20 +1,20 @@
 [
 # specify options for first layer of the network --> determines whether to use 1D or 2D layers --> 'start_with'
-{'layer': 'Start', 'start_with': ['STFT']},  # --> start with this to use 2D layers
-# {'layer': 'Start', 'start_with': ['C_1D', 'DC_1D']},  # --> start with this to use 1D layers
+#{'layer': 'Start', 'start_with': ['STFT']},  # --> start with this to use 2D layers
+{'layer': 'Start', 'start_with': ['C_1D', 'DC_1D']},  # --> start with this to use 1D layers
 #{'layer': 'Start', 'start_with': ['STFT', 'C_1D', 'DC_1D']},  # --> start with this to use both
 
 # specify rules for all following layers after the starting layer --> 'allowed_after'
 # 1D layers
-{'layer': 'C_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'IN_1D', 'BN_1D', 'DC_1D', 'C_1D', 'R_1D']},
-{'layer': 'DC_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'IN_1D', 'BN_1D', 'DC_1D', 'C_1D', 'R_1D']},
-{'layer': 'MP_1D', 'allowed_after': ['IN_1D', 'BN_1D', 'R_1D', 'DC_1D', 'C_1D']},
-{'layer': 'AP_1D', 'allowed_after': ['IN_1D', 'BN_1D', 'R_1D', 'DC_1D', 'C_1D']},
+{'layer': 'C_1D', 'allowed_after': ['AP_1D', 'MP_1D','BN_1D', 'DC_1D', 'C_1D', 'R_1D']},
+{'layer': 'DC_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'BN_1D', 'DC_1D', 'C_1D', 'R_1D']},
+{'layer': 'MP_1D', 'allowed_after': ['BN_1D', 'R_1D', 'DC_1D', 'C_1D']},
+{'layer': 'AP_1D', 'allowed_after': ['BN_1D', 'R_1D', 'DC_1D', 'C_1D']},
 {'layer': 'GAP_1D', 'allowed_after': ['D', 'DO']},
 {'layer': 'GMP_1D', 'allowed_after': ['D', 'DO']},
 {'layer': 'R_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'DC_1D', 'C_1D']},
 {'layer': 'BN_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'R_1D', 'DC_1D', 'C_1D']},
-{'layer': 'IN_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'R_1D', 'DC_1D', 'C_1D']},
+#{'layer': 'IN_1D', 'allowed_after': ['AP_1D', 'MP_1D', 'R_1D', 'DC_1D', 'C_1D']},
 
 # 2D preprocessing layers
 {'layer': 'STFT', 'allowed_after': ['MAG']},
@@ -23,15 +23,15 @@
 # {'layer': 'MAG2DEC', 'allowed_after': ['C_2D', 'DC_2D']},
 
 # 2D layers
-{'layer': 'C_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'IN_2D', 'BN_2D', 'DC_2D', 'C_2D', 'R_2D']},
-{'layer': 'DC_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'IN_2D', 'BN_2D', 'DC_2D', 'C_2D', 'R_2D']},
-{'layer': 'MP_2D', 'allowed_after': ['IN_2D', 'BN_2D', 'R_2D', 'DC_2D', 'C_2D']},
-{'layer': 'AP_2D', 'allowed_after': ['IN_2D', 'BN_2D', 'R_2D', 'DC_2D', 'C_2D']},
+{'layer': 'C_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'BN_2D', 'DC_2D', 'C_2D', 'R_2D']},
+{'layer': 'DC_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'BN_2D', 'DC_2D', 'C_2D', 'R_2D']},
+{'layer': 'MP_2D', 'allowed_after': ['BN_2D', 'R_2D', 'DC_2D', 'C_2D']},
+{'layer': 'AP_2D', 'allowed_after': ['BN_2D', 'R_2D', 'DC_2D', 'C_2D']},
 {'layer': 'GAP_2D', 'allowed_after': ['D', 'DO']},
 {'layer': 'GMP_2D', 'allowed_after': ['D', 'DO']},
 {'layer': 'R_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'DC_2D', 'C_2D']},
 {'layer': 'BN_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']},
-{'layer': 'IN_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']},
+#{'layer': 'IN_2D', 'allowed_after': ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']},
 
 # Classification layers
 {'layer': 'DO', 'allowed_after': ['D']},
