@@ -84,7 +84,7 @@ def set_result_value_for_board(board_snr, category, value, results):
     # return the updated information
     return information 
 
-def save_to_dir(board, save_dir,measured_values,tensor_arena_size):
+def save_to_dir(board, results_path,measured_values,tensor_arena_size):
     """ 
     save_to_dir saves the measured values of the serial connection to the result.json under the key inference_information in the save_dir directory. 
     structure of "inference_information" is expected to be this:
@@ -95,7 +95,7 @@ def save_to_dir(board, save_dir,measured_values,tensor_arena_size):
     }
 
     :param board: dict containing information about board {"model": <board_model>, "snr": <snr_as_string>}
-    :param save_dir: expects a directory path that already contains a result.json containing key vale pairs.
+    :param: results_path: boad specific result json that only adds results for this board
     :param measured_values: a list containing all the measured information.
     :param tensor_arena_size: int containing the size of the tensor arena on the mcu.
 
@@ -105,7 +105,7 @@ def save_to_dir(board, save_dir,measured_values,tensor_arena_size):
     :raises: RunTimeError if the information of the board is already contained in result.json
     """ 
     # read the values of results.json
-    with open(save_dir + '/results.json') as f:
+    with open(results_path) as f:
         results = json.loads(f.read())
 
     # board snr should be unique id that serves as key for the information
@@ -129,12 +129,12 @@ def save_to_dir(board, save_dir,measured_values,tensor_arena_size):
 
 
     # save it to output
-    with open(save_dir + '/results.json', 'w') as f:
+    with open(results_path, 'w') as f:
         json.dump(results, f, indent=2)
 
 
 
-def read_inference_time(board, save_dir=None):
+def read_inference_time(board, results_path, save_dir=None):
     """ 
     read_inference_time starts a serial connection to the specific board and fetches the inference time and saves it optionally to save_dir else prints it to console.
 
@@ -196,7 +196,7 @@ def read_inference_time(board, save_dir=None):
 
     # save output to directory or print it
     if save_dir is not None:
-        save_to_dir(board, save_dir,measured_values,tensor_arena_size)
+        save_to_dir(board,results_path,measured_values,tensor_arena_size)
     else:
         print(measured_values)
 
@@ -207,6 +207,8 @@ if __name__ == "__main__":
         description='This script measures the inference speed of a neural network on the specified microcontroller.')
 
     parser.add_argument('save_dir', nargs='?', default=None)
+    parser.add_argument('results_path', nargs='?', default='./results.json', help="individual path of result.json")
+
     # board should be a dict specifying board model and snr e.g. {"model" : "nrf52840dk_nrf52840", "snr": "1050242564"}
     parser.add_argument('board_model', nargs='?', default=None)
     parser.add_argument('board_snr', nargs='?', default=None)
@@ -218,5 +220,5 @@ if __name__ == "__main__":
         "model" : args.board_model,
         "snr" : args.board_snr
     }
-    read_inference_time(board, args.save_dir) 
+    read_inference_time(board,args.results_path,args.save_dir) 
     time.sleep(2)

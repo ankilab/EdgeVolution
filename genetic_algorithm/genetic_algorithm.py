@@ -186,7 +186,7 @@ class GeneticAlgorithm:
         return information 
 
 
-    def calculate_energy_consumption(self, board_snr:str, data_dir:str):
+    def calculate_energy_consumption(self, board_snr:str, data_dir:str, results_path:str):
         """ 
         calculate_energy_consumption reads the energy measurements from the correct csv, averages it and then integrates it over inference time 
 
@@ -199,7 +199,6 @@ class GeneticAlgorithm:
         # get paths FIXME: make paths more robust for e.g. Windows 
         power_measurement_file_name = "power_measurements_" + board_snr +".csv"
         csv_path = data_dir + "/" + power_measurement_file_name
-        results_path = data_dir + "/" + "results.json"
 
         try:
             # load results from json
@@ -261,52 +260,35 @@ class GeneticAlgorithm:
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
         for idx, individual in enumerate(self.preselected_individuals):
+            save_dir = path + individual
             print(f"Evaluate energy of {individual} (index: {idx})")
 
             # flash tflite model on individual board
             if len(self.params["boards"]) > 0:       
+                procs = []
                 for board in self.params["boards"]:
-                    tflite_path = "../" +path + individual + "/models/model_tflite_untrained.tflite"
-                    cpp_path = '../tflite/airway_tflite/src/model.cpp'
-                    flasher_path = './tools/flash_tflite_model.sh'
+                    procs = [p for p in procs if p.poll() is None]
 
-                    # start measuring
-                    ppk2 = init_ppk2(board["ppk"])
-                    time.sleep(1)
-                    subprocess.call(['bash', '-i',flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
-                    time.sleep(1)
-
-                    # if no ppk connected, measuring the power consumption is not possible
-                    if ppk2 is not None:
-                        stop_measuring(ppk2)
-
-                        # start measuring energy consumption
-                        args = ['python tools/measure_power_consumption.py', path + individual, board["snr"], board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
-                        command = " ".join(args) # joining args separated by space
-                        proc_energy = Popen(command, shell=True)
-
-                    # get inference time from Serial port
-                    args = ['python tools/measure_inference_time.py', path + individual, board["model"], board["snr"]]
+                    # setting up command
+                    args = ['python tools/run_pipeline_for_board.py', save_dir,board["snr"],board["model"],board["ppk"],f'{self.params["power_measurement_nb_samples_average"]}']
                     command = " ".join(args) # joining args separated by space
-                    proc_inference = Popen(command, shell=True)
+                    
+                    # starting new process 
+                    p = Popen(command, shell=True)
+                    procs.append(p)
 
-                    # wait for inference time measurement to finish
-                    proc_inference.wait()
+                # joining processes
+                for p in procs:
+                    p.wait()
+                print("done waiting for them procs")
 
-                    # if no ppk connected, measuring the power consumption is not possible
-                    if ppk2 is not None:
-                        # wait for energy consumption measurement to finish
-                        try:
-                            proc_energy.wait(timeout=30)
-
-                            # calculate energy consumption
-                            self.calculate_energy_consumption(board["snr"], path + individual)
-                        except:
-                            pass
-
+                # this can be moved in process as well
+                for board in self.params["boards"]:
+                    board_results_path = save_dir + f'/results_{board["snr"]}.json'
+                    if board["ppk"] is not "None":
+                        self.calculate_energy_consumption(board["snr"], save_dir, board_results_path)
             else: # no boards 
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')
-          
 
             time.sleep(2)
 

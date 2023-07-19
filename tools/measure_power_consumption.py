@@ -119,12 +119,13 @@ def _timeout_handler(signal_number, current_stack):
     raise Exception(f"end of time; signal number: {signal_number}, current stack: {current_stack}")
 
 
-def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:str, nb_samples_average: int, max_iterations=None):
+def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, results_path:str, board_snr:str, ppk_serial:str, nb_samples_average: int, max_iterations=None):
     """ 
     measure_power_nrf measures the power consumption and saves all values to a .csv file at the given location. 
     
     :param _ppk2: ppk connection
     :param save_dir: directory where to save the csv file, read result.json and optionally save error log text file
+    :param: results_path: boad specific result json that only adds results for this board
     :param board_snr: snr of board connected to ppk to map measured data to a specific board
     :param ppk_serial: serial number of the power profiler that is connected to the board to be measured or "None" if no ppk connected.
     :param nb_samples_average: window size of average sampling 
@@ -145,7 +146,6 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
     power_measurement_file_name = "power_measurements_" + board_snr +".csv"
     csv_path = save_dir + "/" + power_measurement_file_name
     error_log_path = save_dir + "/" + "error_log_" + board_snr + ".txt"
-    results_path = save_dir + "/" + "results.json"
 
     max_iterations = None
     # open csv to write power measurements
@@ -254,6 +254,7 @@ if __name__ == "__main__":
         description='This script measures the power consumption of the microcontroller with provided board_snr connected to the power profiling kit (ppk) with provided serial ppk_serial.')
 
     parser.add_argument('save_dir', nargs='?', default='./tflite', help="directory where to save the csv file, read result.json and optionally save error log text file")
+    parser.add_argument('results_path', nargs='?', default='./results.json', help="individual, board specific path of result.json")
     parser.add_argument('board_snr', nargs='?', default=None, help="snr of board connected to ppk to map measured data to a specific board")
     parser.add_argument('ppk_serial', nargs='?', default=None, help="serial number of the power profiler that is connected to the board to be measured or 'None' if no ppk connected.")
     parser.add_argument('nb_samples_average', nargs='?', default="2000", help="window size of average sampling ")
@@ -267,7 +268,7 @@ if __name__ == "__main__":
     # if ppk_serial is "None", no connection is expected, thus ppk2 is also None.
     if ppk2 is not None:
         # writing measures to csv file
-        measure_power_nrf(ppk2, args.save_dir,args.board_snr, args.ppk_serial, int(args.nb_samples_average),1000)
+        measure_power_nrf(ppk2, args.save_dir,args.results_path,args.board_snr, args.ppk_serial, int(args.nb_samples_average),1000)
 
         # stop measuring
         stop_measuring(ppk2)
