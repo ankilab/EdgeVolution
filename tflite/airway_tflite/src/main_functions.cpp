@@ -44,15 +44,64 @@ namespace {
 	tflite::MicroInterpreter *interpreter = nullptr;
 
 	//constexpr int kTensorArenaSize = 170 * 1024;
-	constexpr int kTensorArenaSize = 230 * 1024;
+	constexpr int kTensorArenaSize = 155 * 1024;
 	uint8_t tensor_arena[kTensorArenaSize];
 }  /* namespace */
 
+uint32_t MeasureTfLiteEvalTensors(const tflite::Model* model) {
+	uint32_t total_size = 0;
+	for (size_t subgraph_idx = 0; subgraph_idx < model->subgraphs()->size();
+		subgraph_idx++) {
+		const tflite::SubGraph* subgraph = model->subgraphs()->Get(subgraph_idx);
+
+		size_t alloc_count = subgraph->tensors()->size();
+		total_size += sizeof(TfLiteEvalTensor) * alloc_count;
+		
+	}
+	return total_size;
+}
+
+uint32_t MeasureNodeAndRegistrations(const tflite::Model* model) {
+	uint32_t total_size = 0;
+	for (size_t subgraph_idx = 0; subgraph_idx < model->subgraphs()->size();
+		subgraph_idx++) {
+		const tflite::SubGraph* subgraph = model->subgraphs()->Get(subgraph_idx);
+		uint32_t operators_size = tflite::NumSubgraphOperators(subgraph);
+		uint32_t size= sizeof(tflite::NodeAndRegistration) * operators_size;
+		total_size += size;
+	}
+	return total_size;
+}
+
+
+
+uint32_t MeasureTotalSize(const tflite::Model* model) {
+	uint32_t total_size = 0;
+
+	total_size += sizeof(tflite::internal::ScratchBufferRequest) * 12;
+
+	total_size += tflite::getMicroBuiltinDataAllocatorSize(); 
+
+	// Allocate struct to store eval tensors, nodes and registrations.
+	total_size += sizeof(tflite::SubgraphAllocations) * model->subgraphs()->size();
+	
+	// nodes and registrations get allocated extra and are referred by SubgraphAllocations struct
+	total_size += MeasureNodeAndRegistrations(model);
+	total_size += MeasureTfLiteEvalTensors(model);
+
+	uint32_t input_size = sizeof(TfLiteTensor*) * model->subgraphs()->Get(0)->inputs()->size();
+	total_size += input_size;
+
+	uint32_t output_size = sizeof(TfLiteTensor*) * model->subgraphs()->Get(0)->outputs()->size();
+	total_size += output_size;
+
+	return total_size;		
+}
 uint8_t setup_failed = 1;
 
 
 /* The name of this function is important for Arduino compatibility. */
-void setup(void)
+__attribute__((optimize(0))) void setup(void)
 {
 	/* Initialize LED. */
 	if (!device_is_ready(led.port)) {
@@ -77,12 +126,16 @@ void setup(void)
 		k_sleep(K_MSEC(100));
 	}
 
+	printk("connected \n");
 
 	model = tflite::GetModel(g_model);
 	if (model->version() != TFLITE_SCHEMA_VERSION) {
 		printk("Version error");
 		return;
 	}
+
+	uint32_t measured = MeasureTotalSize(model);
+	printk("measdured used bytes : %d \n", measured);
 
 
 	// Create OpResolver class with up to 26 kernel support.
@@ -116,16 +169,22 @@ void setup(void)
 	op_resolver->AddShape();
 	op_resolver->AddConcatenation();
 
-
+	printk("added operations\n");
 	static tflite::MicroInterpreter static_interpreter(model, *op_resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);
 	interpreter = &static_interpreter;
+	printk("init interpreter done\n");
 
 	/* Allocate memory from the tensor_arena for the model's tensors. */
-	interpreter->AllocateTensors();
-
+	TfLiteStatus allocate_status = interpreter->AllocateTensors();
 	size_t size = interpreter->arena_used_bytes();
-	printk("size : %d \n", size);
+	printk("tensorarena used bytes : %d \n", size);
 
+	if (allocate_status != kTfLiteOk) {
+		printk("AllocateTensors() failed\n");
+		return;
+	}
+	printk("allocating done\n");
+	k_sleep(K_MSEC(100));
 	setup_failed = 0;
 
 	if (setup_failed){

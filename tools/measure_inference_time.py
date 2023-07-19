@@ -176,6 +176,7 @@ def read_inference_time(board, save_dir=None):
                     line = ser.readline()
                     if line != b'':
                         if "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
+                            print(str(line))
                             measured_values.append(str(line))
                         elif "InfTime" in str(line):
                             print("inftime")
@@ -183,8 +184,9 @@ def read_inference_time(board, save_dir=None):
                             inf_time = int(number)
                             print("read inf time:" + str(inf_time))
                             measured_values.append(inf_time)
-                        elif "size" in str(line):
+                        elif "tensorarena" in str(line):
                             tensor_arena_size = int(re.findall(r'\d+', str(line))[0])
+                            print(f"tensorarena size captured {tensor_arena_size}")
                         else:
                             print(str(line))
 
