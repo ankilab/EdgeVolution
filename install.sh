@@ -145,7 +145,7 @@ if ! [ -d "$sdk" ]; then
 
     sudo tar xvf zephyr-sdk-0.16.1_linux-x86_64.tar.xz -C /opt
     rm zephyr-sdk-0.16.1_linux-x86_64.tar.xz
-    cd sdk
+    cd $sdk
     ./setup.sh
     ls
 else

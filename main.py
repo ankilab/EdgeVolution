@@ -7,12 +7,17 @@ from utils.saver import Saver
 from utils.loader import Loader
 
 # add all boards to array. if only one specific board required, have only one element in list
+#BOARDS = [
+#    {"model": "nrf52840dk_nrf52840", "snr": "1050242564", "ppk": "FEA55411"},
+#    {"model": "nrf52840dk_nrf52840", "snr": "1050283223", "ppk": "FAFD344C"},
+#    {"model": "nrf52833dk_nrf52833", "snr": "685756103", "ppk": "None"},
+#    {"model": "nrf5340dk_nrf5340_cpuapp", "snr": "1050006605", "ppk": "None"},
+#]
+
 BOARDS = [
-    {"model" : "nrf52840dk_nrf52840", "snr": "1050242564", "ppk": "FEA55411"},
-    {"model" : "nrf52840dk_nrf52840", "snr": "1050283223", "ppk": "FAFD344C"},
-    {"model" : "nrf52833dk_nrf52833", "snr": "685756103", "ppk": "None"},
-    {"model" : "nrf5340dk_nrf5340_cpuapp", "snr": "1050006605", "ppk": "None"},
+    {"model": "nrf52840dk_nrf52840", "snr": "1050289157", "ppk": "E373C904"},
 ]
+
 
 #################################
 # define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
@@ -35,9 +40,9 @@ if len(CLASSES_FILTER) != 0:
 #################################
 # define EvoNAS hyper-parameters
 #################################
-NB_GENERATIONS = 25
-POPULATION_SIZE = 150
-NB_BEST_MODELS_CROSSOVER = 50  # specifies the number of models that will be used for crossover
+NB_GENERATIONS = 2
+POPULATION_SIZE = 2
+NB_BEST_MODELS_CROSSOVER = 5  # specifies the number of models that will be used for crossover
 MUTATION_RATE = 20  # in percent
 
 MAX_NB_FEATURE_LAYERS = 30  # max number layers before GAP, GMP or Flatten layer in the first generation
@@ -86,7 +91,7 @@ params = {'dataset': DATASET,
           'max_memory_footprint': MAX_MEMORY_FOOTPRINT,
           'max_inference_time': MAX_INFERENCE_TIME,
           'max_energy_consumption': MAX_ENERGY_CONSUMPTION,
-          'boards' : BOARDS}
+          'boards': BOARDS}
 
 
 def main(continue_from=None):

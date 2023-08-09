@@ -3,7 +3,6 @@ tflite/bootloader/
 tflite/modules/
 tflite/tools/
 tflite/zephyr/
-tflite/airway_tflite/build
 tflite/build*
 tflite/log.log
 tiny_ml/
@@ -23,3 +22,5 @@ train-conv1d-network.ipynb
 train-resnet.ipynb
 /measure_energy_consumption.ipynb
 datasets/downloads/
+README.txt
+nrf-command-line-tools*

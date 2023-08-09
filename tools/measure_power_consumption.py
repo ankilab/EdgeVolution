@@ -26,8 +26,10 @@ def get_ppk_port(ppk_serial:str):
 
     # find port that contains the ppk serial number
     for port in ports:
-        if ppk_serial in port.serial_number:
-            devices.append(port.device)
+
+        if port.serial_number is not None:
+            if ppk_serial in port.serial_number:
+                devices.append(port.device)
     
     # return device if single device is found
     if len(devices) == 1:

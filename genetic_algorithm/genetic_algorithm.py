@@ -267,7 +267,7 @@ class GeneticAlgorithm:
             if len(self.params["boards"]) > 0:       
                 for board in self.params["boards"]:
                     tflite_path = "../" +path + individual + "/models/model_tflite_untrained.tflite"
-                    cpp_path = '../tflite/airway_tflite/src/model.cpp'
+                    cpp_path = '../tflite/evonas_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
                     # start measuring

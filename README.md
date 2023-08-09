@@ -62,6 +62,12 @@ Follow these steps for Linux:
 
 * Relogin to apply changes.
 
+* If the virtualenv .venv is not activated yet:
+    ```
+    # activate virtual environment
+    source .venv/bin/activate
+    ```
+
 ### Windows
 For windows, manual installation is possible.
 
@@ -151,9 +157,9 @@ To debug a NRF development kit board, follow these steps according this [tutoria
 * Open folder EvoNAS in VS Code
 * Run nRF Connect extension in VS Code
 * On the WELCOME tab, click on `Open an existing application`
-* Select ./tflite/airway_tflite 
-* On the APPLICATIONS tab, click on the second icon next to airway_tflite which adds a build configuration `Open an existing application`
-* Select which board type to debug, use `prj.conf` as configuration and keep build as directory name. (NOTE: choosing a build directory outside of airway_tflite via ../ does not save the build configuration)
+* Select ./tflite/evonas_tflite
+* On the APPLICATIONS tab, click on the second icon next to evonas_tflite which adds a build configuration `Open an existing application`
+* Select which board type to debug, use `prj.conf` as configuration and keep build as directory name. (NOTE: choosing a build directory outside of evonas_tflite via ../ does not save the build configuration)
 * A build should have been started. The board can now be debugged using the Debug button in the ACTIONS tab. Make sure that the board appears in the CONNECTED DEVICES tab. When hooked up to the power profiler, the power profiler needs to be lit in blue in order to flash the kit properly. 
 
 ### Workaround
