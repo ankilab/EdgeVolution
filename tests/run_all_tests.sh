@@ -1,0 +1,1 @@
+python -m coverage run -m pytest --ignore=.venv --ignore=datasets --ignore=tools --ignore=tflite --ignore=utils
