@@ -13,6 +13,7 @@ import time
 from multiprocessing import Pool
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool 
+from multiprocessing import get_context
 
 # this is old code that serves for benchmarking
 def sequential_convert_to_tflite(model, representative_data=None):
@@ -38,11 +39,6 @@ def sequential_convert_to_tflite(model, representative_data=None):
 
     tflite_model = converter.convert()
     return tflite_model
-
-def f(model):
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
-    return converter.convert()
-
 
 if __name__ == "__main__":
     print("testing tflite conversions...")
@@ -232,7 +228,7 @@ if __name__ == "__main__":
     ]
     input_shape = (6_000, 1)
     model = translate(chromosome,input_shape,12,16000)
-    x = 10
+    x = 32
     models = [model] * x
 
     # run sequential for x times
@@ -247,12 +243,10 @@ if __name__ == "__main__":
     
     #run x parallel conversions
     start = time.time()
-
-    pool = ThreadPool()
-    outputs = pool.map(sequential_convert_to_tflite,models)
-    pool.close()
-    pool.join()
-
+    # normal fork has some lock acquiring issues 
+    # see https://pythonspeed.com/articles/python-multiprocessing/ 
+    with get_context("spawn").Pool() as pool:
+        outputs = pool.map(sequential_convert_to_tflite,models)
     elapsed_time = time.time() - start
 
 
