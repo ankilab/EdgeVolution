@@ -20,6 +20,7 @@ from .src.fitness import calculate_fitness
 from .utils.convert_to_tflite import convert_to_tflite
 from .utils.substitute_tflite_layer import substitute_tflite_layer
 from tools.measure_power_consumption import init_ppk2, stop_measuring
+from multiprocessing import get_context
 
 
 class GeneticAlgorithm:
@@ -350,9 +351,26 @@ class GeneticAlgorithm:
             mutated_chromosome = self.my_gene_pool.mutate_chromosome(chromosome)
             self.population_genotype.append(mutated_chromosome)
 
+    def _process_model_translation(self, chromosome):
+        try:
+            model = translate(chromosome, self.params['input_shape'], self.params['nb_classes'],
+                                self.params['sample_rate'])
+        except:
+            raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")    
+        try:
+            model = substitute_tflite_layer(model, self.params["input_shape"])
+        except:
+            raise ValueError(f"Error when substituting STFT and MAG layers. Chromosome: {chromosome}")
+        return model  
 
     def _process_model_conversion(self, model):
-        pass
+        try:
+            tflite_model = convert_to_tflite(model, np.random.uniform(size=(200, self.params["input_shape"][0],
+                                                                                 self.params["input_shape"][1])))
+        except:
+            raise ValueError(f"Error when converting to TFLite")
+        
+        return tflite_model
 
     def prepare_generation(self, current_generation: int):
         self.individuals_names = []
@@ -369,30 +387,17 @@ class GeneticAlgorithm:
 
         self.generation_counter = current_generation
 
-        #d = {}
-        #pool = Pool(os.cpu_count())
-        #pool.map(self._process_model_conversion, )
+        # convert chromosomes to models and to tflite models in parallel
+        with get_context("spawn").Pool(os.cpu_count()) as pool:
+            models = pool.map(self._process_model_translation, self.population_genotype)
+            # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
+            tflite_models = pool.map(self._process_model_conversion, models)
 
-        # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
-        for chromosome in self.population_genotype:
-            try:
-                model = translate(chromosome, self.params['input_shape'], self.params['nb_classes'],
-                                  self.params['sample_rate'])
-            except:
-                raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")
-
-            try:
-                tflite_model = substitute_tflite_layer(model, self.params["input_shape"])
-            except:
-                raise ValueError(f"Error when substituting STFT and MAG layers. Chromosome: {chromosome}")
-
-            try:
-                tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, self.params["input_shape"][0],
-                                                                                 self.params["input_shape"][1])))
-            except:
-                raise ValueError(f"Error when converting to TFLite. Chromosome: {chromosome}")
-
+        # save models 
+        for model in models:
             self.population_phenotype.append(model)
+
+        for tflite_model in tflite_models:
             self.population_phenotype_tflite.append(tflite_model)
 
         # save untrained networks such that it can be loaded in a new process
