@@ -1,7 +1,7 @@
 import unittest
 from genetic_algorithm.src.genepool import GenePool
 
-params = {"path_gene_pool": "../../gene_pool.txt", "path_rule_set": "../../rule_set.txt", "max_nb_feature_layers": 30,
+params = {"path_gene_pool": "gene_pool.txt", "path_rule_set": "rule_set.txt", "max_nb_feature_layers": 30,
           "max_nb_classification_layers": 10}
 gene_pool = GenePool(params)
 
@@ -35,11 +35,14 @@ class TestGenePool(unittest.TestCase):
         self.assertIn(actual['layer'], expected)
 
         # Test Case 2
-        _input_1 = {'layer': 'IN_2D'}
-        _input_2 = None
-        expected = ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']
-        actual = gene_pool._get_gene_to_add(_input_1, _input_2)
-        self.assertIn(actual['layer'], expected)
+
+        # IN_2D removed
+        
+        # _input_1 = {'layer': 'IN_2D'}
+        # _input_2 = None
+        # expected = ['AP_2D', 'MP_2D', 'R_2D', 'DC_2D', 'C_2D']
+        # actual = gene_pool._get_gene_to_add(_input_1, _input_2)
+        # self.assertIn(actual['layer'], expected)
 
     def test_drop_gene(self):
         # Test Case 1
