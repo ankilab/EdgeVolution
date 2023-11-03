@@ -17,9 +17,6 @@ from utils.saver import Saver
 from utils.loader import Loader
 from .src.fitness import calculate_fitness
 
-from .utils.convert_to_tflite import convert_to_tflite
-from .utils.substitute_tflite_layer import substitute_tflite_layer
-from tools.measure_power_consumption import init_ppk2, stop_measuring
 from multiprocessing import get_context
 
 
@@ -51,44 +48,6 @@ class GeneticAlgorithm:
             random_chromosome = self.my_gene_pool.get_random_chromosome()
             self.population_genotype.append(random_chromosome)
 
-    def evaluate_memory_footprint(self):
-        """ Load memory footprint after converting the model to TFLite.
-        Determine models (dependent on the thresholds specified in main.py) that will be further evaluated. """
-        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
-        for individual in self.individuals_names:
-            # read h5 model memory footprint
-            model_path = path + individual + '/models/model_untrained.h5'
-            memory_footprint_h5 = os.path.getsize(model_path)
-
-            # read TFLite model memory footprint
-            tflite_model_path = path + individual + '/models/model_tflite_untrained.tflite'
-            memory_footprint_tflite = os.path.getsize(tflite_model_path)
-
-            # read C-Array memory footprint
-            c_array_path = path + individual + '/models/model_c_array_untrained.cc'
-            memory_footprint_c_array = os.path.getsize(c_array_path)
-
-            d = {'memory_footprint_h5': memory_footprint_h5,
-                 'memory_footprint_tflite': memory_footprint_tflite,
-                 'memory_footprint_c_array': memory_footprint_c_array}
-
-            # delete the untrained TFLite model and C array
-            os.remove(c_array_path)
-
-            # take only the models into account that are below a certain threshold
-            if memory_footprint_tflite <= self.params['max_memory_footprint']:
-                self.preselected_individuals.append(individual)
-            else:
-                # set fitness directly to zero since it is not relevant anymore
-                d["fitness"] = 0
-
-            with open(path + individual + '/results.json', 'w') as f:
-                json.dump(d, f, indent=2)
-
-        if len(self.preselected_individuals) == 0:
-            raise Exception("All models are too big in terms of file size. Therefore none of the generated models will"
-                            " be further evaluated. Think about adjusting your GA parameters.")
-
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
@@ -118,198 +77,6 @@ class GeneticAlgorithm:
         # make sure to wait until all processes are finished
         for p in procs:
             p.wait()
-
-    def get_inference_information_from_results(self, board_snr, results):
-        """ 
-        get_inference_information_from_results reads the inference information from results and provides some checking. 
-
-        :param board_snr: string containing information the board snr
-        :param results: dict that contains the inference_information of all the measured boards
-        
-        :raises: ValueError if result does not contain key 'inference_information' or inference_information does not contain the provided board_snr
-        :return: Inference time if exists
-        """ 
-        
-        # check for inference_information in results
-        if "inference_information" not in results:
-            raise ValueError("key 'inference_information' does not exist")
-        
-        # check for board_snr in inference_information
-        if board_snr not in results["inference_information"]:
-            raise ValueError("board_snr does not exist in inference information")
-        
-        # raises valueError if not possible to be converted to float
-        value = float(results["inference_information"][board_snr])
-
-        # return the inference time of the provided board_snr
-        return value
-
-
-
-    def set_result_value_for_board(self, board_snr, category, value, results):
-        """ 
-        update_or_set_result_value checks if the board information is already available and appends it to the dict
-        structure of "<type>_information" is expected to be this:
-        "<type>_information" : {
-                    "board_1" : [board_1_information],
-                    "board_2: : [board_2_information],
-                    ....
-        }
-
-        :param board_snr: string containing information the board snr
-        :param category: string that specifies the type of results key. e.g. "energy_information" or "mean_power_information"
-        :param value: the value that will be added to the information for the category
-        :param result: the current data that has already been saved
-
-        :raises: RuntimeError if the category with board_snr is already set
-        :return: dictionary with updated information
-        """ 
-        
-        # board snr should be unique id that serves as key for the information
-        id = board_snr
-
-        # get previous category information if exists
-        information = {}
-        if category in results:
-
-            #get old information of category
-            information = results[category]
-
-            # inference information of specified board should not already be contained beforehand
-            if id in information:
-                raise RuntimeError(f"result.json already contains {category} of the specified board {board_snr}")
-            
-
-        # append new information for board with id
-        information[id] = value
-
-        # return the updated information
-        return information 
-
-
-    def calculate_energy_consumption(self, board_snr:str, data_dir:str):
-        """ 
-        calculate_energy_consumption reads the energy measurements from the correct csv, averages it and then integrates it over inference time 
-
-        :param board_snr: string containing information the board snr
-        :param data_dir: directory path containing result.json and power_measurements_<board_snr>.csv of the board
-
-        :return: None. Writes energy consumption and mean power consumption to results.json
-        """ 
-
-        # get paths FIXME: make paths more robust for e.g. Windows 
-        power_measurement_file_name = "power_measurements_" + board_snr +".csv"
-        csv_path = data_dir + "/" + power_measurement_file_name
-        results_path = data_dir + "/" + "results.json"
-
-        try:
-            # load results from json
-            with open(results_path) as f:
-                results = json.loads(f.read())
-        except FileNotFoundError as e:
-            raise NotImplementedError("Not implemented proper handling if result does not exist. should actually not be the case and not be ignored")
-        except Exception as e:
-            raise NotImplementedError("proper error handling")
-
-        try:
-            data = pd.read_csv(csv_path)
-            # get all power consumption measurements
-            values = np.asarray(data["Power Consumption"])
-
-            threshold = self.params["power_measurement_threshold"]
-            start = None
-            end = None
-            for val in values:
-                if start is None and val > threshold:
-                    start = int(np.where(val == values)[0])
-                elif start is not None and val < threshold:
-                    end = int(np.where(val == values)[0])
-                    break
-
-            # the value with the highest gradient is
-            mean_power_consumption = np.mean(values[start:end])  # measured in uA
-            mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
-
-            voltage = 3.3  # in V
-
-            # get inference time from board
-            try:
-                inf_time = self.get_inference_information_from_results(board_snr,results) # in ms
-            except ValueError as e:
-                inf_time = 0
-
-            # convert to seconds
-            inf_time = inf_time * (10 ** -3)  # in s
-
-            # calculate energy by Energy = Voltage x Current x time
-            energy_consumption = voltage * mean_power_consumption * inf_time  # in J
-            energy_consumption = energy_consumption * (10 ** 3)  # in mJ
-
-            # save energy consumption to results
-            results["energy_information"] = self.set_result_value_for_board(board_snr, "energy_information", float(energy_consumption), results)
-            results["mean_power_information"] = self.set_result_value_for_board(board_snr, "mean_power_information", float(mean_power_consumption),results)
-
-        except Exception as e:
-            results["energy_information"] = self.set_result_value_for_board(board_snr, "energy", str(e), results)
-
-        # save to results.json
-        with open(results_path, 'w') as f:
-            json.dump(results, f, indent=2)
-
-
-    def evaluate_energy_consumption_and_inference_speed(self):
-        """ Evaluate all preselected models on the MCU. """
-        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
-
-        for idx, individual in enumerate(self.preselected_individuals):
-            print(f"Evaluate energy of {individual} (index: {idx})")
-
-            # flash tflite model on individual board
-            if len(self.params["boards"]) > 0:       
-                for board in self.params["boards"]:
-                    tflite_path = "../" +path + individual + "/models/model_tflite_untrained.tflite"
-                    cpp_path = '../tflite/evonas_tflite/src/model.cpp'
-                    flasher_path = './tools/flash_tflite_model.sh'
-
-                    # start measuring
-                    ppk2 = init_ppk2(board["ppk"])
-                    time.sleep(1)
-                    subprocess.call(['bash', '-i',flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
-                    time.sleep(1)
-
-                    # if no ppk connected, measuring the power consumption is not possible
-                    if ppk2 is not None:
-                        stop_measuring(ppk2)
-
-                        # start measuring energy consumption
-                        args = ['python tools/measure_power_consumption.py', path + individual, board["snr"], board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
-                        command = " ".join(args) # joining args separated by space
-                        proc_energy = Popen(command, shell=True)
-
-                    # get inference time from Serial port
-                    args = ['python tools/measure_inference_time.py', path + individual, board["model"], board["snr"]]
-                    command = " ".join(args) # joining args separated by space
-                    proc_inference = Popen(command, shell=True)
-
-                    # wait for inference time measurement to finish
-                    proc_inference.wait()
-
-                    # if no ppk connected, measuring the power consumption is not possible
-                    if ppk2 is not None:
-                        # wait for energy consumption measurement to finish
-                        try:
-                            proc_energy.wait(timeout=30)
-
-                            # calculate energy consumption
-                            self.calculate_energy_consumption(board["snr"], path + individual)
-                        except:
-                            pass
-
-            else: # no boards 
-                raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')
-          
-
-            time.sleep(2)
 
     def selection(self):
         # calculate fitness of all preselected models
@@ -353,14 +120,9 @@ class GeneticAlgorithm:
 
     def _process_model_translation(self, chromosome):
         try:
-            model = translate(chromosome, self.params['input_shape'], self.params['nb_classes'],
-                                self.params['sample_rate'])
+            model = translate(chromosome, self.params['input_shape'], self.params['nb_classes'])
         except:
             raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")    
-        try:
-            model = substitute_tflite_layer(model, self.params["input_shape"])
-        except:
-            raise ValueError(f"Error when substituting STFT and MAG layers. Chromosome: {chromosome}")
         return model  
 
     def _process_model_conversion(self, model):

@@ -13,9 +13,6 @@ sys.path.insert(0, '.')
 sys.path.insert(0, '../.')
 sys.path.insert(0, '../../.')
 
-from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
-from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
-from genetic_algorithm.utils import norm_layer
 from datasets.get_datasets import get_datasets
 
 #########################################################################################
@@ -118,41 +115,15 @@ history = model.fit(ds_train.batch(128),
 save_path = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/history.fl"
 fl.save(save_path, history.history)
 
-#########################################################################################
-# Convert TF Model to TFLite Model
-#########################################################################################
+
 model = load_tf_model(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_untrained.h5")
 model.load_weights(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_trained.h5")
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
               loss=tf.keras.losses.CategoricalCrossentropy(),
               metrics='accuracy')
 
-# TODO: use 200 mel spectrograms as representative dataset
-tflite_model = substitute_tflite_layer(model, (6000, 1))
-tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 6000, 1)))
-
-# save TFLite model
-path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"
-with open(path_tflite_model, "wb") as fp:
-    fp.write(tflite_model)
-
-#########################################################################################
-# Determine test accuracy using TF Lite model
-#########################################################################################
-
-# input_details = tflite_model.get_input_details()
-# output_details = tflite_model.get_output_details()
-# tflite_model.allocate_tensors()
-#
-# for x_test in X_test:
-#     tflite_model.set_tensor(input_details[0]['index'], [x_test])
-#     tflite_model.invoke()
-#     output_data = tflite_model.get_tensor(output_details[0]['index'])
-
-# TODO compare normal model output and TFLite model output
-
-#loss, test_acc = model.evaluate(ds_test.batch(64))
 best_val_acc = np.max(history.history['val_accuracy'])
+
 #########################################################################################
 # Save determined test accuracy in results.json
 #########################################################################################

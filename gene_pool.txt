@@ -13,10 +13,7 @@
 #{'layer': 'IN_1D', 'f_name': 'InstanceNormalization()'},
 
 # 2D preprocessing layers
-{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [64, 256, 32], 'hop_length': [128, 384, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
 {'layer': 'MAG', 'f_name': 'Magnitude()'},
-# {'layer': 'MAG2DEC', 'f_name': 'MagnitudeToDecibel()'},
-# {'layer': 'MEL', 'f_name': 'get_melspectrogram_layer', 'n_mels': [80, 80, 1], 'n_fft': [1024, 1024, 1], 'hop_length': [128, 128, 1], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last'], 'mel_f_min': [40, 40, 1], 'mel_f_max': [8000, 8000, 1]},
 
 # 2D layers
 {'layer': 'C_2D', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
