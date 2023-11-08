@@ -30,23 +30,20 @@ class Saver:
         else:
             return self.results_dir / f'Generation_{gen_count}/{name}'
 
-    def save_chromosomes(self, population_genotype: list, population_phenotype: list, population_phenotype_tflite: list,
+    def save_chromosomes(self, population_genotype: list, population_phenotype: list, 
                          chromosome_names: list, gen_count: int) -> None:
         # create generation dir
         os.mkdir(self._get_path(gen_count))
         # generate individual dir and safe chromosome
-        for name, chromosome_g, chromosome_p, chromosome_p_tflite \
-                in zip(chromosome_names, population_genotype, population_phenotype, population_phenotype_tflite):
+        for name, chromosome_g, chromosome_p \
+                in zip(chromosome_names, population_genotype, population_phenotype):
 
             p = self._get_path(gen_count, name)
             os.mkdir(p)
             self._save_chromosome_genotype(chromosome_g, p)
             p = p / "models"
             os.mkdir(p)
-            self._save_chromosome_phenotype(chromosome_p, chromosome_p_tflite, p)
-
-            # convert tflite model to C-array
-            subprocess.call("xxd -i " + str(p / "model_tflite_untrained.tflite") + " > " + str(p / "model_c_array_untrained.cc"), shell=True)
+            self._save_chromosome_phenotype(chromosome_p, p)
 
     @staticmethod
     def _save_chromosome_genotype(chromosome, path):
@@ -54,11 +51,8 @@ class Saver:
             json.dump(chromosome, f, indent=2)
 
     @staticmethod
-    def _save_chromosome_phenotype(model_untrained, model_tflite_untrained, path):
+    def _save_chromosome_phenotype(model_untrained, path):
         model_untrained.save(path / "model_untrained.h5")
-
-        with open(path / 'model_tflite_untrained.tflite', 'wb') as f:
-            f.write(model_tflite_untrained)
 
     def save_best_individual(self, gen_count, best_individual):
         row = [f'Generation_{gen_count}', best_individual[0], best_individual[1]]

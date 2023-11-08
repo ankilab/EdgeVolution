@@ -1,19 +1,16 @@
 import tensorflow as tf
 import sys
-from tensorflow_addons.layers import InstanceNormalization
 import numpy as np
 import json
 import flammkuchen as fl
-from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
-import matplotlib.pyplot as plt
-import ast
 import argparse
-
+import pickle 
 sys.path.insert(0, '.')
 sys.path.insert(0, '../.')
 sys.path.insert(0, '../../.')
 
-from datasets.get_datasets import get_datasets
+import tensorflow_datasets as tfds
+
 
 #########################################################################################
 # Some general configuration
@@ -25,6 +22,8 @@ from datasets.get_datasets import get_datasets
 
 # --> This is better, but we never know how many memory exactly is allocated
 # However, 24 GB should be enough to train 10 models in parallel, even if we have 10 huge models
+
+
 gpus = tf.config.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
@@ -46,7 +45,7 @@ args = parser.parse_args()
 #########################################################################################
 # Load data
 #########################################################################################
-ds_train, ds_val, ds_test = get_datasets(args.dataset, classes_filter=args.classes_filter)
+ds_train, ds_test = tfds.load('cifar10', split=['train','test'], as_supervised=True)
 
 
 #########################################################################################
@@ -54,12 +53,7 @@ ds_train, ds_val, ds_test = get_datasets(args.dataset, classes_filter=args.class
 #########################################################################################
 # load and compile tf model
 def load_tf_model(path):
-    m = tf.keras.models.load_model(path, custom_objects={"InstanceNormalization": InstanceNormalization,
-                                                         'NormLayer': norm_layer.NormLayer,
-                                                         'STFT': STFT,
-                                                         'Magnitude': Magnitude,
-                                                         'ApplyFilterbank': ApplyFilterbank,
-                                                         'MagnitudeToDecibel': MagnitudeToDecibel})
+    m = tf.keras.models.load_model(path)
     return m
 
 
@@ -103,8 +97,8 @@ lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, v
 callbacks = [lr_callback, model_checkpoint_callback]#, early_stopping]
 
 # train
-history = model.fit(ds_train.batch(128),
-                    validation_data=ds_val.batch(64),
+history = model.fit(ds_train.batch(1),
+                    validation_data=ds_test.batch(1),
                     callbacks=callbacks,
                     verbose=0,
                     epochs=args.nb_epochs)

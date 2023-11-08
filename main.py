@@ -16,8 +16,8 @@ EXPERIMENT = "sc_2d_4classes_selection50_mutation20"
 # select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
 DATASET = DATASETS[0]
 SAMPLE_RATE = 16_000
-INPUT_SHAPE = (6_000, 1)
-NB_CLASSES = 12  # Speech commands is a 12 classes problem
+INPUT_SHAPE = (32,32,3)
+NB_CLASSES = 10  # Speech commands is a 12 classes problem
 CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
 # CLASSES_FILTER = []  # empty --> all classes are used
 
@@ -87,12 +87,12 @@ def main(continue_from=None):
 
     for i_generation in range(gen_start, NB_GENERATIONS+1):
         my_ga.prepare_generation(i_generation)
-
+        print("now training the models")
         # train all neural networks that actually fit into MCU flash memory
         my_ga.train_neural_networks()
 
         # determine the fitness for each model and select the best ones
-        my_ga.selection()
+        #my_ga.selection()
 
         # Preparation of the next generation, unless we have just run the last generation
         if i_generation != NB_GENERATIONS:

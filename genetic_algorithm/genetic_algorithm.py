@@ -2,7 +2,6 @@ import os.path
 import signal
 from subprocess import Popen
 
-import pandas as pd
 from coolname import generate_slug
 import json
 import numpy as np
@@ -51,38 +50,28 @@ class GeneticAlgorithm:
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
-        min_free_space = self.params['min_free_space_gpu']
-        procs = []
+        print("trainning")
         idx = 0
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        while idx < len(self.preselected_individuals):
-            procs = [p for p in procs if p.poll() is None]
-            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-
-            if info.free > min_free_space:
-                command = 'python genetic_algorithm/src/train.py ' + \
-                           f'--results_dir {self.my_saver.results_dir} ' + \
-                           f'--gen_dir Generation_{self.generation_counter} ' + \
-                           f'--individual_dir {self.preselected_individuals[idx]} ' + \
-                           f'--nb_epochs {self.params["nb_epochs"]} ' + \
-                           f'--dataset {self.params["dataset"]} ' + \
-                           f'--classes_filter ' + ' '.join(str(i) for i in self.params["classes_filter"])
-                procs.append(Popen(command, shell=True))
-                idx += 1
-
+        print(len(self.individuals_names))
+        while idx < len(self.individuals_names):
+            command = 'python genetic_algorithm/src/train.py ' + \
+                        f'--results_dir {self.my_saver.results_dir} ' + \
+                        f'--gen_dir Generation_{self.generation_counter} ' + \
+                        f'--individual_dir {self.individuals_names[idx]} ' + \
+                        f'--nb_epochs {self.params["nb_epochs"]} ' + \
+                        f'--dataset {self.params["dataset"]} ' + \
+                        f'--classes_filter ' + ' '.join(str(i) for i in self.params["classes_filter"])
+            idx += 1
+            subprocess.call(command,stdout=subprocess.PIPE, shell=True)
+            print("doje")
             time.sleep(15)
 
-        nvidia_smi.nvmlShutdown()
-        # make sure to wait until all processes are finished
-        for p in procs:
-            p.wait()
 
     def selection(self):
         # calculate fitness of all preselected models
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
         models_with_fitness = dict()
-        for individual in self.preselected_individuals:
+        for individual in self.individuals_names:
             with open(path + individual + '/results.json', 'r') as f:
                 results = json.loads(f.read())
                 fitness = calculate_fitness(results, self.params)
@@ -125,15 +114,6 @@ class GeneticAlgorithm:
             raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {chromosome}")    
         return model  
 
-    def _process_model_conversion(self, model):
-        try:
-            tflite_model = convert_to_tflite(model, np.random.uniform(size=(200, self.params["input_shape"][0],
-                                                                                 self.params["input_shape"][1])))
-        except:
-            raise ValueError(f"Error when converting to TFLite")
-        
-        return tflite_model
-
     def prepare_generation(self, current_generation: int):
         self.individuals_names = []
         self.population_phenotype = []
@@ -151,20 +131,17 @@ class GeneticAlgorithm:
 
         # convert chromosomes to models and to tflite models in parallel
         with get_context("spawn").Pool(os.cpu_count()) as pool:
+
             models = pool.map(self._process_model_translation, self.population_genotype)
             # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
-            tflite_models = pool.map(self._process_model_conversion, models)
 
         # save models 
         for model in models:
             self.population_phenotype.append(model)
 
-        for tflite_model in tflite_models:
-            self.population_phenotype_tflite.append(tflite_model)
 
         # save untrained networks such that it can be loaded in a new process
-        self.my_saver.save_chromosomes(self.population_genotype, self.population_phenotype,
-                                       self.population_phenotype_tflite, self.individuals_names,
+        self.my_saver.save_chromosomes(self.population_genotype, self.population_phenotype, self.individuals_names,
                                        self.generation_counter)
 
     def _generate_individuals_names(self):
