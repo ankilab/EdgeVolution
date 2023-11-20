@@ -11,6 +11,7 @@ import subprocess
 import nvidia_smi
 from multiprocessing import Pool
 
+#from .src.gene_operations import GenePool
 from .src.genepool import GenePool
 from .src.translation import translate
 from utils.saver import Saver
@@ -19,6 +20,7 @@ from .src.fitness import calculate_fitness
 
 from .utils.convert_to_tflite import convert_to_tflite
 from .utils.substitute_tflite_layer import substitute_tflite_layer
+from .utils.save_ram_rom_usage import save_ram_rom_usage
 from tools.measure_power_consumption import init_ppk2, stop_measuring
 
 
@@ -197,7 +199,7 @@ class GeneticAlgorithm:
         """ 
 
         # get paths FIXME: make paths more robust for e.g. Windows 
-        power_measurement_file_name = "power_measurements_" + board_snr +".csv"
+        power_measurement_file_name = "power_measurements_" + board_snr + ".csv"
         csv_path = data_dir + "/" + power_measurement_file_name
         results_path = data_dir + "/" + "results.json"
 
@@ -255,7 +257,6 @@ class GeneticAlgorithm:
         with open(results_path, 'w') as f:
             json.dump(results, f, indent=2)
 
-
     def evaluate_energy_consumption_and_inference_speed(self):
         """ Evaluate all preselected models on the MCU. """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
@@ -266,19 +267,26 @@ class GeneticAlgorithm:
             # flash tflite model on individual board
             if len(self.params["boards"]) > 0:       
                 for board in self.params["boards"]:
-                    tflite_path = "../" +path + individual + "/models/model_tflite_untrained.tflite"
+                    tflite_path = "../" + path + individual + "/models/model_tflite_untrained.tflite"
                     cpp_path = '../tflite/evonas_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
                     # start measuring
                     ppk2 = init_ppk2(board["ppk"])
-                    time.sleep(1)
-                    subprocess.call(['bash', '-i',flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
-                    time.sleep(1)
+                    time.sleep(2)
+
+                    # flash tflite model on board
+                    subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
+                    time.sleep(2)
+
+                    # save RAM and ROM usage to results.json (available after the project was built)
+                    save_ram_rom_usage("build-" + board["model"], path + individual + "/" + "results.json")
 
                     # if no ppk connected, measuring the power consumption is not possible
+                    proc_energy = None
                     if ppk2 is not None:
                         stop_measuring(ppk2)
+                        time.sleep(2)
 
                         # start measuring energy consumption
                         args = ['python tools/measure_power_consumption.py', path + individual, board["snr"], board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
@@ -294,7 +302,7 @@ class GeneticAlgorithm:
                     proc_inference.wait()
 
                     # if no ppk connected, measuring the power consumption is not possible
-                    if ppk2 is not None:
+                    if ppk2 is not None and proc_energy is not None:
                         # wait for energy consumption measurement to finish
                         try:
                             proc_energy.wait(timeout=30)
@@ -306,7 +314,6 @@ class GeneticAlgorithm:
 
             else: # no boards 
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')
-          
 
             time.sleep(2)
 
