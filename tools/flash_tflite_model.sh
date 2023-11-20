@@ -22,5 +22,9 @@ echo "Value of CONFIG_USB_DEVICE_PRODUCT changed to '$name'"
 # build the files for the given board and snr
 west build -b $board_type evonas_tflite/ --build-dir build-$board_type
 
+# generate RAM and ROM reports
+west build -t ram_report --build-dir build-$board_type
+west build -t rom_report --build-dir build-$board_type
+
 # flash the given board
 west flash --recover --dev-id $board_snr --build-dir build-$board_type

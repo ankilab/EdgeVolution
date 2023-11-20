@@ -16,7 +16,7 @@ sys.path.insert(0, '../../.')
 from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
 from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
 from genetic_algorithm.utils import norm_layer
-from datasets.get_datasets import get_datasets
+from datasets.load_data import get_datasets
 
 #########################################################################################
 # Some general configuration
@@ -70,7 +70,7 @@ model_path = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir +
 model = load_tf_model(model_path)
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              loss=tf.keras.losses.CategoricalCrossentropy(),
+              loss= 'binary_crossentropy', # tf.keras.losses.CategoricalCrossentropy(),
               metrics='accuracy')
 
 # callback for saving the best model
@@ -106,6 +106,7 @@ lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, v
 callbacks = [lr_callback, model_checkpoint_callback]#, early_stopping]
 
 # train
+print("Training model...")
 history = model.fit(ds_train.batch(128),
                     validation_data=ds_val.batch(64),
                     callbacks=callbacks,
@@ -123,13 +124,17 @@ fl.save(save_path, history.history)
 #########################################################################################
 model = load_tf_model(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_untrained.h5")
 model.load_weights(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_trained.h5")
+# model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+#               loss=tf.keras.losses.CategoricalCrossentropy(),
+#               metrics='accuracy')
+
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              loss=tf.keras.losses.CategoricalCrossentropy(),
+              loss='binary_crossentropy',
               metrics='accuracy')
 
 # TODO: use 200 mel spectrograms as representative dataset
-tflite_model = substitute_tflite_layer(model, (6000, 1))
-tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 6000, 1)))
+tflite_model = substitute_tflite_layer(model, (5000, 1))
+tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 5000, 1)))
 
 # save TFLite model
 path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"

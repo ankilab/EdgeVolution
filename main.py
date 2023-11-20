@@ -1,97 +1,18 @@
 import tensorflow as tf
 import multiprocessing
 import argparse
+import yaml
+import numpy as np
 
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
 from utils.loader import Loader
 
-# add all boards to array. if only one specific board required, have only one element in list
-#BOARDS = [
-#    {"model": "nrf52840dk_nrf52840", "snr": "1050242564", "ppk": "FEA55411"},
-#    {"model": "nrf52840dk_nrf52840", "snr": "1050283223", "ppk": "FAFD344C"},
-#    {"model": "nrf52833dk_nrf52833", "snr": "685756103", "ppk": "None"},
-#    {"model": "nrf5340dk_nrf5340_cpuapp", "snr": "1050006605", "ppk": "None"},
-#]
+with open("config.yaml", 'r') as yaml_file:
+    params = yaml.safe_load(yaml_file)
 
-BOARDS = [
-    {"model": "nrf52840dk_nrf52840", "snr": "1050289157", "ppk": "E373C904"},
-]
-
-
-#################################
-# define which dataset and experiment to use (--> adjust it in train.py and add more datasets there)
-#################################
-DATASETS = ["speech_commands", "motion_sense_accelerometer"]
-EXPERIMENT = "sc_2d_4classes_selection50_mutation20"
-# EXPERIMENT = "test"
-
-# select what dataset to use --> make sure the data loader is defined in datasets/get_datasets.py
-DATASET = DATASETS[0]
-SAMPLE_RATE = 16_000
-INPUT_SHAPE = (6_000, 1)
-NB_CLASSES = 12  # Speech commands is a 12 classes problem
-CLASSES_FILTER = [0, 2, 6, 8]  # containing all classes that should be used for optimization
-# CLASSES_FILTER = []  # empty --> all classes are used
-
-if len(CLASSES_FILTER) != 0:
-    NB_CLASSES = len(CLASSES_FILTER)
-
-#################################
-# define EvoNAS hyper-parameters
-#################################
-NB_GENERATIONS = 2
-POPULATION_SIZE = 2
-NB_BEST_MODELS_CROSSOVER = 5  # specifies the number of models that will be used for crossover
-MUTATION_RATE = 20  # in percent
-
-MAX_NB_FEATURE_LAYERS = 30  # max number layers before GAP, GMP or Flatten layer in the first generation
-MAX_NB_CLASSIFICATION_LAYERS = 6  # max number layers after GAP, GMP or Flatten layer in the first generation
-
-PATH_GENE_POOL = "gene_pool.txt"
-PATH_RULE_SET = "rule_set.txt"
-
-# number of samples that will be averaged when measuring power consumption
-POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 100
-
-# threshold in mA that is used after the average filter was applied (i.e., value above 'threshold' is the start,
-# where inference started, the next value below 'threshold' is the end of inference)
-POWER_MEASUREMENT_THRESHOLD = 4000  # in uA
-
-######################################
-# define DNN training hyper-parameters
-######################################
-NB_EPOCHS = 10
-MIN_FREE_SPACE_GPU = 6_000_000_000  # 6 GB
-
-#################################
-# define constraints
-#################################
-MAX_MEMORY_FOOTPRINT = 800_000  # in Bytes (800000 bytes --> 0.8 MB)
-MAX_INFERENCE_TIME = 200  # in ms
-MAX_ENERGY_CONSUMPTION = 2  # in mJ
-
-params = {'dataset': DATASET,
-          'sample_rate': SAMPLE_RATE,
-          'generations': NB_GENERATIONS,
-          'population_size': POPULATION_SIZE,
-          'nb_best_models_crossover': NB_BEST_MODELS_CROSSOVER,
-          'mutation_rate': MUTATION_RATE,
-          'max_nb_feature_layers': MAX_NB_FEATURE_LAYERS,
-          'max_nb_classification_layers': MAX_NB_CLASSIFICATION_LAYERS,
-          'power_measurement_nb_samples_average': POWER_MEASUREMENT_NB_SAMPLES_AVERAGE,
-          'power_measurement_threshold': POWER_MEASUREMENT_THRESHOLD,
-          'path_gene_pool': PATH_GENE_POOL,
-          'path_rule_set': PATH_RULE_SET,
-          'input_shape': INPUT_SHAPE,
-          'classes_filter': CLASSES_FILTER,
-          'nb_classes': NB_CLASSES,
-          'nb_epochs': NB_EPOCHS,
-          'min_free_space_gpu': MIN_FREE_SPACE_GPU,
-          'max_memory_footprint': MAX_MEMORY_FOOTPRINT,
-          'max_inference_time': MAX_INFERENCE_TIME,
-          'max_energy_consumption': MAX_ENERGY_CONSUMPTION,
-          'boards': BOARDS}
+if len(params["classes_filter"]) != 0:
+    params["nb_classes"] = len(params["classes_filter"])
 
 
 def main(continue_from=None):
@@ -99,7 +20,7 @@ def main(continue_from=None):
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
-    my_saver = Saver(EXPERIMENT)
+    my_saver = Saver(params["experiment_description"])
 
     if continue_from['continue_from_ga_run'] is None:
         my_ga = GeneticAlgorithm(params, my_saver)
@@ -120,7 +41,7 @@ def main(continue_from=None):
         # save params
         my_saver.save_params(params_)
 
-    for i_generation in range(gen_start, NB_GENERATIONS+1):
+    for i_generation in range(gen_start, params["nb_generations"] + 1):
         my_ga.prepare_generation(i_generation)
 
         # Pre-selection of candidate chromosomes, which are trained on a GPU afterwards
@@ -136,12 +57,13 @@ def main(continue_from=None):
 
         # wait for the process to finish
         process.join(timeout=5)
+        process.terminate()
 
         # determine the fitness for each model and select the best ones
         my_ga.selection()
 
         # Preparation of the next generation, unless we have just run the last generation
-        if i_generation != NB_GENERATIONS:
+        if i_generation != params["nb_generations"]:
             my_ga.crossover()
             my_ga.mutation()
 
@@ -158,4 +80,7 @@ if __name__ == "__main__":
 
     continue_from = {'continue_from_ga_run': args.continue_from_ga_run,
                      'continue_from_generation': args.continue_from_generation}
+
+    np.random.seed(42)
+
     main(continue_from)

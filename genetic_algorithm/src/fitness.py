@@ -8,8 +8,8 @@ def calculate_fitness(results, params):
     try:
         fitness = a * results['val_acc'] + \
                   b * (1 - (results["memory_footprint_tflite"] / params["max_memory_footprint"])) + \
-                  c * (1 - (results["inference_time"] / params["max_inference_time"])) + \
-                  d * (1 - (results["energy_consumption"] / params["max_energy_consumption"]))
+                  c * (1 - (results["inference_information"]["1050289157"] / params["max_inference_time"])) + \
+                  d * (1 - (results["energy_information"]["1050289157"] / params["max_energy_consumption"]))
         return fitness
     except:
         # if a key does not exist, the model was not evaluated correctly --> there was something wrong with the model,

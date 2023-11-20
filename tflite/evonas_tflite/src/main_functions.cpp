@@ -80,7 +80,7 @@ uint32_t MeasureTotalSize(const tflite::Model* model) {
 
 	total_size += sizeof(tflite::internal::ScratchBufferRequest) * 12;
 
-	total_size += tflite::getMicroBuiltinDataAllocatorSize(); 
+	//total_size += tflite::getMicroBuiltinDataAllocatorSize();
 
 	// Allocate struct to store eval tensors, nodes and registrations.
 	total_size += sizeof(tflite::SubgraphAllocations) * model->subgraphs()->size();
@@ -135,11 +135,11 @@ __attribute__((optimize(0))) void setup(void)
 	}
 
 	uint32_t measured = MeasureTotalSize(model);
-	printk("measdured used bytes : %d \n", measured);
+	printk("measured used bytes : %d \n", measured);
 
 
 	// Create OpResolver class with up to 26 kernel support.
-	using KeywordOpResolver = tflite::MicroMutableOpResolver<26>;
+	using KeywordOpResolver = tflite::MicroMutableOpResolver<33>;
 
 	KeywordOpResolver* op_resolver = new KeywordOpResolver();
 	op_resolver->AddFullyConnected();
@@ -168,6 +168,16 @@ __attribute__((optimize(0))) void setup(void)
 	op_resolver->AddExpandDims();
 	op_resolver->AddShape();
 	op_resolver->AddConcatenation();
+	op_resolver->AddLogistic();
+
+	op_resolver->AddRange();
+	op_resolver->AddPad();
+
+	op_resolver->AddSplitV();
+	op_resolver->AddFloorDiv();
+	op_resolver->AddStridedSlice();
+	op_resolver->AddMaximum();
+	//op_resolver->AddRfft2D();
 
 	printk("added operations\n");
 	static tflite::MicroInterpreter static_interpreter(model, *op_resolver, tensor_arena, kTensorArenaSize, nullptr, nullptr);

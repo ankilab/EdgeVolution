@@ -26,13 +26,19 @@ class GenePool:
             # add current layer
             chromosome.append(self._get_gene_with_random_parameters(gene))
 
+        # check if the last layer at this point is one with complex output (i.e., STFT)
+        # --> is yes, add a Magnitude layer
+        if 'STFT_2D' in chromosome[-1]['layer']:
+            chromosome.append(self._get_gene_with_random_parameters('MAG_2D'))
+
         # check in the previous gene if we have a 1D or 2D network
         if '2D' in gene:
             gene = np.random.choice(['GAP_2D', 'GMP_2D'])
         elif '1D' in gene:
             gene = np.random.choice(['GAP_1D', 'GMP_1D'])
         else:
-            raise ValueError("Couldn't determine if the architecture is 1D or 2D.")
+            print(gene)
+            raise RuntimeError("Couldn't determine if the architecture is 1D or 2D.")
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
         for _ in range(0, np.random.choice(np.arange(3, self.params['max_nb_classification_layers'] + 1)), 1):

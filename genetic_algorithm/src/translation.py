@@ -2,7 +2,7 @@ import copy
 
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, BatchNormalization, GlobalAveragePooling2D, \
-    MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, ReLU, Flatten, Dropout, Resizing, Conv1D, DepthwiseConv1D, \
+    MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, Activation, Flatten, Dropout, Resizing, Conv1D, DepthwiseConv1D, \
     GlobalAveragePooling1D, MaxPooling1D, AveragePooling1D, GlobalMaxPooling1D
 from tensorflow_addons.layers import InstanceNormalization
 from ast import literal_eval
@@ -10,6 +10,8 @@ from ast import literal_eval
 from kapre import STFT, Magnitude, MagnitudeToDecibel, ApplyFilterbank
 from kapre.composed import get_melspectrogram_layer
 from genetic_algorithm.utils.norm_layer import get_norm_layer
+
+from genepool_modules.sinc_conv import SincConv1D
 
 
 def translate(chromosome: list, input_shape: tuple, nb_classes: int, sample_rate: int) -> tf.keras.Model:
@@ -20,7 +22,7 @@ def translate(chromosome: list, input_shape: tuple, nb_classes: int, sample_rate
     for gene in chromosome:
         gene = copy.deepcopy(gene)
         # need an extra parameter specified in main.py when we have Mel Spectrogram TF-Functional in the beginning
-        if gene['layer'] == 'MEL':
+        if gene['layer'] == 'MEL_2D':
             mel_used = True
             gene['sample_rate'] = sample_rate
 
@@ -37,5 +39,6 @@ def translate(chromosome: list, input_shape: tuple, nb_classes: int, sample_rate
             model.add(tf_layer)
 
     # last layer is always classification layer
-    model.add(Dense(nb_classes, activation='softmax'))
+    # model.add(Dense(nb_classes, activation='softmax'))
+    model.add(Dense(nb_classes, activation='sigmoid'))
     return model

@@ -12,7 +12,7 @@ datasets/speech_commands
 datasets/motion_sense_accelerometer
 *utils/datasets.py
 *.cc
-*.tflite
+#*.tflite
 *.h5
 tests-resnet.ipynb
 tests-tflite.ipynb
@@ -24,3 +24,7 @@ train-resnet.ipynb
 datasets/downloads/
 README.txt
 nrf-command-line-tools*
+*.ipynb_checkpoints
+datasets/*
+get_ops.py
+*build*
