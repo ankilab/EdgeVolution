@@ -1,5 +1,5 @@
 import time
-from ppk2_api.ppk2_api import PPK2_MP
+from ppk2_api.ppk2_api import PPK2_MP, PPK2_API
 import argparse
 import csv
 import json
@@ -66,7 +66,8 @@ def init_ppk2(ppk_serial:str, timeout_in_s = 10):
         connected_ppk2_port = get_ppk_port(ppk_serial)
 
         # init connection
-        _ppk2 = PPK2_MP(port=connected_ppk2_port, buffer_max_size_seconds=2); time.sleep(0.1)
+        _ppk2 = PPK2_API(port=connected_ppk2_port); time.sleep(0.1)
+        #_ppk2 = PPK2_MP(port=connected_ppk2_port, buffer_max_size_seconds=2); time.sleep(0.1)
     except Exception as e:
         print(str(e))
 
@@ -85,6 +86,7 @@ def init_ppk2(ppk_serial:str, timeout_in_s = 10):
             _ppk2.get_modifiers(); time.sleep(0.1)
             _ppk2.use_ampere_meter(); time.sleep(0.1)  # set ampere meter mode
             _ppk2.set_source_voltage(3300); time.sleep(0.1) # set source voltage
+            _ppk2.toggle_DUT_power("OFF"); time.sleep(0.1)  # disable DUT power
             _ppk2.toggle_DUT_power("ON"); time.sleep(0.1)  # enable DUT power
 
             # start measuring
@@ -124,7 +126,7 @@ def _timeout_handler(signal_number, current_stack):
     raise Exception(f"end of time; signal number: {signal_number}, current stack: {current_stack}")
 
 
-def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:str, nb_samples_average: int, max_iterations=None):
+def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:str, nb_samples_average: int, max_iterations=None):
     """ 
     measure_power_nrf measures the power consumption and saves all values to a .csv file at the given location. 
     
@@ -178,7 +180,7 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
                 if read_data != b'':
 
                     # get samples 
-                    samples = _ppk2.get_samples(read_data)
+                    samples, _ = _ppk2.get_samples(read_data)
 
                     # write averaged samples to csv file
                     for ii in range(0, len(samples), nb_samples_average):
@@ -226,7 +228,7 @@ def measure_power_nrf(_ppk2:PPK2_MP, save_dir: str, board_snr:str, ppk_serial:st
             time.sleep(0.1)
 
 
-def stop_measuring(_ppk2:PPK2_MP, timeout_in_s = 10):
+def stop_measuring(_ppk2:PPK2_API, timeout_in_s = 10):
     """ 
     stop_measuring stops measuring the ppk trying it for timeout_in_s.
 
