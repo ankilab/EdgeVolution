@@ -2,6 +2,7 @@ import tensorflow as tf
 import multiprocessing
 import argparse
 import yaml
+import numpy as np
 
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
@@ -79,4 +80,7 @@ if __name__ == "__main__":
 
     continue_from = {'continue_from_ga_run': args.continue_from_ga_run,
                      'continue_from_generation': args.continue_from_generation}
+
+    np.random.seed(42)
+
     main(continue_from)

@@ -8,15 +8,18 @@
 {'layer': 'AP_1D', 'f_name': 'AveragePooling1D', 'pool_size':[2, 4, 1], 'padding':['same']},
 {'layer': 'GAP_1D', 'f_name': 'GlobalAveragePooling1D()'},
 {'layer': 'GMP_1D', 'f_name': 'GlobalMaxPooling1D()'},
-{'layer': 'R_1D', 'f_name': 'ReLU()'},
+{'layer': 'R_1D', 'f_name': 'Activation', 'activation': ['relu']},
+{'layer': 'SW_1D', 'f_name': 'Activation', 'activation': ['swish']},
+{'layer': 'G_1D', 'f_name': 'Activation', 'activation': ['gelu']},
 {'layer': 'BN_1D', 'f_name': 'BatchNormalization()'},
+{'layer': 'SincConv_1D', 'f_name': 'SincConv1D', 'num_filters': [8, 128, 8], 'kernel_size': [8, 128, 8], 'cutoff': [0.2, 4, 0.2]},
 #{'layer': 'IN_1D', 'f_name': 'InstanceNormalization()'},
 
 # 2D preprocessing layers
-{'layer': 'STFT', 'f_name': 'STFT', 'n_fft': [64, 256, 32], 'hop_length': [128, 384, 32], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
-{'layer': 'MAG', 'f_name': 'Magnitude()'},
-# {'layer': 'MAG2DEC', 'f_name': 'MagnitudeToDecibel()'},
-# {'layer': 'MEL', 'f_name': 'get_melspectrogram_layer', 'n_mels': [80, 80, 1], 'n_fft': [1024, 1024, 1], 'hop_length': [128, 128, 1], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last'], 'mel_f_min': [40, 40, 1], 'mel_f_max': [8000, 8000, 1]},
+{'layer': 'STFT_2D', 'f_name': 'STFT', 'n_fft': [128, 512, 16], 'hop_length': [64, 256, 16], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last']},
+{'layer': 'MAG_2D', 'f_name': 'Magnitude()'},
+{'layer': 'MAG2DEC_2D', 'f_name': 'MagnitudeToDecibel()'},
+{'layer': 'MEL_2D', 'f_name': 'get_melspectrogram_layer', 'n_mels': [32, 96, 1], 'n_fft': [128, 512, 16], 'hop_length': [64, 156, 16], 'input_data_format': ['channels_last'], 'output_data_format': ['channels_last'], 'mel_f_min': [40, 40, 1], 'mel_f_max': [8000, 8000, 1]},
 
 # 2D layers
 {'layer': 'C_2D', 'f_name': 'Conv2D', 'filters': [4, 32, 1], 'kernel_size': [1, 5, 1], 'strides': [1, 2, 1], 'padding': ['same']},
@@ -25,13 +28,16 @@
 {'layer': 'AP_2D', 'f_name': 'AveragePooling2D', 'pool_size':[2, 4, 1], 'padding':['same']},
 {'layer': 'GAP_2D', 'f_name': 'GlobalAveragePooling2D()'},
 {'layer': 'GMP_2D', 'f_name': 'GlobalMaxPooling2D()'},
-{'layer': 'R_2D', 'f_name': 'ReLU()'},
+{'layer': 'R_2D', 'f_name': 'Activation', 'activation': ['relu']},
+{'layer': 'SW_2D', 'f_name': 'Activation', 'activation': ['swish']},
+{'layer': 'G_2D', 'f_name': 'Activation', 'activation': ['gelu']},
 {'layer': 'BN_2D', 'f_name': 'BatchNormalization()'},
+
 #{'layer': 'IN_2D', 'f_name': 'InstanceNormalization()'},
 
 # Universal layers
 {'layer': 'DO', 'f_name': 'Dropout', 'rate': [0.0, 0.5, 0.1]},
-{'layer': 'D', 'f_name': 'Dense', 'units': [16, 128, 8], 'activation': ['relu']},
+{'layer': 'D', 'f_name': 'Dense', 'units': [8, 128, 8], 'activation': ['relu']},
 
 # {'layer': 'FLAT', 'f_name': 'Flatten()'},
 # {'layer': 'NORM', 'f_name': 'get_norm_layer()'},

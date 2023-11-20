@@ -5,7 +5,7 @@ boards:
   - model: nrf52840dk_nrf52840  # Board model
     snr: 1050242564  # Serial number
     ppk: FEA55411  # PPK (Power Profiling Kit) serial number
-  # - model: nrf52840dk_nrf52840  # Board model
+  #  - model: nrf52840dk_nrf52840  # Board model
   #   snr: 1050283223  # Serial number
   #   ppk: FAFD344C  # PPK (Power Profiling Kit) serial number
   # - model: nrf52833dk_nrf52833  # Board model
@@ -16,10 +16,11 @@ boards:
   #   ppk: None  # PPK (Power Profiling Kit) serial number (unit: N/A)
 
 
-# DATASETS and EXPERIMENT
-datasets:
-  - "speech_commands"  # Dataset name
-  - "motion_sense_accelerometer"  # Dataset name
+# DATASETS
+# This list is just an informative list of available datasets. Select one in the 'dataset' entry below.
+available_datasets:
+  - "speech_commands"
+  - "motion_sense_accelerometer"
   - "corscience"
   - "daliac"
 
