@@ -5,6 +5,7 @@ import csv
 import subprocess
 import shutil
 from pathlib import Path
+import git
 
 
 class Saver:
@@ -17,6 +18,12 @@ class Saver:
         self.random_names = []
 
     def save_params(self, params):
+        # get git commit hash and add it to params
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha
+        params["git_sha"] = sha
+
+        # save params.json
         with open(self.results_dir / 'params.json', 'w') as f:
             json.dump(params, f, indent=4)
 
