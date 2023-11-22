@@ -120,8 +120,9 @@ class GenePool:
     def _crossover_chromosomes(self, chromosome_1, chromosome_2):
         # get the indices where preprocessing ends and where the classification layers start
         # --> between those layers we will determine a random crossover point
-        idx_start_1 = self._get_first_conv_layer_index(chromosome_1)
-        idx_start_2 = self._get_first_conv_layer_index(chromosome_2)
+        # idx_start_1 = self._get_first_conv_layer_index(chromosome_1) --> deprecated
+        # idx_start_2 = self._get_first_conv_layer_index(chromosome_2) --> deprecated
+        idx_start_1, idx_start_2 = 1, 1
         idx_end_1 = self._get_flatten_gap_gmp_index(chromosome_1)
         idx_end_2 = self._get_flatten_gap_gmp_index(chromosome_2)
 
@@ -155,10 +156,25 @@ class GenePool:
         # otherwise take it from the second chromosome
         if np.random.randint(0, 100, 1) < 50:
             new_chromosome += chromosome_1[idx_end_1::]
+            new_chromosome = self.check_if_GAP_GMP_1D_or_2D(new_chromosome, idx_end_1)
         else:
             new_chromosome += chromosome_2[idx_end_2::]
+            new_chromosome = self.check_if_GAP_GMP_1D_or_2D(new_chromosome, idx_end_2)
 
         return new_chromosome, chr_1_split, chr_2_split+1
+    
+    def check_if_GAP_GMP_1D_or_2D(self, chromosome, idx_gap_gmp):
+        """ 
+        Check if GAP or GMP is followed by a 1D or 2D layer and change it if necessary. 
+        """
+        if '2D' in chromosome[idx_gap_gmp - 1]['layer'] and '1D' in chromosome[idx_gap_gmp]['layer']:
+            chromosome[idx_gap_gmp]['layer'] = chromosome[idx_gap_gmp]['layer'].replace('1D', '2D')
+            chromosome[idx_gap_gmp]['f_name'] = chromosome[idx_gap_gmp]['f_name'].replace('1D', '2D')
+        elif '1D' in chromosome[idx_gap_gmp - 1]['layer']  and '2D' in chromosome[idx_gap_gmp]['layer']:
+            chromosome[idx_gap_gmp]['layer'] = chromosome[idx_gap_gmp]['layer'].replace('2D', '1D')
+            chromosome[idx_gap_gmp]['f_name'] = chromosome[idx_gap_gmp]['f_name'].replace('2D', '1D')
+
+        return chromosome
 
     @staticmethod
     def _get_first_conv_layer_index(chromosome):
