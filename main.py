@@ -3,6 +3,7 @@ import multiprocessing
 import argparse
 import yaml
 import numpy as np
+from ast import literal_eval
 
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
@@ -15,7 +16,7 @@ if len(params["classes_filter"]) != 0:
     params["nb_classes"] = len(params["classes_filter"])
 
 
-def main(continue_from=None):
+def main(continue_from=None, optimize_accuracy_only=None):
     gpus = tf.config.list_physical_devices('GPU')
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
@@ -56,7 +57,7 @@ def main(continue_from=None):
         my_ga.train_neural_networks()
 
         # wait for the process to finish
-        process.join(timeout=5)
+        process.join()
         process.terminate()
 
         # determine the fitness for each model and select the best ones
@@ -76,6 +77,7 @@ if __name__ == "__main__":
 
     parser.add_argument('continue_from_ga_run', nargs='?', default=None)
     parser.add_argument('continue_from_generation', nargs='?', default=None)
+    parser.add_argument('optimize_accuracy_only', nargs='?', default=None)
     args = parser.parse_args()
 
     continue_from = {'continue_from_ga_run': args.continue_from_ga_run,
@@ -83,4 +85,4 @@ if __name__ == "__main__":
 
     np.random.seed(42)
 
-    main(continue_from)
+    main(continue_from, args.optimize_accuracy_only)

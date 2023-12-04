@@ -7,36 +7,35 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, BatchNormali
 from tensorflow_addons.layers import InstanceNormalization
 from ast import literal_eval
 
-from kapre import STFT, Magnitude, MagnitudeToDecibel, ApplyFilterbank
-from kapre.composed import get_melspectrogram_layer
-from genetic_algorithm.utils.norm_layer import get_norm_layer
+from kapre import STFT, Magnitude, MagnitudeToDecibel
 
-from genepool_modules.sinc_conv import SincConv1D
+from genetic_algorithm.src.genepool_modules.sinc_conv_layer import SincConv1D
+from genetic_algorithm.src.genepool_modules.filterbank_layer import get_filterbank_layer
 
 
 def translate(chromosome: list, input_shape: tuple, nb_classes: int, sample_rate: int) -> tf.keras.Model:
     model = tf.keras.Sequential()
     model.add(tf.keras.Input(shape=input_shape))
 
-    mel_used = False
     for gene in chromosome:
         gene = copy.deepcopy(gene)
-        # need an extra parameter specified in main.py when we have Mel Spectrogram TF-Functional in the beginning
-        if gene['layer'] == 'MEL_2D':
-            mel_used = True
+
+        # need an extra parameters when applying filterbank
+        if gene['layer'] == 'FB_2D':
+            # sample rate from config.yaml
             gene['sample_rate'] = sample_rate
+
+            # find STFT layer and get its n_fft parameter as it is needed for the filterbank layer
+            stft_layer = [x for x in chromosome if x['layer'] == 'STFT_2D'][0]
+            gene['n_fft'] = stft_layer['n_fft']
 
         gene.pop('layer', None)
         tf_layer = eval(gene['f_name'])
         if len(gene.keys()) > 1:
             tf_layer = tf_layer(**literal_eval(str({x: gene[x] for x in gene if x not in 'f_name'})))
+
         # add layer to the model
-        if mel_used is True:
-            for layer in tf_layer.layers:
-                model.add(layer)
-            mel_used = False
-        else:
-            model.add(tf_layer)
+        model.add(tf_layer)
 
     # last layer is always classification layer
     # model.add(Dense(nb_classes, activation='softmax'))

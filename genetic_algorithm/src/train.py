@@ -5,6 +5,7 @@ import numpy as np
 import json
 import flammkuchen as fl
 from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
+from genepool_modules.sinc_conv_layer import SincConv1D
 import matplotlib.pyplot as plt
 import ast
 import argparse
@@ -16,7 +17,8 @@ sys.path.insert(0, '../../.')
 from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
 from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
 from genetic_algorithm.utils import norm_layer
-from datasets.load_data import get_datasets
+from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
+from datasets.src.dataloader_daliac import DaliacDataLoader
 
 #########################################################################################
 # Some general configuration
@@ -49,7 +51,10 @@ args = parser.parse_args()
 #########################################################################################
 # Load data
 #########################################################################################
-ds_train, ds_val, ds_test = get_datasets(args.dataset, classes_filter=args.classes_filter)
+#ds_train, ds_val, ds_test = SpeechCommandsDataloader({'input_shape': (6000, 1),
+#                                                      'classes_filter': args.classes_filter}).load_dataset()
+
+ds_train, ds_val, ds_test = DaliacDataLoader().load_dataset()
 
 
 #########################################################################################
@@ -58,6 +63,7 @@ ds_train, ds_val, ds_test = get_datasets(args.dataset, classes_filter=args.class
 # load and compile tf model
 def load_tf_model(path):
     m = tf.keras.models.load_model(path, custom_objects={"InstanceNormalization": InstanceNormalization,
+                                                         "SincConv1D": SincConv1D,
                                                          'NormLayer': norm_layer.NormLayer,
                                                          'STFT': STFT,
                                                          'Magnitude': Magnitude,
@@ -70,7 +76,8 @@ model_path = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir +
 model = load_tf_model(model_path)
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              loss= 'binary_crossentropy', # tf.keras.losses.CategoricalCrossentropy(),
+              #loss= 'binary_crossentropy',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(),
               metrics='accuracy')
 
 # callback for saving the best model
@@ -83,32 +90,47 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 
 def exp_scheduler(epoch, lr):
     if epoch < 2:
-        return 0.01
-    elif epoch < 4:
         return 0.001
+    elif epoch < 4:
+        return 0.0005
     elif epoch < 6:
         return 0.0001
     else:
         return lr * np.exp(-0.1)
 
 
+def daliac_scheduler(epoch, lr):
+    if epoch < 75:
+        return 0.001
+    elif epoch < 125:
+        return 0.0005
+    elif epoch < 175:
+        return 0.0001
+    else:
+        return lr * np.exp(-0.1)
+
+
 early_stopping = tf.keras.callbacks.EarlyStopping(
-    monitor="val_accuracy",
-    min_delta=0.5,
-    patience=3,
-    verbose=0,
-    mode="max",
-    baseline=None,
-    restore_best_weights=False,
+    monitor='val_accuracy',
+    mode='max',
+    min_delta=0.01,
+    patience=2,
+    restore_best_weights=True
 )
 
-lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=0)
-callbacks = [lr_callback, model_checkpoint_callback]#, early_stopping]
+lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=daliac_scheduler, verbose=0)
+callbacks = [lr_callback, model_checkpoint_callback, early_stopping]
 
 # train
 print("Training model...")
-history = model.fit(ds_train.batch(128),
-                    validation_data=ds_val.batch(64),
+# history = model.fit(ds_train.batch(32),
+#                     validation_data=ds_val.batch(32),
+#                     callbacks=callbacks,
+#                     #verbose=0,
+#                     epochs=args.nb_epochs)
+
+history = model.fit(ds_train,
+                    validation_data=ds_val,
                     callbacks=callbacks,
                     verbose=0,
                     epochs=args.nb_epochs)
@@ -129,12 +151,12 @@ model.load_weights(args.results_dir + "/" + args.gen_dir + "/" + args.individual
 #               metrics='accuracy')
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              loss='binary_crossentropy',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(),
               metrics='accuracy')
 
 # TODO: use 200 mel spectrograms as representative dataset
-tflite_model = substitute_tflite_layer(model, (5000, 1))
-tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 5000, 1)))
+tflite_model = substitute_tflite_layer(model, (2048, 1))
+tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 2048, 1)))
 
 # save TFLite model
 path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"

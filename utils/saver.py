@@ -37,6 +37,26 @@ class Saver:
         else:
             return self.results_dir / f'Generation_{gen_count}/{name}'
 
+    @staticmethod
+    def _save_chromosome_genotype(chromosome, path):
+        with open(path / 'chromosome.json', 'w') as f:
+            json.dump(chromosome, f, indent=2)
+
+    def save_best_individual(self, gen_count: int, name: str, fitness: float):
+        row = [f'Generation_{gen_count}', name, fitness]
+        with open(self.results_dir / r'best_individual_each_generation.csv', 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
+    def save_parents(self, gen_count, individuals_new_generation, parents_names):
+        for individual, (parent_1, parent_2, parent_1_split, parent_2_split) in zip(individuals_new_generation, parents_names):
+            # parent_1_split and parent_2_split are the idx where the chromosomes are split up
+            row = [f'Generation: {gen_count}', f'Parent_1: ({parent_1}, {parent_1_split})',
+                   f'Parent_2: ({parent_2}, {parent_2_split})', f'New_Individual: {individual}']
+            with open(self.results_dir / r'crossover_parents.csv', 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(row)
+
     def save_chromosomes(self, population_genotype: list, population_phenotype: list, population_phenotype_tflite: list,
                          chromosome_names: list, gen_count: int) -> None:
         # create generation dir
@@ -55,32 +75,38 @@ class Saver:
             # convert tflite model to C-array
             subprocess.call("xxd -i " + str(p / "model_tflite_untrained.tflite") + " > " + str(p / "model_c_array_untrained.cc"), shell=True)
 
-    @staticmethod
-    def _save_chromosome_genotype(chromosome, path):
-        with open(path / 'chromosome.json', 'w') as f:
-            json.dump(chromosome, f, indent=2)
+    def create_generation_dir(self, individuals: dict, gen_count: int) -> None:
+        # create generation dir
+        os.mkdir(self._get_path(gen_count))
 
-    @staticmethod
-    def _save_chromosome_phenotype(model_untrained, model_tflite_untrained, path):
-        model_untrained.save(path / "model_untrained.h5")
+        # generate individual dir (without chromosome)
+        for name in individuals.keys():
+            p = self._get_path(gen_count, name)
+            os.mkdir(p)
 
-        with open(path / 'model_tflite_untrained.tflite', 'wb') as f:
+    def save_population_genotype(self, individuals: dict, gen_count) -> None:
+        for name in individuals.keys():
+            p = self._get_path(gen_count, name)
+            self._save_chromosome_genotype(individuals[name]['genotype'], p)
+
+    def save_population_phenotype(self, name: dict, gen_count, model_untrained) -> None:
+        p = self._get_path(gen_count, name)
+        p = p / "models"
+        os.mkdir(p)
+
+        model_untrained.save(p / "model_untrained.h5")
+
+    def save_population_phenotype_tflite(self, name: str, gen_count, model_tflite_untrained) -> None:
+        p = self._get_path(gen_count, name)
+        p = p / "models"
+        if not os.path.exists(p):
+            os.mkdir(p)
+
+        with open(p / 'model_tflite_untrained.tflite', 'wb') as f:
             f.write(model_tflite_untrained)
 
-    def save_best_individual(self, gen_count, best_individual):
-        row = [f'Generation_{gen_count}', best_individual[0], best_individual[1]]
-        with open(self.results_dir / r'best_individual_each_generation.csv', 'a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(row)
-
-    def save_parents(self, gen_count, individuals_new_generation, parents_names):
-        for individual, (parent_1, parent_2, parent_1_split, parent_2_split) in zip(individuals_new_generation, parents_names):
-            # parent_1_split and parent_2_split are the idx where the chromosomes are split up
-            row = [f'Generation: {gen_count}', f'Parent_1: ({parent_1}, {parent_1_split})',
-                   f'Parent_2: ({parent_2}, {parent_2_split})', f'New_Individual: {individual}']
-            with open(self.results_dir / r'crossover_parents.csv', 'a', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(row)
+        # convert tflite model to C-array
+        subprocess.call("xxd -i " + str(p / "model_tflite_untrained.tflite") + " > " + str(p / "model_c_array_untrained.cc"), shell=True)
 
 
 

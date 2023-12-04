@@ -63,3 +63,12 @@ class SincConv1D(tf.keras.layers.Layer):
         # Apply 1D convolution with the Sinc kernel
         outputs = tf.nn.conv1d(inputs, self.kernel, stride=1, padding='SAME')
         return outputs
+    
+    def get_config(self):
+        config = super(SincConv1D, self).get_config()
+        config.update({
+            'num_filters': self.num_filters,
+            'kernel_size': self.kernel_size,
+            'cutoff': self.cutoff
+        })
+        return config

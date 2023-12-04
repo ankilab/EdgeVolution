@@ -86,7 +86,6 @@ def init_ppk2(ppk_serial:str, timeout_in_s = 10):
             _ppk2.get_modifiers(); time.sleep(0.1)
             _ppk2.use_ampere_meter(); time.sleep(0.1)  # set ampere meter mode
             _ppk2.set_source_voltage(3300); time.sleep(0.1) # set source voltage
-            _ppk2.toggle_DUT_power("OFF"); time.sleep(0.1)  # disable DUT power
             _ppk2.toggle_DUT_power("ON"); time.sleep(0.1)  # enable DUT power
 
             # start measuring
@@ -122,6 +121,10 @@ def _timeout_handler(signal_number, current_stack):
 
     raises: Exception
     """
+    ppk2.stop_measuring()
+    time.sleep(1)
+    del ppk2
+    time.sleep(3)
 
     raise Exception(f"end of time; signal number: {signal_number}, current stack: {current_stack}")
 
@@ -162,19 +165,26 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow(['Power Consumption'])
 
+        nb_tries = 0
         while True:
             try:
                 # define a timeout for get_data method in [s] to avoid being stucked in an endless loop
-                signal.alarm(5)
+                signal.alarm(10)
 
                 # call get_data and try to receive data from PPK2
                 try:
                     read_data = _ppk2.get_data()
                 except Exception as e:
+                    nb_tries += 1
                     print(f"Error when calling get_data: {str(e)}")
                     with open(error_log_path, 'a') as file:
                         file.write(f"10010: Error when calling get_data: {str(e)} \n")
-                    continue
+                    if nb_tries < 100:
+                        continue
+                    else:
+                        with open(error_log_path, 'a') as file:
+                            file.write(f"10010: Tried to call get_data 100 times, but failed. Stopping power measurement. \n")
+                        break
 
                 # if data is read
                 if read_data != b'':
@@ -183,18 +193,11 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
                     samples, _ = _ppk2.get_samples(read_data)
 
                     # write averaged samples to csv file
-                    for ii in range(0, len(samples), nb_samples_average):
-                        writer.writerow([np.mean(samples[ii:ii + nb_samples_average])])
+                    for ii in range(0, len(samples)):
+                        writer.writerow([np.mean(samples[ii])])
             except:
                 print("Get data is not working")
-                # init ppk again. serial should be valid
-                _ppk2.stop_measuring()
-                time.sleep(5)
-                _ppk2 = init_ppk2(ppk_serial)
 
-                if _ppk2 is None:
-                    raise RuntimeError("ppk initialization returns None, this might be due to not having a ppk serial number associated")
-                time.sleep(1)
                 continue
 
             i = i + 1
@@ -202,6 +205,7 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
             # check stopping criterion if exists
             if max_iterations is not None:
                 if i > max_iterations:
+                    print("max iterations reached. breaking")
                     break
             else:
 
@@ -278,7 +282,7 @@ if __name__ == "__main__":
 
     # initializing connection and starting to measure
     ppk2 = init_ppk2(args.ppk_serial)
-    time.sleep(2)
+    time.sleep(3)
 
     # if ppk_serial is "None", no connection is expected, thus ppk2 is also None.
     if ppk2 is not None:
@@ -286,5 +290,8 @@ if __name__ == "__main__":
         measure_power_nrf(ppk2, args.save_dir,args.board_snr, args.ppk_serial, int(args.nb_samples_average),1000)
 
         # stop measuring
-        time.sleep(2)
         stop_measuring(ppk2)
+
+        time.sleep(1)
+        del ppk2
+        time.sleep(3)

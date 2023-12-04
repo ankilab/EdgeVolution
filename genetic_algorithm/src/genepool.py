@@ -105,10 +105,11 @@ class GenePool:
             with open(path + chromosome_2_name + '/chromosome.json') as f:
                 chromosome_2 = json.loads(f.read())
 
-            try:
-                new_chromosome, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
-            except:
-                continue
+            #try:
+            new_chromosome, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
+            #except Exception as e:
+                #print(e)
+                #continue
 
             if new_chromosome is not None:
                 new_population.append(new_chromosome)
@@ -143,8 +144,8 @@ class GenePool:
             rule_set_is_violated = self._check_rule_set_violation(chromosome_1[chr_1_split], chromosome_2[chr_2_split + 1])
             if not rule_set_is_violated:
                 break
-            elif i == 100:  # no split found --> chromosomes are not crossable
-                return None
+            elif i == 1000:  # no split found --> chromosomes are not crossable
+                return None, None, None
             else:
                 chr_1_split = np.random.randint(idx_start_1, idx_end_1)
                 chr_2_split = np.random.randint(idx_start_2, idx_end_2)
@@ -156,23 +157,27 @@ class GenePool:
         # otherwise take it from the second chromosome
         if np.random.randint(0, 100, 1) < 50:
             new_chromosome += chromosome_1[idx_end_1::]
-            new_chromosome = self.check_if_GAP_GMP_1D_or_2D(new_chromosome, idx_end_1)
         else:
             new_chromosome += chromosome_2[idx_end_2::]
-            new_chromosome = self.check_if_GAP_GMP_1D_or_2D(new_chromosome, idx_end_2)
+
+        # check if GAP or GMP is followed by a 1D or 2D layer and change it if necessary
+        new_chromosome = self.check_if_GAP_GMP_1D_or_2D(new_chromosome)
 
         return new_chromosome, chr_1_split, chr_2_split+1
     
-    def check_if_GAP_GMP_1D_or_2D(self, chromosome, idx_gap_gmp):
+    def check_if_GAP_GMP_1D_or_2D(self, chromosome):
         """ 
         Check if GAP or GMP is followed by a 1D or 2D layer and change it if necessary. 
         """
+        idx_gap_gmp = self._get_flatten_gap_gmp_index(chromosome)
         if '2D' in chromosome[idx_gap_gmp - 1]['layer'] and '1D' in chromosome[idx_gap_gmp]['layer']:
             chromosome[idx_gap_gmp]['layer'] = chromosome[idx_gap_gmp]['layer'].replace('1D', '2D')
             chromosome[idx_gap_gmp]['f_name'] = chromosome[idx_gap_gmp]['f_name'].replace('1D', '2D')
-        elif '1D' in chromosome[idx_gap_gmp - 1]['layer']  and '2D' in chromosome[idx_gap_gmp]['layer']:
+            print("Changed GAP/GMP to 2D. Chromosome:", chromosome)
+        elif '1D' in chromosome[idx_gap_gmp - 1]['layer'] and '2D' in chromosome[idx_gap_gmp]['layer']:
             chromosome[idx_gap_gmp]['layer'] = chromosome[idx_gap_gmp]['layer'].replace('2D', '1D')
             chromosome[idx_gap_gmp]['f_name'] = chromosome[idx_gap_gmp]['f_name'].replace('2D', '1D')
+            print("Changed GAP/GMP to 1D. Chromosome:", chromosome)
 
         return chromosome
 

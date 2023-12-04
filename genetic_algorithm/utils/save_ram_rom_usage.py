@@ -1,7 +1,9 @@
 import json
+import os
 
 
 def save_ram_rom_usage(build_path: str, results_path: str):
+
     # get RAM usage
     with open(build_path + "/ram.json") as f:
         ram_usage = json.loads(f.read())["total_size"]
