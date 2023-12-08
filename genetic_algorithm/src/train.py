@@ -114,9 +114,10 @@ early_stopping = tf.keras.callbacks.EarlyStopping(
     monitor='val_accuracy',
     mode='max',
     min_delta=0.01,
-    patience=2,
-    restore_best_weights=True
-)
+    patience=10,
+    verbose=1,
+    restore_best_weights=True)
+
 
 lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=daliac_scheduler, verbose=0)
 callbacks = [lr_callback, model_checkpoint_callback, early_stopping]
@@ -132,8 +133,10 @@ print("Training model...")
 history = model.fit(ds_train,
                     validation_data=ds_val,
                     callbacks=callbacks,
-                    verbose=0,
+                    #verbose=0,
                     epochs=args.nb_epochs)
+
+print("Training finished!")
 
 #########################################################################################
 # Save training history

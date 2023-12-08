@@ -28,5 +28,13 @@ class Loader:
             population_genotype.append(chromosome)
         return population_genotype
 
+    def load_individuals(self):
+        individuals = {}
+        for individual in os.listdir(self.gen_path):
+            with open(self.gen_path / str(individual) / 'chromosome.json') as f:
+                chromosome = json.loads(f.read())
+            individuals[individual] = {'genotype': chromosome}
+        return individuals
+
     def get_gen_start(self) -> int:
-        return int(self.generation) + 1
+        return int(self.generation)

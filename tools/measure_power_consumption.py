@@ -44,8 +44,7 @@ def get_ppk_port(ppk_serial:str):
         raise RuntimeError(f"There is more than one ppk with serial number {ppk_serial} connected")
 
 
-
-def init_ppk2(ppk_serial:str, timeout_in_s = 10):
+def init_ppk2(ppk_serial: str, timeout_in_s=10):
     """ 
     init_ppk2 initializes the ppk and starts measuring.
 
@@ -192,9 +191,9 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
                     # get samples 
                     samples, _ = _ppk2.get_samples(read_data)
 
-                    # write averaged samples to csv file
+                    # write samples to csv file
                     for ii in range(0, len(samples)):
-                        writer.writerow([np.mean(samples[ii])])
+                        writer.writerow([samples[ii]])
             except:
                 print("Get data is not working")
 

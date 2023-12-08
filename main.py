@@ -58,7 +58,6 @@ def main(continue_from=None, optimize_accuracy_only=None):
 
         # wait for the process to finish
         process.join()
-        process.terminate()
 
         # determine the fitness for each model and select the best ones
         my_ga.selection()

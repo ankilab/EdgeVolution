@@ -35,18 +35,18 @@ classes_filter: [] #[0, 2, 6, 8]  # List of classes used for optimization
 
 # EvoNAS hyper-parameters
 nb_generations: 20  # Number of generations
-population_size: 200  # Population size
-nb_best_models_crossover: 50  # Number of models used for crossover
-mutation_rate: 20  # Mutation rate (units: percent)
+population_size: 100  # Population size
+nb_best_models_crossover: 25  # Number of models used for crossover
+mutation_rate: 15  # Mutation rate (units: percent)
 max_nb_feature_layers: 25  # Max number of layers before GAP, GMP, or Flatten
 max_nb_classification_layers: 10  # Max number of layers after GAP, GMP, or Flatten
 path_gene_pool: gene_pool.txt  # File path for gene pool
 path_rule_set: rule_set.txt  # File path for rule set
-power_measurement_nb_samples_average: 1000  # Number of samples for power measurement averaging
+power_measurement_nb_samples_average: 50  # Number of samples for power measurement averaging
 power_measurement_threshold: 4000  # Power measurement threshold (units: uA)
 
 # DNN training hyper-parameters
-nb_epochs: 300  # Number of epochs
+nb_epochs: 200  # Number of epochs
 min_free_space_gpu: 3000000000  # Minimum free space on GPU (units: bytes)
 
 # Constraints

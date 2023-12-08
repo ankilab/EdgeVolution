@@ -1,5 +1,4 @@
 import os.path
-import signal
 from subprocess import Popen
 
 import pandas as pd
@@ -9,8 +8,6 @@ import numpy as np
 import time
 import subprocess
 import nvidia_smi
-import tensorflow as tf
-from multiprocessing import Pool
 from tqdm import tqdm
 import copy
 
@@ -35,14 +32,11 @@ class GeneticAlgorithm:
         self.my_gene_pool = GenePool(params)
 
         # define all variables that change after each generation
-        #if loader is None:
-            #self.population_genotype: list = []  # dicts containing all individuals with its properties
-        #else:
-            # load all genotypes --> each of them will get a new name but that's the easiest solution I found for now
-            #self.population_genotype: list = loader.load_population_genotype()
+        if loader is None:
+            self.individuals: dict = {}
+        else:
+            self.individuals: dict = loader.load_individuals()
 
-        # randomly created names for all individuals within one generation
-        self.individuals: dict = {}
         self.generation_counter: int = 0  # information in which generation we are currently
 
     def init_first_generation(self):
@@ -226,6 +220,9 @@ class GeneticAlgorithm:
 
             threshold = self.params["power_measurement_threshold"]
 
+            # omit the first 10k values as they are not stable
+            values = values[10000:]
+
             values_averaged = pd.Series(values).rolling(self.params["power_measurement_nb_samples_average"]).mean()
 
             start = np.where(values_averaged > threshold)[0][0]
@@ -271,6 +268,10 @@ class GeneticAlgorithm:
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
             print(f"Evaluate energy of {individual} (index: {idx})")
 
+            # error log 
+            error_log_path = path + individual + '/error_log.txt'
+
+
             # flash tflite model on individual board
             if len(self.params["boards"]) > 0:
                 for board in self.params["boards"]:
@@ -280,10 +281,17 @@ class GeneticAlgorithm:
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)
                     ppk2 = init_ppk2(board["ppk"])
+                    time.sleep(1)  # --> important to wait a bit before flashing the model
 
                     # flash tflite model on board
-                    subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
-                    time.sleep(1)
+                    try:
+                        subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
+                    except Exception as e:
+                        with open(error_log_path, 'a') as f:
+                            f.write(f"Error when flashing model on board {board['snr']} - exception: {str(e)}.\n")
+                    
+                    # wait for the board to boot
+                    time.sleep(2)
 
                     # save RAM and ROM usage to results.json (available after the project was built)
                     save_ram_rom_usage("tflite/build-" + board["model"], path + individual + "/" + "results.json")
@@ -311,7 +319,9 @@ class GeneticAlgorithm:
                     try:
                         proc_inference.wait()
                     except Exception as e:
-                        print(str(e))
+                        # save error log
+                        with open(error_log_path, 'a') as f:
+                            f.write(f"Error when measuring inference time on board {board['snr']}.\n")
 
                     # if no ppk connected, measuring the power consumption is not possible
                     if proc_energy is not None:
@@ -319,13 +329,17 @@ class GeneticAlgorithm:
                         try:
                             proc_energy.wait(timeout=10)
                         except Exception as e:
-                            print(str(e))
+                            # save error log
+                            with open(error_log_path, 'a') as f:
+                                f.write(f"Error when measuring energy consumption on board {board['snr']}.\n")
 
                         try:
                             # calculate energy consumption
                             self.calculate_energy_consumption(board["snr"], path + individual)
                         except Exception as e:
-                            print(str(e))
+                            # save error log
+                            with open(error_log_path, 'a') as f:
+                                f.write(f"Error when calculating energy consumption on board {board['snr']}.\n")
                     time.sleep(2)
             else:  # no boards
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')
@@ -381,13 +395,14 @@ class GeneticAlgorithm:
             mutated_chromosome = self.my_gene_pool.mutate_chromosome(chromosome)
             self.individuals[name]["genotype"] = mutated_chromosome
 
-    def _process_model_translation(self, individual_name: str):
+    def _process_model_translation_and_conversion(self, individual_name: str):
         try:
             import tensorflow as tf
             gpus = tf.config.list_physical_devices('GPU')
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
         except:
+            print("Could not set memory growth in function _process_model_translation")
             pass
             
         # translate chromosome to TensorFlow model
@@ -406,22 +421,8 @@ class GeneticAlgorithm:
         except:
             raise ValueError(f"Error when substituting STFT and MAG layers.")
 
-        return {individual_name: model_substituted}
-
-    def _process_model_conversion(self, models_substituted: dict) -> None:
-        individual_name = str(list(models_substituted.keys())[0])
-        model = list(models_substituted.values())[0]
-
         try:
-            import tensorflow as tf
-            gpus = tf.config.list_physical_devices('GPU')
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-        except:
-            pass
-
-        try:
-            tflite_model = convert_to_tflite(model, np.random.uniform(size=(200, self.params["input_shape"][0],
+            tflite_model = convert_to_tflite(model_substituted, np.random.uniform(size=(200, self.params["input_shape"][0],
                                                                             self.params["input_shape"][1])))
         except:
             raise ValueError(f"Error when converting to TFLite")
@@ -440,15 +441,13 @@ class GeneticAlgorithm:
         self.my_saver.save_population_genotype(self.individuals, self.generation_counter)
 
         # convert chromosomes to models and to tflite models in parallel
-        #cpus = os.cpu_count() - 2
-        cpus = 5
+        cpus = os.cpu_count() - 4
+        #cpus = 8
         with get_context("spawn").Pool(cpus) as pool:
-            models_substituted = pool.map(self._process_model_translation, self.individuals)
+            pool.map(self._process_model_translation_and_conversion, self.individuals)
 
-            # translate all chromosomes: genotype (chromosome) --> phenotype (tf.keras.Model)
-            pool.map(self._process_model_conversion, models_substituted)
+        print("Finished translating and converting models")
 
-        del models_substituted
 
     def _generate_individuals_names(self):
         names = []

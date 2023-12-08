@@ -89,7 +89,7 @@ class Saver:
             p = self._get_path(gen_count, name)
             self._save_chromosome_genotype(individuals[name]['genotype'], p)
 
-    def save_population_phenotype(self, name: dict, gen_count, model_untrained) -> None:
+    def save_population_phenotype(self, name: str, gen_count, model_untrained) -> None:
         p = self._get_path(gen_count, name)
         p = p / "models"
         os.mkdir(p)
@@ -106,7 +106,10 @@ class Saver:
             f.write(model_tflite_untrained)
 
         # convert tflite model to C-array
-        subprocess.call("xxd -i " + str(p / "model_tflite_untrained.tflite") + " > " + str(p / "model_c_array_untrained.cc"), shell=True)
+        try:
+            subprocess.call("xxd -i " + str(p / "model_tflite_untrained.tflite") + " > " + str(p / "model_c_array_untrained.cc"), shell=True, timeout=20)
+        except subprocess.TimeoutExpired:
+            print("xxd command timed out")
 
 
 
