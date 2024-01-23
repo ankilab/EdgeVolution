@@ -1,19 +1,32 @@
+from omegaconf import DictConfig
 
+def calculate_fitness(results, cfg: DictConfig):
 
-def calculate_fitness(results, params):
-    a = 0.7  # weight val_acc
-    b = 0.1  # weight rom_usage (flash memory)
-    c = 0.1  # weight inference_time
-    d = 0.1  # weight energy_consumption
-
-    snr = params['boards'][0]['snr']
+    snr = cfg.boards.value[0].snr
     try:
-        fitness = a * results['val_acc'] + \
-                  b * (1 - (results["rom_usage"] / params["max_rom_usage"])) + \
-                  c * (1 - (results["inference_information"][snr] / params["max_inference_time"])) + \
-                  d * (1 - (results["energy_information"][snr] / params["max_energy_consumption"]))
+        acc = results['val_acc']
+        rom_usage = results["rom_usage"]
+        energy_information = results["energy_information"][snr]
+
+        acc_weighted = acc * cfg.hyperparameters.acc_weight.value
+
+        rom_usage_scaled = (cfg.hyperparameters.min_rom_usage.value / rom_usage)
+        if rom_usage_scaled > 1:
+            rom_usage_scaled = 1
+        rom_usage_weighted = rom_usage_scaled * cfg.hyperparameters.rom_usage_weight.value
+        
+        if energy_information == 0:
+            energy_information_scaled = 0
+        else:
+            energy_information_scaled = (cfg.hyperparameters.min_energy_information.value / energy_information)
+            if energy_information_scaled > 1:
+                energy_information_scaled = 1
+
+        energy_information_weighted = energy_information_scaled * cfg.hyperparameters.energy_information_weight.value
+
+        fitness = acc_weighted + rom_usage_weighted + energy_information_weighted
+
         return fitness
-    except:
-        # if a key does not exist, the model was not evaluated correctly --> there was something wrong with the model,
-        # so we omit it for crossover following generations through giving it a bad fitness
-        return -10001
+    except Exception as e:
+        print(f'caught {type(e)}: error in calculate_fitness')
+        return 0
