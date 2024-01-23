@@ -66,7 +66,7 @@ def init_ppk2(ppk_serial: str, timeout_in_s=10):
 
         # init connection
         _ppk2 = PPK2_API(port=connected_ppk2_port); time.sleep(0.1)
-        #_ppk2 = PPK2_MP(port=connected_ppk2_port, buffer_max_size_seconds=2); time.sleep(0.1)
+        #_ppk2 = PPK2_MP(port=connected_ppk2_port, buffer_max_size_seconds=2, buffer_chunk_seconds=1); time.sleep(0.1)
     except Exception as e:
         print(str(e))
 
@@ -88,7 +88,7 @@ def init_ppk2(ppk_serial: str, timeout_in_s=10):
             _ppk2.toggle_DUT_power("ON"); time.sleep(0.1)  # enable DUT power
 
             # start measuring
-            _ppk2.start_measuring(); time.sleep(0.1) 
+            _ppk2.start_measuring(); time.sleep(0.1)
 
             # breaking if successful
             break
@@ -128,7 +128,7 @@ def _timeout_handler(signal_number, current_stack):
     raise Exception(f"end of time; signal number: {signal_number}, current stack: {current_stack}")
 
 
-def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:str, nb_samples_average: int, max_iterations=None):
+def measure_power_nrf(_ppk2: PPK2_API, save_dir: str, board_snr: str, ppk_serial: str, nb_samples_average: int, max_iterations=None):
     """ 
     measure_power_nrf measures the power consumption and saves all values to a .csv file at the given location. 
     
@@ -168,7 +168,7 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
         while True:
             try:
                 # define a timeout for get_data method in [s] to avoid being stucked in an endless loop
-                signal.alarm(10)
+                signal.alarm(5)
 
                 # call get_data and try to receive data from PPK2
                 try:
@@ -178,7 +178,7 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
                     print(f"Error when calling get_data: {str(e)}")
                     with open(error_log_path, 'a') as file:
                         file.write(f"10010: Error when calling get_data: {str(e)} \n")
-                    if nb_tries < 100:
+                    if nb_tries < 50:
                         continue
                     else:
                         with open(error_log_path, 'a') as file:
@@ -223,7 +223,7 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
                                 # 50 more iterations will be measured until we leave the while loop
                                 print("read the inference information, now iterating 20 times more")
                                 i = 0
-                                max_iterations = 50
+                                max_iterations = 20
                     except Exception as e:
                         print(str(e))
                         with open(error_log_path, 'a') as file:
@@ -231,7 +231,7 @@ def measure_power_nrf(_ppk2:PPK2_API, save_dir: str, board_snr:str, ppk_serial:s
             time.sleep(0.1)
 
 
-def stop_measuring(_ppk2:PPK2_API, timeout_in_s = 10):
+def stop_measuring(_ppk2: PPK2_API, timeout_in_s=2):
     """ 
     stop_measuring stops measuring the ppk trying it for timeout_in_s.
 
@@ -274,7 +274,7 @@ if __name__ == "__main__":
     parser.add_argument('save_dir', nargs='?', default='./tflite', help="directory where to save the csv file, read result.json and optionally save error log text file")
     parser.add_argument('board_snr', nargs='?', default=None, help="snr of board connected to ppk to map measured data to a specific board")
     parser.add_argument('ppk_serial', nargs='?', default=None, help="serial number of the power profiler that is connected to the board to be measured or 'None' if no ppk connected.")
-    parser.add_argument('nb_samples_average', nargs='?', default="2000", help="window size of average sampling ")
+    parser.add_argument('nb_samples_average', nargs='?', default="50", help="window size of average sampling ")
 
     # parse arguments
     args = parser.parse_args()
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     # if ppk_serial is "None", no connection is expected, thus ppk2 is also None.
     if ppk2 is not None:
         # writing measures to csv file
-        measure_power_nrf(ppk2, args.save_dir,args.board_snr, args.ppk_serial, int(args.nb_samples_average),1000)
+        measure_power_nrf(ppk2, args.save_dir, args.board_snr, args.ppk_serial, int(args.nb_samples_average), None)
 
         # stop measuring
         stop_measuring(ppk2)

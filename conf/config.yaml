@@ -1,0 +1,346 @@
+hyperparameters:  
+
+  ### General parameters:
+  dataset_name:
+    value: ???
+    unit: null 
+    icon: "material-symbols:dataset-outline"
+    displayname: "Dataset"
+    group: "Training parameters"
+    description: "The name of the dataset."
+    display: true
+
+  input_shape:
+    value: ???
+    unit: null 
+    icon: "uil:square-shape"
+    displayname: "Input shape"
+    group: "Training parameters"
+    description: "Dimensions of the input data that is fed into the models."
+    display: true
+
+  num_classes:
+    value: ???
+    unit: null 
+    icon: "octicon:number-24"
+    displayname: "Number of classes"
+    group: "Training parameters"
+    description: "The number of classes in the dataset."
+    display: true
+
+  sample_rate:
+    value: ???  # Sample rate (units: Hz)
+    unit: Hz  # Sample rate unit
+    icon: "uil:heart-rate"
+    displayname: "Sample rate"
+    group: "Training parameters"
+    description: "The number of samples taken per second in the chosen dataset."
+    display: true
+
+  git_sha:
+    value: "No Git SHA provided. Should be set when executing the code."
+    unit: null 
+    icon: "devicon-plain:git"
+    displayname: "Git SHA"
+    group: "Run information"
+    description: "The specific Git commit hash or identifier representing a snapshot of the codebase used in an evolutionary neural architecture search algorithm."
+    display: true
+
+  ### Experiment parameters:
+  experiment_description:
+    value: "No description provided."
+    unit: null 
+    icon: "fluent:text-description-20-filled"
+    displayname: "Experiment description"
+    group: "Run information"
+    description: "A description of the experiment."
+    display: true
+
+
+  ### DNN hyper-parameters:
+  top_activation:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Top activation"
+    group: "Training parameters"
+    description: "The activation function used for the last layer of each candidate network."
+    display: true
+
+  num_epochs:
+    value: ???
+    unit: null 
+    icon: "akar-icons:arrow-cycle"
+    displayname: "Number of epochs"
+    group: "Training parameters"
+    description: "Number of complete iterations through the entire training dataset during the model training process"
+    display: true
+
+  batch_size:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Batch size"
+    group: "Training parameters"
+    description: "The number of training samples utilized in one iteration of the model training process."
+    display: true
+
+  lr_scheduler:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Learning rate scheduler"
+    group: "Training parameters"
+    description: "The learning rate scheduler used to train the model."
+    display: true
+
+  optimizer:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Optimizer"
+    group: "Training parameters"
+    description: "The optimizer used to train the model."
+    display: true
+
+  loss:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Loss function"
+    group: "Training parameters"
+    description: "The loss function used to train the model."
+    display: true
+
+  metrics:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Metrics"
+    group: "Training parameters"
+    description: "The metrics used to train the model."
+    display: true
+
+
+  ### EvoNAS hyper-parameters:
+  num_generations:
+    value: ???
+    unit: null 
+    icon: "iconoir:tree"
+    displayname: "Generations"
+    group: "Evonas parameters"
+    description: "The total iterations or evolutionary cycles through which the algorithm refines neural architectures."
+    display: true
+
+  population_size:
+    value: ???
+    unit: null 
+    icon: "pepicons-pencil:people"
+    displayname: "Population"
+    group: "Evonas parameters"
+    description: "The quantity of neural network models concurrently evaluated and evolved within each generation."
+    display: true
+
+  num_best_models_crossover:
+    value: ???
+    unit: null 
+    icon: "game-icons:podium-winner"
+    displayname: "Best models crossover"
+    group: "Evonas parameters"
+    description: "The count of top-performing models selected for genetic crossover to generate new offspring."
+    display: true
+
+  mutation_rate:
+    value: ???
+    unit: null 
+    icon: "ph:virus"
+    displayname: "Mutation rate"
+    group: "Evonas parameters"
+    description: "The probability that a given model will be mutated during the evolutionary process."
+    display: true
+
+  ### Fitness
+  max_memory_footprint:
+    value: 1000000 # 1 MB
+    unit: "B" 
+    icon: "fluent:memory-16-regular"
+    displayname: "Max memory footprint"
+    group: "Fitness parameters"
+    description: "The maximum memory footprint of the model."
+    display: true
+
+  min_rom_usage:
+    value: ???
+    unit: "B" 
+    icon: "material-symbols:data-usage"
+    displayname: "Min ROM usage"
+    group: "Fitness parameters"
+    description: "The minimum ROM usage of a model that is deployed to the MCU."
+    display: true
+
+  min_energy_information:
+    value: ???
+    unit: "mJ" 
+    icon: "simple-line-icons:energy"
+    displayname: "Min energy consumption"
+    group: "Fitness parameters"
+    description: "The minimum energy consumption of a model that is deployed to the MCU."
+    display: true
+
+  acc_weight:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Accuracy weight"
+    group: "Fitness parameters"
+    description: "The weight of the accuracy in the fitness function."
+    display: true
+  
+  rom_usage_weight:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "ROM usage weight"
+    group: "Fitness parameters"
+    description: "The weight of the ROM usage in the fitness function."
+    display: true
+
+  energy_information_weight:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Energy information weight"
+    group: "Fitness parameters"
+    description: "The weight of the energy consumption in the fitness function."
+    display: true
+
+
+  ### Search space
+  max_num_feature_layers:
+    value: ???
+    unit: null 
+    icon: "cil:search"
+    displayname: "Max feature layers"
+    group: "Evonas parameters"
+    description: "The maximum number of layers before GAP, GMP, or Flatten."
+    display: true
+  
+  max_num_classification_layers:
+    value: ???
+    unit: null 
+    icon: "ph:tag"
+    displayname: "Max classification layers"
+    group: "Evonas parameters"
+    description: "The maximum number of layers after GAP, GMP, or Flatten."
+    display: true
+
+  # path_search_space:
+  #   value: "search_space.json"
+  #   unit: null 
+  #   icon: "ph:path-bold"
+  #   displayname: "Path search space"
+  #   group: "Filepath parameters"
+  #   description: "The path to the search space file."
+  #   display: true
+
+  path_gene_pool:
+    value: "gene_pool.txt"
+    unit: null 
+    icon: null
+    displayname: "Path gene pool"
+    group: "Filepath parameters"
+    description: "The path to the gene pool file."
+    display: true
+
+  path_rule_set:
+    value: "rule_set.txt"
+    unit: null 
+    icon: null
+    displayname: "Path rule set"
+    group: "Filepath parameters"
+    description: "The path to the rule set file."
+    display: true
+
+  ### Power measurement
+  power_measurement_num_samples_average:
+    value: 50
+    unit: null 
+    icon: "icon-park:average"
+    displayname: "Power measurement samples average"
+    group: "Power measurement parameters"
+    description: "The number of power measurement samples considered for averaging during the deployment of neural architectures on microcontrollers, influencing the accuracy of power consumption measurement."
+    display: true  
+  
+  power_measurement_threshold:
+    value: 4000
+    unit: "mA" 
+    icon: "ic:outline-power"
+    displayname: "Power measurement threshold"
+    group: "Power measurement parameters"
+    description: "The threshold value for power consumption measurement."
+    display: true
+
+  ### Others
+  classes_filter:
+    value: ???
+    unit: null 
+    icon: "bi:collection-play"
+    displayname: "Classes filter"
+    group: "Training parameters"
+    description: "The classes to be used for training and testing."
+    display: true
+
+  min_free_space_gpu:
+    value: ???
+    unit: "B" 
+    icon: "mdi:gpu"
+    displayname: "Min free space GPU"
+    group: "Training parameters"
+    description: "The minimum free space on the GPU before starting training of a new model."
+    display: true
+
+  optimize_for_MCU:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Optimize for MCU"
+    group: "Training parameters"
+    description: "Whether to optimize for MCU or not. If not, models are just optimized for accuracy."
+    display: true
+
+  ### Continue from feature
+  continue_from:
+    value: ???
+    unit: null
+    icon: null
+    displayname: "Continued from the run mentioned in 'value'."
+    group: "Run information"
+    description: "If provided, the run will continue from the run mentioned in 'value' (which is always a list of two [path_to_continue_from, generation_to_continue_from])"
+    display: true
+
+### Microcontroller boards
+boards:
+  value: ???
+  unit: null
+  icon: "jam:microchip"
+  displayname: "Boards"
+  group: "Run information"
+  description: "The target microcontroller hardware configurations, including model specifications, serial number (snr), and power profiler kit identifier (ppk) with associated values for deployment."
+  display: true
+
+### Placeholder for results
+results:
+  - memory_footprint_h5: {}
+  - memory_footprint_tflite: {}
+  - memory_footprint_c_array: {}
+  - ram_usage: {}
+  - rom_usage: {}
+  - inference_information: {}
+  - tensorsize_information: {}
+  - energy_information: {}
+  - mean_power_information: {}
+  - val_acc: {}
+  - fitness: {}
+  - error: false
+
+fitness_function: {}

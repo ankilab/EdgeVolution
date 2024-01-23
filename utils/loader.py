@@ -1,12 +1,12 @@
 from pathlib import Path
 import json
 import os
-
+from omegaconf import DictConfig
 
 class Loader:
-    def __init__(self, continue_from: dict):
-        self.ga_run = continue_from['continue_from_ga_run']
-        self.generation = continue_from['continue_from_generation']
+    def __init__(self, continue_from: list):
+        self.ga_run = continue_from[0]
+        self.generation = continue_from[1]
         self.ga_path = Path("Results/" + self.ga_run)
         self.gen_path = self.ga_path / f"Generation_{self.generation}"
 

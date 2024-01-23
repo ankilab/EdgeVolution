@@ -1,0 +1,4 @@
+value:
+  - model: "nrf5340dk_nrf5340_cpuapp"  # Board model
+    snr: "1050006605"  # Serial number
+    ppk: None  # PPK (Power Profiling Kit) serial number (unit: N/A)

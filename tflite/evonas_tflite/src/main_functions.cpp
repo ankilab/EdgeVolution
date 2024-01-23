@@ -32,6 +32,9 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/gpio.h>
 
+#include <chrono>
+#include <thread>
+
 #define LED0_NODE DT_ALIAS(led0)
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
@@ -121,10 +124,13 @@ __attribute__((optimize(0))) void setup(void)
 	while (!dtr) {
 		uart_line_ctrl_get(dev, UART_LINE_CTRL_DTR, &dtr);
 		/* Toggle LED until DTR flag was set. */
-		gpio_pin_toggle_dt(&led);		
+		gpio_pin_toggle_dt(&led);	
 		/* Give CPU resources to low priority threads. */
 		k_sleep(K_MSEC(100));
 	}
+
+	/* Turn LED on to indicate that DTR flag was set */
+	gpio_pin_set_dt(&led, 1);	
 
 	printk("connected \n");
 
@@ -208,34 +214,54 @@ __attribute__((optimize(0))) void setup(void)
 	int64_t time_stamp;
 	int64_t milliseconds_spent;
 
-
-	// start time measurement
-	time_stamp = k_uptime_get();
+	k_sleep(K_MSEC(100));
 	printk("now invoking...\n");
 
+	// run invoke one time
+	// start time measurement
+	time_stamp = k_uptime_get();
+	
 	TfLiteStatus invoke_status = interpreter->Invoke();
 	if (invoke_status != kTfLiteOk) {
-			printk("Invoke error\n");
-			return;
+		printk("Invoke error\n");
+		return;
 	}
 
 	milliseconds_spent = k_uptime_delta(&time_stamp);
-	all_times += milliseconds_spent;
+
+	if (milliseconds_spent >= 200) {
+		// just pass by as we need no averaging
+	}
+	else{
+		size_t n_iterations = 10;
+
+		for (size_t i = 0; i < n_iterations; i++){
+			time_stamp = k_uptime_get();	
+
+			TfLiteStatus invoke_status = interpreter->Invoke();
+			if (invoke_status != kTfLiteOk) {
+				printk("Invoke error\n");
+				return;
+			}
+			milliseconds_spent = k_uptime_delta(&time_stamp);
+			all_times += milliseconds_spent;
+		}
+
+		// divide by 10 to get average time
+		milliseconds_spent = all_times / n_iterations;
+	}
+
 	printk("Time: %d\n", (int32_t)(milliseconds_spent));
 	printk("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
 	k_sleep(K_SECONDS(5));
 
-
-
 	delete[] op_resolver;
 
-
+	usb_disable();
 }
 
 /* The name of this function is important for Arduino compatibility. */
 void loop(void)
 {	
-
-
-
+	k_sleep(K_FOREVER);
 }

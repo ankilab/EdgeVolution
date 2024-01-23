@@ -1,0 +1,92 @@
+{
+    "gene_pool": [
+        {"layer": "C_1D", "f_name": "Conv1D", "exclude": false, "group": "Feature Extraction 1D", "filters": [4, 32, 1], "kernel_size": [1, 5, 1], "strides": [1, 2, 1], "padding": ["same"]},
+        {"layer": "DC_1D", "f_name": "DepthwiseConv1D", "exclude": false, "group": "Feature Extraction 1D", "kernel_size": [1, 5, 1], "strides": [1, 2, 1], "padding": ["same"]},
+        {"layer": "MP_1D", "f_name": "MaxPooling1D", "exclude": false, "group": "Feature Extraction 1D", "pool_size": [2, 4, 1], "padding": ["same"]},
+        {"layer": "AP_1D", "f_name": "AveragePooling1D", "exclude": false, "group": "Feature Extraction 1D", "pool_size": [2, 4, 1], "padding": ["same"]},
+        {"layer": "R_1D", "f_name": "Activation", "exclude": false, "group": "Feature Extraction 1D", "activation": ["relu"]},
+        {"layer": "SW_1D", "f_name": "Activation", "exclude": true, "group": "Feature Extraction 1D", "activation": ["swish"]},
+        {"layer": "G_1D", "f_name": "Activation", "exclude": true, "group": "Feature Extraction 1D", "activation": ["gelu"]},
+        {"layer": "BN_1D", "f_name": "BatchNormalization()", "exclude": false, "group": "Feature Extraction 1D"},
+        {"layer": "SincConv_1D", "f_name": "SincConv1D", "exclude": true, "group": "Feature Extraction 1D", "num_filters": [8, 128, 8], "kernel_size": [8, 128, 8], "cutoff": [0.2, 4, 0.2]},
+        {"layer": "IN_1D", "f_name": "InstanceNormalization()", "exclude": true, "group": "Feature Extraction 1D"},
+        
+        {"layer": "GAP_1D", "f_name": "GlobalAveragePooling1D()", "exclude": false, "group": "Global Pooling 1D"},
+        {"layer": "GMP_1D", "f_name": "GlobalMaxPooling1D()", "exclude": false, "group": "Global Pooling 1D"},
+
+        {"layer": "STFT_2D", "f_name": "STFT", "exclude": false, "group": "Preprocessing 2D", "n_fft": [64, 512, 16], "hop_length": [64, 396, 16], "input_data_format": ["channels_last"], "output_data_format": ["channels_last"]},
+        {"layer": "MAG_2D", "f_name": "Magnitude()", "exclude": false, "group": "Preprocessing 2D"},
+        {"layer": "FB_2D", "f_name": "get_filterbank_layer", "exclude": false, "group": "Preprocessing 2D", "type": ["mel"], "n_mels": [32, 96, 4], "mel_f_min": [0, 0, 1], "mel_f_max": [90, 90, 1], "output_data_format": ["channels_last"]},
+        {"layer": "MAG2DEC_2D", "f_name": "MagnitudeToDecibel()", "exclude": false, "group": "Preprocessing 2D"},
+        
+        {"layer": "C_2D", "f_name": "Conv2D", "exclude": false, "group": "Feature Extraction 2D", "filters": [4, 32, 1], "kernel_size": [1, 5, 1], "strides": [1, 2, 1], "padding": ["same"]},
+        {"layer": "DC_2D", "f_name": "DepthwiseConv2D", "exclude": false, "group": "Feature Extraction 2D", "kernel_size": [1, 5, 1], "strides": [1, 2, 1], "padding": ["same"]},
+        {"layer": "MP_2D", "f_name": "MaxPooling2D", "exclude": false, "group": "Feature Extraction 2D", "pool_size": [2, 4, 1], "padding": ["same"]},
+        {"layer": "AP_2D", "f_name": "AveragePooling2D", "exclude": false, "group": "Feature Extraction 2D", "pool_size": [2, 4, 1], "padding": ["same"]},
+        {"layer": "R_2D", "f_name": "Activation", "exclude": false, "group": "Feature Extraction 2D", "activation": ["relu"]},
+        {"layer": "SW_2D", "f_name": "Activation", "exclude": true, "group": "Feature Extraction 2D", "activation": ["swish"]},
+        {"layer": "G_2D", "f_name": "Activation", "exclude": true, "group": "Feature Extraction 2D", "activation": ["gelu"]},
+        {"layer": "BN_2D", "f_name": "BatchNormalization()", "exclude": false, "group": "Feature Extraction 2D"},
+        {"layer": "IN_2D", "f_name": "InstanceNormalization()", "exclude": true, "group": "Feature Extraction 2D"},
+        
+        {"layer": "GAP_2D", "f_name": "GlobalAveragePooling2D()", "exclude": false, "group": "Global Pooling 2D"},
+        {"layer": "GMP_2D", "f_name": "GlobalMaxPooling2D()", "exclude": false, "group": "Global Pooling 2D"},
+
+        {"layer": "DO", "f_name": "Dropout", "exclude": false, "group": "Dense", "rate": [0.0, 0.5, 0.1]},
+        {"layer": "D", "f_name": "Dense", "exclude": false, "group": "Dense", "units": [8, 128, 8], "activation": ["relu"]},
+
+        {"layer": "FLAT", "f_name": "Flatten()", "exclude": true, "group": "Universal"},
+        {"layer": "NORM", "f_name": "get_norm_layer()", "exclude": true, "group": "Universal"},
+        {"layer": "RES", "f_name": "Resizing", "exclude": true, "group": "Universal", "height": [64, 64, 1], "width": [64, 64, 1]},
+        {"layer": "RESNET_BLOCK", "f_name": "get_resnet_block()", "exclude": true, "group": "Universal", "n_filters": [32, 1024, 32]}
+    ],
+
+    "rule_set": [
+        {"layer": "Start", "allowed_after": ["STFT_2D"], "exclude": false},
+        {"layer": "Start", "allowed_after": ["STFT_2D", "C_1D", "DC_1D"], "exclude": true},
+        {"layer": "Start", "allowed_after": ["C_1D", "DC_1D"], "exclude": true}, 
+        {"layer": "Start", "allowed_after": ["STFT_2D", "C_1D", "DC_1D"], "exclude": true},
+        {"layer": "Start", "allowed_after": ["STFT_2D", "C_1D", "DC_1D"], "exclude": true},
+    
+        {"layer": "C_1D", "allowed_after": ["AP_1D", "MP_1D", "BN_1D", "DC_1D", "C_1D", "R_1D", "STFT_2D"], "exclude": false},
+        {"layer": "DC_1D", "allowed_after": ["AP_1D", "MP_1D", "BN_1D", "DC_1D", "C_1D", "R_1D", "STFT_2D"], "exclude": false},
+        {"layer": "MP_1D", "allowed_after": ["BN_1D", "R_1D", "DC_1D", "C_1D", "STFT_2D"], "exclude": false},
+        {"layer": "AP_1D", "allowed_after": ["BN_1D", "R_1D", "DC_1D", "C_1D", "STFT_2D"], "exclude": false},
+        {"layer": "R_1D", "allowed_after": ["AP_1D", "MP_1D", "DC_1D", "C_1D", "STFT_2D"], "exclude": false},
+        {"layer": "BN_1D", "allowed_after": ["AP_1D", "MP_1D", "R_1D", "DC_1D", "C_1D", "STFT_2D"], "exclude": false},
+        {"layer": "SincConv_1D", "allowed_after": ["AP_1D", "MP_1D", "BN_1D", "R_1D", "DC_1D", "C_1D", "STFT_2D"], "exclude": false},
+        {"layer": "IN_1D", "allowed_after": ["AP_1D", "MP_1D", "R_1D", "DC_1D", "C_1D"], "exclude": true},
+
+        {"layer": "GAP_1D", "allowed_after": ["D", "DO"], "exclude": false},
+        {"layer": "GMP_1D", "allowed_after": ["D", "DO"], "exclude": false},
+    
+        {"layer": "STFT_2D", "allowed_after": ["MAG_2D"], "exclude": false},
+        {"layer": "MAG_2D", "allowed_after": ["C_2D", "DC_2D", "FB_2D", "MAG2DEC_2D"], "exclude": true},
+        {"layer": "MAG_2D", "allowed_after": ["FB_2D"], "exclude": false},
+        {"layer": "FB_2D", "allowed_after": ["C_2D", "DC_2D", "MAG2DEC_2D"], "exclude": false},
+        {"layer": "MAG2DEC_2D", "allowed_after": ["C_2D", "DC_2D"], "exclude": false},
+    
+        {"layer": "C_2D", "allowed_after": ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D", "R_2D"], "exclude": false},
+        {"layer": "DC_2D", "allowed_after": ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D", "R_2D"], "exclude": false},
+        {"layer": "MP_2D", "allowed_after": ["BN_2D", "R_2D", "DC_2D", "C_2D"], "exclude": false},
+        {"layer": "AP_2D", "allowed_after": ["BN_2D", "R_2D", "DC_2D", "C_2D"], "exclude": false},
+        {"layer": "R_2D", "allowed_after": ["AP_2D", "MP_2D", "DC_2D", "C_2D"], "exclude": false},
+        {"layer": "BN_2D", "allowed_after": ["AP_2D", "MP_2D", "R_2D", "DC_2D", "C_2D"], "exclude": false},
+        {"layer": "IN_2D", "allowed_after": ["AP_2D", "MP_2D", "R_2D", "DC_2D", "C_2D"], "exclude": true},
+
+        {"layer": "GAP_2D", "allowed_after": ["D", "DO"], "exclude": false},
+        {"layer": "GMP_2D", "allowed_after": ["D", "DO"], "exclude": false},
+    
+        {"layer": "DO", "allowed_after": ["D"], "exclude": false},
+        {"layer": "D", "allowed_after": ["DO"], "exclude": false},
+    
+        {"layer": "FLAT", "allowed_after": ["D", "DO"], "exclude": true},
+        {"layer": "NORM", "allowed_after": [], "exclude": true},
+        {"layer": "RES", "allowed_after": [], "exclude": true}
+    ], 
+    
+    "rule_set_groups": [
+        {"group": "Feature Extraction 1D", "allowed_after": ["Global Pooling 1D"], "exclude": false},
+        {"group": "Feature Extraction 2D", "allowed_after": ["Global Pooling 2D"], "exclude": false}
+    ]  
+}

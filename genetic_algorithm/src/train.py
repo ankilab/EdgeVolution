@@ -17,8 +17,8 @@ sys.path.insert(0, '../../.')
 from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
 from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
 from genetic_algorithm.utils import norm_layer
-from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
-from datasets.src.dataloader_daliac import DaliacDataLoader
+
+from datasets.load_data import get_datasets
 
 #########################################################################################
 # Some general configuration
@@ -43,9 +43,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--results_dir", type=str)
 parser.add_argument("--gen_dir", type=str)
 parser.add_argument("--individual_dir", type=str)
-parser.add_argument("--nb_epochs", type=int)
 parser.add_argument("--dataset", type=str)
 parser.add_argument("--classes_filter", type=int, nargs="*")
+parser.add_argument("--num_epochs", type=int)
+parser.add_argument("--batch_size", type=int)
+#parser.add_argument("--input_shape", type=int, nargs="*")
 
 args = parser.parse_args()
 #########################################################################################
@@ -54,7 +56,11 @@ args = parser.parse_args()
 #ds_train, ds_val, ds_test = SpeechCommandsDataloader({'input_shape': (6000, 1),
 #                                                      'classes_filter': args.classes_filter}).load_dataset()
 
-ds_train, ds_val, ds_test = DaliacDataLoader().load_dataset()
+params = {#'input_shape': args.input_shape,
+          'input_shape': (2500, 1),
+          'classes_filter': args.classes_filter}
+
+ds_train, ds_val, ds_test = get_datasets(args.dataset, params)
 
 
 #########################################################################################
@@ -76,8 +82,8 @@ model_path = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir +
 model = load_tf_model(model_path)
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              #loss= 'binary_crossentropy',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+              loss= 'binary_crossentropy',
+              #loss=tf.keras.losses.CategoricalCrossentropy(),
               metrics='accuracy')
 
 # callback for saving the best model
@@ -89,11 +95,11 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 
 
 def exp_scheduler(epoch, lr):
-    if epoch < 2:
+    if epoch < 10:
         return 0.001
-    elif epoch < 4:
+    elif epoch < 20:
         return 0.0005
-    elif epoch < 6:
+    elif epoch < 30:
         return 0.0001
     else:
         return lr * np.exp(-0.1)
@@ -119,22 +125,22 @@ early_stopping = tf.keras.callbacks.EarlyStopping(
     restore_best_weights=True)
 
 
-lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=daliac_scheduler, verbose=0)
-callbacks = [lr_callback, model_checkpoint_callback, early_stopping]
+lr_callback = tf.keras.callbacks.LearningRateScheduler(schedule=exp_scheduler, verbose=0)
+callbacks = [lr_callback, model_checkpoint_callback]#, early_stopping]
 
 # train
 print("Training model...")
-# history = model.fit(ds_train.batch(32),
-#                     validation_data=ds_val.batch(32),
-#                     callbacks=callbacks,
-#                     #verbose=0,
-#                     epochs=args.nb_epochs)
-
-history = model.fit(ds_train,
-                    validation_data=ds_val,
+history = model.fit(ds_train.batch(32),
+                    validation_data=ds_val.batch(32),
                     callbacks=callbacks,
                     #verbose=0,
-                    epochs=args.nb_epochs)
+                    epochs=args.num_epochs)
+
+#history = model.fit(ds_train,
+#                    validation_data=ds_val,
+#                    callbacks=callbacks,
+#                    verbose=0,
+#                    epochs=args.num_epochs)
 
 print("Training finished!")
 
@@ -154,12 +160,13 @@ model.load_weights(args.results_dir + "/" + args.gen_dir + "/" + args.individual
 #               metrics='accuracy')
 
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+              #loss=tf.keras.losses.CategoricalCrossentropy(),
+              loss='binary_crossentropy',
               metrics='accuracy')
 
 # TODO: use 200 mel spectrograms as representative dataset
-tflite_model = substitute_tflite_layer(model, (2048, 1))
-tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, 2048, 1)))
+tflite_model = substitute_tflite_layer(model, params['input_shape'])
+tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, params['input_shape'][0], 1)))
 
 # save TFLite model
 path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"

@@ -24,7 +24,7 @@ west build -b $board_type evonas_tflite/ --build-dir build-$board_type
 
 # generate RAM and ROM reports
 #west build --build-dir build-$board_type -t ram_report
-west build --build-dir build-$board_type -t rom_report
+west build --build-dir build-$board_type -t rom_report > /dev/null
 
 # flash the given board
 nrfjprog --eraseall  # this is specific to the nrf boards

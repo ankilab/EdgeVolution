@@ -6,30 +6,31 @@ import subprocess
 import shutil
 from pathlib import Path
 import git
+from omegaconf import OmegaConf, DictConfig
 
 
 class Saver:
     def __init__(self, experiment):
         if not os.path.exists("Results"):
             os.mkdir("Results")
-        self.results_dir = Path(f"Results/ga_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")
+        self.results_dir = Path(f"Results/evonas_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")
         os.mkdir(self.results_dir)
 
         self.random_names = []
 
-    def save_params(self, params):
+    def save_params(self, cfg: DictConfig):
         # get git commit hash and add it to params
         repo = git.Repo(search_parent_directories=True)
         sha = repo.head.object.hexsha
-        params["git_sha"] = sha
+        cfg.hyperparameters.git_sha.value = sha
 
-        # save params.json
-        with open(self.results_dir / 'params.json', 'w') as f:
-            json.dump(params, f, indent=4)
+        with open(self.results_dir / "config.json", "w") as f:
+            cfg_dict = OmegaConf.to_container(cfg)
+            json.dump(cfg_dict, f, indent=4)
 
         # save genepool.txt and rule_set.txt
-        shutil.copyfile(params["path_gene_pool"], self.results_dir / "gene_pool.txt")
-        shutil.copyfile(params["path_rule_set"], self.results_dir / "rule_set.txt")
+        shutil.copyfile(cfg.hyperparameters.path_gene_pool.value, self.results_dir / "gene_pool.txt")
+        shutil.copyfile(cfg.hyperparameters.path_rule_set.value, self.results_dir / "rule_set.txt")
 
     def _get_path(self, gen_count, name=None):
         if name is None:

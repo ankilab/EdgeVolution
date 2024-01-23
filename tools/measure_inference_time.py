@@ -85,7 +85,7 @@ def set_result_value_for_board(board_snr, category, value, results):
     return information 
 
 
-def save_to_dir(board, save_dir, measured_values, tensor_arena_size):
+def save_to_dir(board, save_dir, measured_value, tensor_arena_size):
     """ 
     save_to_dir saves the measured values of the serial connection to the result.json under the key inference_information in the save_dir directory. 
     structure of "inference_information" is expected to be this:
@@ -112,19 +112,11 @@ def save_to_dir(board, save_dir, measured_values, tensor_arena_size):
     # board snr should be unique id that serves as key for the information
     id = board["snr"]
 
-    # format output  
-    try:
-        # measured value will always be length 1 so average will not do anything except unpacking value from list. See FIXME in read_inference_time 
-        inference_time = np.mean(measured_values)
-    except:
-        # FIXME: the [0] needs to be used as currently it provides a list with one element
-        inference_time = measured_values[0]
-
     # append all inference_information (old and new) to the key
-    results["inference_information"] = set_result_value_for_board(id,"inference_information",inference_time, results)
+    results["inference_information"] = set_result_value_for_board(id,"inference_information", measured_value, results)
 
     # append all tensorsize_information (old and new) to the key
-    results["tensorsize_information"] = set_result_value_for_board(id,"tensorsize_information",tensor_arena_size, results)
+    results["tensorsize_information"] = set_result_value_for_board(id,"tensorsize_information", tensor_arena_size, results)
 
     # save it to output
     with open(save_dir + '/results.json', 'w') as f:
@@ -148,39 +140,39 @@ def read_inference_time(board, save_dir = None):
     except RuntimeError as e:
         raise NotImplementedError("add proper handling when the board can not be found")
 
-    measured_values = []
+    measured_value = None
     tensor_arena_size = 0
     if port:
         max_iterations_counter = 0
-        max_iterations = 600
+        max_iterations = 28
 
         # connecting to port
         with serial.Serial(port, 115200, timeout=0) as ser:
 
-            # FIXME: len(measured_values) can never greater than one, and such only reads one measured value. Not sure if intended or bug.
-            while len(measured_values) < 1:
-                time.sleep(0.1)
+            while measured_value is None:
+                time.sleep(0.25)
                 try:
                     # increase stop criterion counter first before reading
                     if max_iterations_counter > max_iterations:
                         print("max iterations reached")
-                        measured_values.append("Max iterations reached")
+                        measured_value = "Max iterations reached"
                         continue  # this avoids the rare case that at max_iterations reached and it reads one value, thus appending two measured values. maybe rethink the whole structure
-
                     else:
                         max_iterations_counter = max_iterations_counter + 1
+                        if max_iterations_counter % 5 == 0:
+                            print(f"max iterations counter: {max_iterations_counter} of {max_iterations}")
 
                     line = ser.readline()
                     if line != b'':
                         if "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
                             print(str(line))
-                            measured_values.append(str(line))
+                            measured_value = str(line)
                         elif "InfTime" in str(line):
                             print("inftime")
                             number = re.findall(r'\d+', str(line))[0]
                             inf_time = int(number)
                             print("read inf time:" + str(inf_time))
-                            measured_values.append(inf_time)
+                            measured_value = inf_time
                         elif "tensorarena" in str(line):
                             tensor_arena_size = int(re.findall(r'\d+', str(line))[0])
                             print(f"tensorarena size captured {tensor_arena_size}")
@@ -189,15 +181,20 @@ def read_inference_time(board, save_dir = None):
 
                 except Exception as e:
                     print(str(e))
-                    pass
+
+            start = time.time()
+            
     else:
-        measured_values.append("Could not find the port of board. Please connect board. ")
+         measured_value = "Could not find the port of board. Please connect board."
+
+    end = time.time()
+    print("elapsed time: " + str(end - start))
 
     # save output to directory or print it
     if save_dir is not None:
-        save_to_dir(board, save_dir,measured_values,tensor_arena_size)
+        save_to_dir(board, save_dir,measured_value, tensor_arena_size)
     else:
-        print(measured_values)
+        print(measured_value)
 
 
 if __name__ == "__main__":

@@ -1,15 +1,16 @@
 from ast import literal_eval
 import numpy as np
 import json
+from omegaconf import DictConfig
 
 
 class GenePool:
-    def __init__(self, params):
-        self.params = params
-        with open(params['path_gene_pool'], "r") as f:
+    def __init__(self, cfg: DictConfig):
+        self.params = cfg.hyperparameters
+        with open(self.params.path_gene_pool.value, "r") as f:
             self.gene_pool = literal_eval(f.read())
 
-        with open(params['path_rule_set'], "r") as f:
+        with open(self.params.path_rule_set.value, "r") as f:
             self.rule_set = literal_eval(f.read())
 
     def get_random_chromosome(self):
@@ -19,7 +20,7 @@ class GenePool:
         gene = self._get_start_gene()
         chromosome = [self._get_gene_with_random_parameters(gene)]
 
-        for _ in range(0, np.random.choice(np.arange(5, self.params['max_nb_feature_layers'] + 1)), 1):
+        for _ in range(0, np.random.choice(np.arange(5, self.params.max_num_feature_layers.value + 1)), 1):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
@@ -41,7 +42,7 @@ class GenePool:
             raise RuntimeError("Couldn't determine if the architecture is 1D or 2D.")
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        for _ in range(0, np.random.choice(np.arange(3, self.params['max_nb_classification_layers'] + 1)), 1):
+        for _ in range(0, np.random.choice(np.arange(3, self.params.max_num_classification_layers.value + 1)), 1):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
@@ -90,14 +91,16 @@ class GenePool:
 
         new_population = []
         parents_names = []
-        while len(new_population) < self.params['population_size']:
+        while len(new_population) < self.params.population_size.value:
             # get random chromosome
-            chromosome_1_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+            #chromosome_1_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+            chromosome_1_name = np.random.choice(fittest_chromosomes)
 
             # get another random chromosome (make sure to not take the same chromosome again)
             chromosome_2_name = chromosome_1_name
             while chromosome_1_name == chromosome_2_name:
-                chromosome_2_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+                #chromosome_2_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+                chromosome_2_name = np.random.choice(fittest_chromosomes)
 
             # load chromosomes
             with open(path + chromosome_1_name + '/chromosome.json') as f:
@@ -106,15 +109,17 @@ class GenePool:
                 chromosome_2 = json.loads(f.read())
 
             #try:
-            new_chromosome, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
+            new_chromosomes, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
             #except Exception as e:
                 #print(e)
                 #continue
 
-            if new_chromosome is not None:
-                new_population.append(new_chromosome)
-                # save both parents names to be able to follow the whole evolutionary process later
-                parents_names.append((chromosome_1_name, chromosome_2_name, chr_1_split, chr_2_split))
+            for new_chromosome in new_chromosomes:
+                if new_chromosome is not None:
+                    new_population.append(new_chromosome)
+
+                    # save both parents names to be able to follow the whole evolutionary process later
+                    parents_names.append((chromosome_1_name, chromosome_2_name, chr_1_split, chr_2_split))
 
         return new_population, parents_names
 
@@ -151,20 +156,23 @@ class GenePool:
                 chr_2_split = np.random.randint(idx_start_2, idx_end_2)
 
         # crossover chromosomes with determined splits
-        new_chromosome = chromosome_1[:chr_1_split+1:] + chromosome_2[chr_2_split+1:idx_end_2:]
+        new_chromosome_1 = chromosome_1[:chr_1_split+1:] + chromosome_2[chr_2_split+1:idx_end_2:]
+        new_chromosome_2 = chromosome_2[:chr_2_split+1:] + chromosome_1[chr_1_split+1:idx_end_1:]
 
-        # 50% chance of taking the 'second' part (i.e., classification layers) of the first chromosome,
-        # otherwise take it from the second chromosome
-        if np.random.randint(0, 100, 1) < 50:
-            new_chromosome += chromosome_1[idx_end_1::]
+        # Randomly choose which end of the chromosome to add to the new chromosome
+        if np.random.randint(0, 2) == 0:
+            new_chromosome_1 += chromosome_1[idx_end_1::]
+            new_chromosome_2 += chromosome_2[idx_end_2::]
         else:
-            new_chromosome += chromosome_2[idx_end_2::]
+            new_chromosome_1 += chromosome_2[idx_end_2::]
+            new_chromosome_2 += chromosome_1[idx_end_1::]
 
         # check if GAP or GMP is followed by a 1D or 2D layer and change it if necessary
-        new_chromosome = self.check_if_GAP_GMP_1D_or_2D(new_chromosome)
+        new_chromosome_1 = self.check_if_GAP_GMP_1D_or_2D(new_chromosome_1)
+        new_chromosome_2 = self.check_if_GAP_GMP_1D_or_2D(new_chromosome_2)
 
-        return new_chromosome, chr_1_split, chr_2_split+1
-    
+        return [new_chromosome_1, new_chromosome_2], chr_1_split, chr_2_split+1
+
     def check_if_GAP_GMP_1D_or_2D(self, chromosome):
         """ 
         Check if GAP or GMP is followed by a 1D or 2D layer and change it if necessary. 
@@ -200,7 +208,7 @@ class GenePool:
     ##################################################################################
     def mutate_chromosome(self, chromosome):
         mutations = ['drop', 'add', 'params']
-        mutation_probability = self.params['mutation_rate']
+        mutation_probability = self.params.mutation_rate.value
 
         idx = 0
         len_chromosome = len(chromosome)

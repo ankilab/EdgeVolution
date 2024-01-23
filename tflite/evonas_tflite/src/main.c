@@ -16,7 +16,7 @@
 
 #include "main_functions.h"
 
-/* Increase number of loops to see full period of the sine curve */
+
 #define NUM_LOOPS 1000
 
 int main(int argc, char *argv[])

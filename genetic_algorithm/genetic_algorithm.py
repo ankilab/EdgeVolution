@@ -10,6 +10,7 @@ import subprocess
 import nvidia_smi
 from tqdm import tqdm
 import copy
+from omegaconf import DictConfig
 
 # from .src.gene_operations import GenePool
 from .src.genepool import GenePool
@@ -26,10 +27,10 @@ from multiprocessing import get_context
 
 
 class GeneticAlgorithm:
-    def __init__(self, params: dict, saver: Saver, loader: Loader = None):
-        self.params = params
+    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None):
+        self.cfg = cfg
         self.my_saver = saver
-        self.my_gene_pool = GenePool(params)
+        self.my_gene_pool = GenePool(cfg)
 
         # define all variables that change after each generation
         if loader is None:
@@ -74,7 +75,7 @@ class GeneticAlgorithm:
             os.remove(c_array_path)
 
             # take only the models into account that are below a certain threshold
-            if memory_footprint_tflite >= self.params['max_memory_footprint']:
+            if memory_footprint_tflite >= self.cfg.hyperparameters.max_memory_footprint.value:
                 # delete individual from dict if it is too big
                 del self.individuals[individual]
 
@@ -91,7 +92,7 @@ class GeneticAlgorithm:
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
-        min_free_space = self.params['min_free_space_gpu']
+        min_free_space = self.cfg.hyperparameters.min_free_space_gpu.value
         procs = []
         individuals_names = list(self.individuals.keys())
         tqdm_bar = tqdm(total=len(individuals_names), desc="Training models")
@@ -108,13 +109,15 @@ class GeneticAlgorithm:
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
                           f'--individual_dir {individuals_names[idx]} ' + \
-                          f'--nb_epochs {self.params["nb_epochs"]} ' + \
-                          f'--dataset {self.params["dataset"]} ' + \
-                          f'--classes_filter ' + ' '.join(str(i) for i in self.params["classes_filter"])
+                          f'--dataset {self.cfg.hyperparameters.dataset_name.value} ' + \
+                          f'--classes_filter ' + ' '.join(str(i) for i in self.cfg.hyperparameters.classes_filter.value) + \
+                          f'--num_epochs {self.cfg.hyperparameters.num_epochs.value} ' + \
+                          f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' #+ \
+                          #f'--input_shape {self.cfg.hyperparameters.input_shape.value} '
                 procs.append(Popen(command, shell=True))
                 idx += 1
                 tqdm_bar.update(1)
-            time.sleep(10)
+            time.sleep(30)
 
         nvidia_smi.nvmlShutdown()
         # make sure to wait until all processes are finished
@@ -218,12 +221,12 @@ class GeneticAlgorithm:
             # get all power consumption measurements
             values = np.asarray(data["Power Consumption"])
 
-            threshold = self.params["power_measurement_threshold"]
+            threshold = self.cfg.hyperparameters.power_measurement_threshold.value
 
             # omit the first 10k values as they are not stable
             values = values[10000:]
 
-            values_averaged = pd.Series(values).rolling(self.params["power_measurement_nb_samples_average"]).mean()
+            values_averaged = pd.Series(values).rolling(self.cfg.hyperparameters.power_measurement_num_samples_average.value).mean()
 
             start = np.where(values_averaged > threshold)[0][0]
             end = np.where(values_averaged < threshold)[0][np.where(values_averaged < threshold)[0] > np.where(values_averaged > threshold)[0][0]][0]
@@ -273,28 +276,28 @@ class GeneticAlgorithm:
 
 
             # flash tflite model on individual board
-            if len(self.params["boards"]) > 0:
-                for board in self.params["boards"]:
+            if len(self.cfg.boards.value) > 0:
+                for board in self.cfg.boards.value:
                     tflite_path = "../" + path + individual + "/models/model_tflite_untrained.tflite"
                     cpp_path = '../tflite/evonas_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)
-                    ppk2 = init_ppk2(board["ppk"])
+                    ppk2 = init_ppk2(board.ppk)
                     time.sleep(1)  # --> important to wait a bit before flashing the model
 
                     # flash tflite model on board
                     try:
-                        subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board["model"], board["snr"]])
+                        subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
                         with open(error_log_path, 'a') as f:
-                            f.write(f"Error when flashing model on board {board['snr']} - exception: {str(e)}.\n")
+                            f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
                     
                     # wait for the board to boot
                     time.sleep(2)
 
                     # save RAM and ROM usage to results.json (available after the project was built)
-                    save_ram_rom_usage("tflite/build-" + board["model"], path + individual + "/" + "results.json")
+                    save_ram_rom_usage("tflite/build-" + board.model, path + individual + "/" + "results.json")
 
                     # if no ppk connected, measuring the power consumption is not possible
                     proc_energy = None
@@ -303,15 +306,15 @@ class GeneticAlgorithm:
                         time.sleep(3)
 
                         # start measuring energy consumption
-                        args = ['python tools/measure_power_consumption.py', path + individual, board["snr"],
-                                board["ppk"], f'{self.params["power_measurement_nb_samples_average"]}']
+                        args = ['python tools/measure_power_consumption.py', path + individual, board.snr,
+                                board.ppk, f'{self.cfg.hyperparameters.power_measurement_num_samples_average.value}']
                         command = " ".join(args)  # joining args separated by space
                         proc_energy = Popen(command, shell=True)
 
                         time.sleep(2)
 
                     # get inference time from Serial port
-                    args = ['python tools/measure_inference_time.py', path + individual, board["model"], board["snr"]]
+                    args = ['python tools/measure_inference_time.py', path + individual, board.model, board.snr]
                     command = " ".join(args)  # joining args separated by space
                     proc_inference = Popen(command, shell=True)
 
@@ -321,28 +324,28 @@ class GeneticAlgorithm:
                     except Exception as e:
                         # save error log
                         with open(error_log_path, 'a') as f:
-                            f.write(f"Error when measuring inference time on board {board['snr']}.\n")
+                            f.write(f"Error when measuring inference time on board {board.snr}.\n")
 
                     # if no ppk connected, measuring the power consumption is not possible
                     if proc_energy is not None:
                         # wait for energy consumption measurement to finish
                         try:
-                            proc_energy.wait(timeout=10)
+                            proc_energy.wait(timeout=5)
                         except Exception as e:
                             # save error log
                             with open(error_log_path, 'a') as f:
-                                f.write(f"Error when measuring energy consumption on board {board['snr']}.\n")
+                                f.write(f"Error when measuring energy consumption on board {board.snr}.\n")
 
                         try:
                             # calculate energy consumption
-                            self.calculate_energy_consumption(board["snr"], path + individual)
+                            self.calculate_energy_consumption(board.snr, path + individual)
                         except Exception as e:
                             # save error log
                             with open(error_log_path, 'a') as f:
-                                f.write(f"Error when calculating energy consumption on board {board['snr']}.\n")
+                                f.write(f"Error when calculating energy consumption on board {board.snr}.\n")
                     time.sleep(2)
             else:  # no boards
-                raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.params["boards"])}')
+                raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
 
     def selection(self):
         # calculate fitness of all preselected models
@@ -352,7 +355,7 @@ class GeneticAlgorithm:
         for individual in individuals_names:
             with open(path + individual + '/results.json', 'r') as f:
                 results = json.loads(f.read())
-                fitness = calculate_fitness(results, self.params)
+                fitness = calculate_fitness(results, self.cfg)
 
                 self.individuals[individual]["fitness"] = fitness
 
@@ -370,7 +373,7 @@ class GeneticAlgorithm:
         self.my_saver.save_best_individual(self.generation_counter, best_individual_name, best_individual_fitness)
 
         # omit the individuals that are not in the top x
-        self.individuals = dict(list(self.individuals.items())[:self.params['nb_best_models_crossover']])
+        self.individuals = dict(list(self.individuals.items())[:self.cfg.hyperparameters.num_best_models_crossover.value])
 
     def crossover(self):
         """ Crossover the best chromosomes to get the population for the next generation. """
@@ -407,8 +410,11 @@ class GeneticAlgorithm:
             
         # translate chromosome to TensorFlow model
         try:
-            model = translate(self.individuals[individual_name]['genotype'], self.params['input_shape'], self.params['nb_classes'],
-                              self.params['sample_rate'])
+            model = translate(self.individuals[individual_name]['genotype'], 
+                              self.cfg.hyperparameters.input_shape.value, 
+                              self.cfg.hyperparameters.num_classes.value, 
+                              self.cfg.hyperparameters.top_activation.value, 
+                              self.cfg.hyperparameters.sample_rate.value)
         except:
             raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {self.individuals[individual_name]['genotype']}")
         
@@ -417,13 +423,13 @@ class GeneticAlgorithm:
 
         # substitute STFT and MAG layers
         try:
-            model_substituted = substitute_tflite_layer(model, self.params["input_shape"])
+            model_substituted = substitute_tflite_layer(model, self.cfg.hyperparameters.input_shape.value)
         except:
             raise ValueError(f"Error when substituting STFT and MAG layers.")
 
         try:
-            tflite_model = convert_to_tflite(model_substituted, np.random.uniform(size=(200, self.params["input_shape"][0],
-                                                                            self.params["input_shape"][1])))
+            tflite_model = convert_to_tflite(model_substituted, np.random.uniform(size=(200, self.cfg.hyperparameters.input_shape.value[0],
+                                                                            self.cfg.hyperparameters.input_shape.value[1])))
         except:
             raise ValueError(f"Error when converting to TFLite")
 
@@ -451,12 +457,12 @@ class GeneticAlgorithm:
 
     def _generate_individuals_names(self):
         names = []
-        for _ in range(self.params['population_size']):
+        for _ in range(self.cfg.hyperparameters.population_size.value):
             # Assigning a random name to an individual to make it easier to track results
             random_name = generate_slug(2).replace("-", "_")
             while random_name in names:  # --> make sure that the random name does not already exist
                 random_name = generate_slug(2).replace("-", "_")
-            random_name += f"_{self.generation_counter}"
+            random_name += f"_{self.generation_counter + 1}"
             names.append(random_name)
 
         # sort names alphabetically
