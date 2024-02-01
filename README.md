@@ -103,13 +103,6 @@ For windows, manual installation is possible.
     
     ```
 
-## Using EvoNAS
-
-To use EvoNAS, follow these steps:
-
-```
-python main.py
-```
 ## Updating tflite-micro
 
 As zephyr automatically installs its cached tflite micro version, a custom zephyr repo will be maintained. 
@@ -168,6 +161,24 @@ For some reason, the nrf connect plugin does not include the modules located in 
 west build --build-dir /home/<user>/EvoNAS_bump/tflite/build /home/<user>/EvoNAS_bump/tflite --pristine --board nrf52840dk_nrf52840 -- -DNCS_TOOLCHAIN_VERSION:STRING="NONE" -DDTC_OVERLAY_FILE:STRING="/home/<user>/EvoNAS_bump/tflite/app.overlay" -DCONF_FILE:STRING="/home/<user>/EvoNAS_bump/tflite/prj.conf"
 ```
 Now, you can use the Debug under ACTIONS in order to create a launch.json. In the Debug tab of VS Code, now this launch json can be selected to properly debug the code. 
+
+## Using EvoNAS
+Before the EvoNAS optimization run is started, some configurations must be made. These include the definition of hyperparameters, the search space and the boards that are to be used for evaluating the candidates on the microcontroller.
+
+1) Search space setup
+[search space setup](conf/search_space/README.md)
+
+2) Hyperparameters
+[hyperparameters](conf/hyperparameters/README.md)
+
+3) Microcontroller setup
+[microcontroller boards](conf/boards/README.md)
+
+To finally run EvoNAS, call the main script with the corresponding configuration files prepared in the previous steps.
+
+```
+python main.py +hyperparameters=<your_project> +search_space=complete +boards=nrf52840dk
+```
 
 ## Contributing to EvoNAS
 To contribute to EvoNAS, follow these steps:

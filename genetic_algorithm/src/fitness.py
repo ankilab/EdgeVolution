@@ -26,7 +26,9 @@ def calculate_fitness(results, cfg: DictConfig):
 
         fitness = acc_weighted + rom_usage_weighted + energy_information_weighted
 
-        return fitness
+        error = False
+        return fitness, error
     except Exception as e:
         print(f'caught {type(e)}: error in calculate_fitness')
-        return 0
+        error = True
+        return 0, error

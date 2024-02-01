@@ -7,11 +7,10 @@ from omegaconf import DictConfig
 class GenePool:
     def __init__(self, cfg: DictConfig):
         self.params = cfg.hyperparameters
-        with open(self.params.path_gene_pool.value, "r") as f:
-            self.gene_pool = literal_eval(f.read())
 
-        with open(self.params.path_rule_set.value, "r") as f:
-            self.rule_set = literal_eval(f.read())
+        self.gene_pool = [gene for group in cfg.search_space.gene_pool.values() for gene in group]
+        
+        self.rule_set = [{'layer': key, 'rule': cfg.search_space.rule_set[key]['rule']} for key in cfg.search_space.rule_set.keys()]
 
     def get_random_chromosome(self):
         """ Create a gene sequence containing all layers of this random gene. """
@@ -38,7 +37,6 @@ class GenePool:
         elif '1D' in gene:
             gene = np.random.choice(['GAP_1D', 'GMP_1D'])
         else:
-            print(gene)
             raise RuntimeError("Couldn't determine if the architecture is 1D or 2D.")
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
@@ -54,7 +52,7 @@ class GenePool:
     def _get_start_gene(self):
         for rule in self.rule_set:
             if rule['layer'] == 'Start':
-                return np.random.choice(rule['start_with'])
+                return np.random.choice(rule['rule'])
 
     def _get_gene_with_random_parameters(self, target_gene: str) -> dict:
         """ Method to get random parameters for a given gene. """
@@ -288,13 +286,7 @@ class GenePool:
 
     @staticmethod
     def _add_gene(chromosome, new_gene, pos):
-        new_chromosome = []
-        idx = 0
-        while idx < len(chromosome):
-            if idx == pos:
-                new_chromosome.append(new_gene)
-            new_chromosome.append(chromosome[idx])
-            idx += 1
+        new_chromosome = chromosome[:pos] + [new_gene] + chromosome[pos:]
         return new_chromosome
 
     @staticmethod
@@ -324,17 +316,13 @@ class GenePool:
         Method to apply the previously defined rule set (rule_set.txt) to find a layer
         that can follow after a given previous layer.
         """
-        if type(previous_layer) == dict:
+        if isinstance(previous_layer, dict):
             raise ValueError(f"Parameter 'previous_layer' has to be a layer abbreviation like 'C' or 'GMP'. "
                              f"Received {previous_layer} instead.")
 
         for rule in self.rule_set:
             if rule['layer'] == previous_layer:
-                if 'allowed_after' in rule.keys():
-                    return rule['allowed_after']
-                elif 'not_allowed_after' in rule.keys():
-                    not_allowed_after = [r['not_allowed_after'] for r in self.rule_set if r['layer'] == previous_layer][0]
-                    return [g['layer'] for g in self.gene_pool if g['layer'] not in not_allowed_after]
+                return rule.get('rule', [])
 
         # return all layers of the gene pool if there is no entry in the rule set
         return [g['layer'] for g in self.gene_pool]

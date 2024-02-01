@@ -6,7 +6,7 @@ import numpy as np
 import argparse
 import re
 
-def get_nrf_port(board, timeout_in_ms = 2000):
+def get_nrf_port(board, timeout_in_ms = 3000):
     """ 
     get_nrf_port waits until the serial port for the corresponding board is available and return it after that.
 
@@ -27,7 +27,7 @@ def get_nrf_port(board, timeout_in_ms = 2000):
     # max_iterations x sleep_time = total_timeout
     max_iterations = int(timeout_in_ms // sleep_time_in_ms)
     
-    while max_iterations_counter<max_iterations:
+    while max_iterations_counter < max_iterations:
         try:
             # get ports
             ports = serial.tools.list_ports.comports()
@@ -40,7 +40,7 @@ def get_nrf_port(board, timeout_in_ms = 2000):
         except TypeError:
             pass
         except Exception as e:
-            print(f'caught {type(e)}: e')
+            print(f'caught {type(e)}: {e}')
         max_iterations_counter += 1
     raise RuntimeError("Could not find the port to listen to")
 

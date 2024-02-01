@@ -31,7 +31,7 @@ for gpu in gpus:
 def evaluate_single_model(tflite_path: str, board_model: str, board_snr: str, ppk2_snr: str):
 
     if ".h5" in tflite_path:
-        input_shape = (8000, 1)
+        input_shape = (8000, 1)  # TODO: make this more generic
         model = tf.keras.models.load_model(tflite_path, custom_objects={'STFT': STFT,
                                                          'Magnitude': Magnitude,
                                                          'ApplyFilterbank': ApplyFilterbank,

@@ -1,5 +1,14 @@
-hyperparameters:  
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
 
+hyperparameters:  
   ### General parameters:
   dataset_name:
     value: ???
@@ -263,7 +272,7 @@ hyperparameters:
 
   ### Power measurement
   power_measurement_num_samples_average:
-    value: 50
+    value: 100
     unit: null 
     icon: "icon-park:average"
     displayname: "Power measurement samples average"

@@ -20,23 +20,25 @@ def main(cfg: DictConfig):
     my_saver = Saver(cfg.hyperparameters.dataset_name.value)
 
     if cfg.hyperparameters.continue_from.value[0] is None:
+        ############################################################
+        # Start a new run
+        ############################################################
         my_ga = GeneticAlgorithm(cfg, my_saver)
+
         # random init the population of the first generation
+        my_ga.update_population_size()
         my_ga.init_first_generation()
-
-        # TODO: maybe change back!
-        #my_ga.params["population_size"] = 200
-
         gen_start = 1
 
         # save params
         my_saver.save_params(cfg)
     else:
+        ############################################################
+        # Continue from a previous run --> Load this run
+        ############################################################
         my_loader = Loader(cfg.hyperparameters.continue_from.value)
         params_ = my_loader.get_params()
-
         gen_start = my_loader.get_gen_start()
-
         my_ga = GeneticAlgorithm(params_, my_saver, my_loader)
 
         # save params
@@ -68,17 +70,6 @@ def main(cfg: DictConfig):
         if i_generation != cfg.hyperparameters.num_generations:
             my_ga.crossover()
             my_ga.mutation()
-
-        # TODO: maybe remove again if not needed
-        #my_ga.params["nb_best_models_crossover"] = 50
-
-        # Apply mutation rate decay after each 5 generations
-        #try:
-        #    if (i_generation - 1) % 5 == 0:
-        #        my_ga.params["mutation_rate"] -= 5
-        #except:
-        #    # TODO: maybe remove again if not needed
-        #    print("Just passing by")
 
 
 if __name__ == "__main__":

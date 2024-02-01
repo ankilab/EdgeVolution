@@ -1,39 +1,39 @@
 gene_pool:
-  # feature_extraction_1D:
-  #   - layer: C_1D
-  #     f_name: Conv1D
-  #     filters: [4, 32, 1]
-  #     kernel_size: [1, 5, 1]
-  #     strides: [1, 2, 1]
-  #     padding: ['same']
-  #     activation: ['relu']
+  feature_extraction_1D:
+    - layer: C_1D
+      f_name: Conv1D
+      filters: [4, 48, 1]
+      kernel_size: [1, 5, 1]
+      strides: [1, 2, 1]
+      padding: ['same']
+      activation: ['relu']
 
-  #   - layer: DC_1D
-  #     f_name: DepthwiseConv1D
-  #     kernel_size: [1, 5, 1]
-  #     strides: [1, 2, 1]
-  #     padding: ['same']
-  #     activation: ['relu']
+    - layer: DC_1D
+      f_name: DepthwiseConv1D
+      kernel_size: [1, 5, 1]
+      strides: [1, 2, 1]
+      padding: ['same']
+      activation: ['relu']
 
-  #   - layer: MP_1D
-  #     f_name: MaxPooling1D
-  #     pool_size: [2, 4, 1]
-  #     padding: ['same']
+    - layer: MP_1D
+      f_name: MaxPooling1D
+      pool_size: [2, 4, 1]
+      padding: ['same']
 
-  #   - layer: AP_1D
-  #     f_name: AveragePooling1D
-  #     pool_size: [2, 4, 1]
-  #     padding: ['same']
+    - layer: AP_1D
+      f_name: AveragePooling1D
+      pool_size: [2, 4, 1]
+      padding: ['same']
 
-  #   - layer: BN_1D
-  #     f_name: BatchNormalization()
+    - layer: BN_1D
+      f_name: BatchNormalization()
       
-  # global_pooling_1D:
-  #   - layer: GAP_1D
-  #     f_name: GlobalAveragePooling1D()
+  global_pooling_1D:
+    - layer: GAP_1D
+      f_name: GlobalAveragePooling1D()
 
-  #   - layer: GMP_1D
-  #     f_name: GlobalMaxPooling1D()
+    - layer: GMP_1D
+      f_name: GlobalMaxPooling1D()
 
   preprocessing_2D:
     - layer: STFT_2D
@@ -60,7 +60,7 @@ gene_pool:
   feature_extraction_2D:
     - layer: C_2D
       f_name: Conv2D
-      filters: [4, 32, 1]
+      filters: [4, 48, 1]
       kernel_size: [1, 5, 1]
       strides: [1, 2, 1]
       padding: ['same']
@@ -104,6 +104,10 @@ gene_pool:
       activation: ['relu']
 
 rule_set:
+  #################################################
+  # Sorted by groups. Each group is a list of layers, where 'rule' is a list of layers that can be used after the current layer.
+  #################################################
+
   Start:
     # rule: ["STFT_2D", "STFT_2D", "C_1D", "DC_1D"] # STFT two times to balance probabilities to start with 1D or 2D
     rule: ["STFT_2D"]
@@ -137,6 +141,7 @@ rule_set:
   #################################################
   # 2D layers
   #################################################
+
   STFT_2D:
     rule: ["MAG_2D"]
 

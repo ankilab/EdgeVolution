@@ -42,8 +42,10 @@ class GeneticAlgorithm:
 
     def init_first_generation(self):
         # generate random names for all individuals
+        self.update_population_size()
         self.individuals = self._generate_individuals_names()
 
+        # create random chromosomes for all individuals
         for name in self.individuals.keys():
             random_chromosome = self.my_gene_pool.get_random_chromosome()
             self.individuals[name]["genotype"] = random_chromosome
@@ -112,8 +114,12 @@ class GeneticAlgorithm:
                           f'--dataset {self.cfg.hyperparameters.dataset_name.value} ' + \
                           f'--classes_filter ' + ' '.join(str(i) for i in self.cfg.hyperparameters.classes_filter.value) + \
                           f'--num_epochs {self.cfg.hyperparameters.num_epochs.value} ' + \
-                          f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' #+ \
-                          #f'--input_shape {self.cfg.hyperparameters.input_shape.value} '
+                          f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' + \
+                          f'--input_shape {" ".join(str(i) for i in self.cfg.hyperparameters.input_shape.value)} ' + \
+                          f'--loss {self.cfg.hyperparameters.loss.value} ' +\
+                          f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
+                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' #+ \
+                          #f'--lr_scheduler {" ".join(str(i) for i in self.cfg.hyperparameters.lr_scheduler.value)} '
                 procs.append(Popen(command, shell=True))
                 idx += 1
                 tqdm_bar.update(1)
@@ -238,10 +244,7 @@ class GeneticAlgorithm:
             voltage = 3.3  # in V
 
             # get inference time from board
-            try:
-                inf_time = self.get_inference_information_from_results(board_snr, results)  # in ms
-            except ValueError as e:
-                inf_time = 0
+            inf_time = self.get_inference_information_from_results(board_snr, results)  # in ms
 
             # convert to seconds
             inf_time = inf_time * (10 ** -3)  # in s
@@ -311,7 +314,7 @@ class GeneticAlgorithm:
                         command = " ".join(args)  # joining args separated by space
                         proc_energy = Popen(command, shell=True)
 
-                        time.sleep(2)
+                        time.sleep(3)
 
                     # get inference time from Serial port
                     args = ['python tools/measure_inference_time.py', path + individual, board.model, board.snr]
@@ -330,7 +333,7 @@ class GeneticAlgorithm:
                     if proc_energy is not None:
                         # wait for energy consumption measurement to finish
                         try:
-                            proc_energy.wait(timeout=5)
+                            proc_energy.wait(timeout=10)
                         except Exception as e:
                             # save error log
                             with open(error_log_path, 'a') as f:
@@ -343,7 +346,7 @@ class GeneticAlgorithm:
                             # save error log
                             with open(error_log_path, 'a') as f:
                                 f.write(f"Error when calculating energy consumption on board {board.snr}.\n")
-                    time.sleep(2)
+                    time.sleep(3)
             else:  # no boards
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
 
@@ -355,13 +358,14 @@ class GeneticAlgorithm:
         for individual in individuals_names:
             with open(path + individual + '/results.json', 'r') as f:
                 results = json.loads(f.read())
-                fitness = calculate_fitness(results, self.cfg)
+                fitness, error = calculate_fitness(results, self.cfg)
 
                 self.individuals[individual]["fitness"] = fitness
 
             # save fitness in results.json
             with open(path + individual + '/results.json', 'w') as f:
                 results['fitness'] = float(fitness)
+                results['error'] = str(error)
                 json.dump(results, f, indent=2)
 
         # sort individuals by their achieved fitness
@@ -390,6 +394,31 @@ class GeneticAlgorithm:
 
         # save parents
         self.my_saver.save_parents(self.generation_counter, list(self.individuals.keys()), parents_names)
+
+    def update_population_size(self):
+        """
+        Apply population size decay after each generation.
+        """
+        decay = self.cfg.hyperparameters.population_size_decay.value
+        self.cfg.hyperparameters.population_size.value = next((elem[1] for elem in decay if self.generation_counter <= elem[0]), decay[-1][1])
+
+    def update_num_best_models_crossover(self):
+        """ 
+        Apply num_best_models_crossover decay after each generation.
+        """
+        for elem in self.cfg.hyperparameters.num_best_models_crossover_decay.value:
+            if self.generation_counter <= int(elem[0]):
+                self.cfg.hyperparameters.num_best_models_crossover.value = int(elem[1])
+                break
+
+    def update_mutation_rate(self):
+        """ 
+        Apply mutation rate decay after each generation.
+        """
+        for elem in self.cfg.hyperparameters.mutation_rate_decay.value:
+            if self.generation_counter <= int(elem[0]):
+                self.cfg.hyperparameters.mutation_rate.value = int(elem[1])
+                break
 
     def mutation(self):
         """ Mutation of the population previously generated by crossover. """
@@ -439,6 +468,11 @@ class GeneticAlgorithm:
     def prepare_generation(self, current_generation: int):
         # increment generation counter
         self.generation_counter = current_generation
+
+        # apply decays to hyperparameters to go away from eploration to exploitation
+        self.update_population_size()
+        self.update_num_best_models_crossover()
+        self.update_mutation_rate()
 
         # create generation dir
         self.my_saver.create_generation_dir(self.individuals, self.generation_counter)

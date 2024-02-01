@@ -26,11 +26,13 @@ class Saver:
 
         with open(self.results_dir / "config.json", "w") as f:
             cfg_dict = OmegaConf.to_container(cfg)
+            cfg_dict = {k: cfg_dict[k] for k in ['boards', 'hyperparameters', 'results', 'fitness_function']}
             json.dump(cfg_dict, f, indent=4)
 
-        # save genepool.txt and rule_set.txt
-        shutil.copyfile(cfg.hyperparameters.path_gene_pool.value, self.results_dir / "gene_pool.txt")
-        shutil.copyfile(cfg.hyperparameters.path_rule_set.value, self.results_dir / "rule_set.txt")
+        # save search_space.json
+        with open(self.results_dir / "search_space.json", "w") as f:
+            json.dump(OmegaConf.to_container(cfg.search_space), f, indent=4)
+        
 
     def _get_path(self, gen_count, name=None):
         if name is None:

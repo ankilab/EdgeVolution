@@ -254,10 +254,6 @@ __attribute__((optimize(0))) void setup(void)
 	printk("Time: %d\n", (int32_t)(milliseconds_spent));
 	printk("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
 	k_sleep(K_SECONDS(5));
-
-	delete[] op_resolver;
-
-	usb_disable();
 }
 
 /* The name of this function is important for Arduino compatibility. */
