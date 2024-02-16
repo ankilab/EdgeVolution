@@ -2,7 +2,7 @@
 optimize_for_MCU:
   value: true
 min_free_space_gpu:
-  value: 6_000_000
+  value: 10_000_000
 
 ### Dataset/DNN training hyper-parameters:
 dataset_name:
@@ -18,7 +18,7 @@ classes_filter:
 top_activation:
   value: "softmax"
 num_epochs:
-  value: 10
+  value: 3
 batch_size:
   value: 128
 lr_scheduler:
@@ -36,19 +36,19 @@ num_generations:
 population_size:
   value: 300
 num_best_models_crossover:
-  value: 60
+  value: 50
 mutation_rate:
   value: 25
 population_size_decay:
-  value: [[1, 300], [2, 200], [5, 150], [10, 100]] # [(until_generation, decay), (until_generation, decay), ...]
+  value: [[1, 300], [2, 150], [5, 100], [10, 100]] # [(until_generation, decay), (until_generation, decay), ...]
 num_best_models_crossover_decay:
-  value: [[1, 60], [2, 40], [5, 30], [10, 20]] # [(until_generation, decay), (until_generation, decay), ...]
+  value: [[1, 50], [2, 25], [5, 20], [10, 20]] # [(until_generation, decay), (until_generation, decay), ...]
 mutation_rate_decay:
   value: [[1, 25], [2, 20], [5, 15], [10, 10]] # [(until_generation, decay), (until_generation, decay), ...]
 max_num_feature_layers:
-  value: 20
+  value: 6
 max_num_classification_layers:
-  value: 5
+  value: 4
 
 ### Fitness
 min_rom_usage:

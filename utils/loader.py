@@ -4,25 +4,31 @@ import os
 from omegaconf import DictConfig
 
 class Loader:
-    def __init__(self, continue_from: list):
-        self.ga_run = continue_from[0]
-        self.generation = continue_from[1]
-        self.ga_path = Path("Results/" + self.ga_run)
+    def __init__(self, continue_path: str, continue_generation: int):
+        self.generation = continue_generation
+        self.ga_path = Path(continue_path)
         self.gen_path = self.ga_path / f"Generation_{self.generation}"
 
-        self.params = None
+        self.cfg = None
 
-    def get_params(self):
-        with open(self.ga_path / 'params.json') as f:
-            self.params = json.loads(f.read())
+    def get_cfg(self):
+        with open(self.ga_path / 'config.json') as f:
+            self.cfg = json.loads(f.read())
+            
+        with open(self.ga_path / 'search_space.json') as f:
+            self.cfg["search_space"] = json.loads(f.read())
         
         # add information from which run the current run was continued
-        self.params["continued_from"] = str(self.gen_path)
-        return self.params
+        self.cfg["continued_from"] = str(self.gen_path)
+        self.cfg = DictConfig(self.cfg)
+        return self.cfg
 
     def load_population_genotype(self):
         population_genotype = []
-        for ind in os.listdir(self.gen_path):
+        population = [ind for ind in os.listdir(self.gen_path)]
+        population.sort()
+
+        for ind in population:
             with open(self.gen_path / str(ind) / 'chromosome.json') as f:
                 chromosome = json.loads(f.read())
             population_genotype.append(chromosome)
@@ -30,11 +36,11 @@ class Loader:
 
     def load_individuals(self):
         individuals = {}
-        for individual in os.listdir(self.gen_path):
+        population = [ind for ind in os.listdir(self.gen_path)]
+        population.sort()
+
+        for individual in population:
             with open(self.gen_path / str(individual) / 'chromosome.json') as f:
                 chromosome = json.loads(f.read())
             individuals[individual] = {'genotype': chromosome}
         return individuals
-
-    def get_gen_start(self) -> int:
-        return int(self.generation)

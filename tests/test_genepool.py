@@ -11,7 +11,7 @@ class TestGenePool(unittest.TestCase):
     # Tests for rule set
     ###################################################################
     def test_get_random_gene_sequence(self):
-        gene_sequence = gene_pool.get_random_chromosome()
+        gene_sequence = gene_pool.create_gene_sequence()
         self.assertIsNotNone(gene_sequence)
 
     def test_get_possible_layers_only_allowed_GAP(self):

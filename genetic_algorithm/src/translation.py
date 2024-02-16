@@ -11,6 +11,7 @@ from kapre import STFT, Magnitude, MagnitudeToDecibel
 
 from genetic_algorithm.src.genepool_modules.sinc_conv_layer import SincConv1D
 from genetic_algorithm.src.genepool_modules.filterbank_layer import get_filterbank_layer
+from genetic_algorithm.src.genepool_modules.conv2d_block import get_conv2d_block, get_depthwise_conv2d_block
 
 
 def translate(chromosome: list, input_shape: tuple, num_classes: int, top_activation: str, sample_rate: int) -> tf.keras.Model:

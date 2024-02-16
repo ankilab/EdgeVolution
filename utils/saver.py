@@ -13,7 +13,7 @@ class Saver:
     def __init__(self, experiment):
         if not os.path.exists("Results"):
             os.mkdir("Results")
-        self.results_dir = Path(f"Results/evonas_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")
+        self.results_dir = Path(f"../../../../data_slow/du92wufe/EvoNAS/Results/evonas_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")
         os.mkdir(self.results_dir)
 
         self.random_names = []

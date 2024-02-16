@@ -9,6 +9,16 @@ hydra:
     dir: .
 
 hyperparameters:  
+
+  # telegram_bot_token:
+  #   value: "6714744963:AAFVLcimFbYymBLkA_mHBbSGpFCijv0TFGA"
+  #   unit: null 
+  #   icon: null
+  #   displayname: "Telegram bot token"
+  #   group: "Run information"
+  #   description: "The token of the Telegram bot used to send messages to the user."
+  #   display: true
+
   ### General parameters:
   dataset_name:
     value: ???
@@ -272,7 +282,7 @@ hyperparameters:
 
   ### Power measurement
   power_measurement_num_samples_average:
-    value: 100
+    value: 500
     unit: null 
     icon: "icon-park:average"
     displayname: "Power measurement samples average"

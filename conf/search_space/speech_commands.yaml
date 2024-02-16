@@ -58,6 +58,25 @@ gene_pool:
       f_name: MagnitudeToDecibel()
     
   feature_extraction_2D:
+    - layer: C_2D_BLOCK
+      f_name: get_conv2d_block
+      filters: [4, 64, 1]
+      kernel_height: [1, 12, 1]
+      kernel_width: [1, 12, 1]
+      strides: [1, 2, 1]
+      padding: ['same']
+      norm_layer: ['None', 'BatchNormalization']
+      activation: ['None', 'relu', 'sigmoid', 'tanh', 'leaky_relu']
+    
+    - layer: DC_2D_BLOCK
+      f_name: get_depthwise_conv2d_block
+      kernel_height: [1, 12, 1]
+      kernel_width: [1, 12, 1]
+      strides: [1, 2, 1]
+      padding: ['same']
+      norm_layer: ['None', 'BatchNormalization']
+      activation: ['None', 'relu', 'sigmoid', 'tanh', 'leaky_relu']
+
     - layer: C_2D
       f_name: Conv2D
       filters: [4, 48, 1]
@@ -94,13 +113,13 @@ gene_pool:
       f_name: GlobalMaxPooling2D()
 
   dense:
-    - layer: DO
-      f_name: Dropout
-      rate: [0.0, 0.5, 0.1]
+    # - layer: DO
+    #   f_name: Dropout
+    #   rate: [0.0, 0.5, 0.1]
 
     - layer: D
       f_name: Dense
-      units: [8, 128, 8]
+      units: [8, 64, 8]
       activation: ['relu']
 
 rule_set:
@@ -146,44 +165,50 @@ rule_set:
     rule: ["MAG_2D"]
 
   MAG_2D:
-    rule: ["C_2D", "DC_2D", "FB_2D", "MAG2DEC_2D"]
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK", "FB_2D", "MAG2DEC_2D"]
 
   FB_2D:
-    rule: ["C_2D", "DC_2D", "MAG2DEC_2D"]
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK", "MAG2DEC_2D"]
 
   MAG2DEC_2D:
-    rule: ["C_2D", "DC_2D"]
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
 
-  C_2D:
-    rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
+  C_2D_BLOCK:
+    rule: ["AP_2D", "MP_2D", "C_2D_BLOCK", "DC_2D_BLOCK"]
 
-  DC_2D:
-    rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
+  DC_2D_BLOCK:
+    rule: ["AP_2D", "MP_2D", "C_2D_BLOCK", "DC_2D_BLOCK"]
+
+  # C_2D:
+  #   rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
+
+  # DC_2D:
+  #   rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
 
   MP_2D:
-    rule: ["BN_2D", "DC_2D", "C_2D"]
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
 
   AP_2D:
-    rule: ["BN_2D", "DC_2D", "C_2D"]
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
 
-  BN_2D:
-    rule: ["AP_2D", "MP_2D", "DC_2D", "C_2D"]
+  # BN_2D:
+  #   rule: ["AP_2D", "MP_2D", "DC_2D", "C_2D"]
 
   GAP_2D:
-    rule: ["D", "DO"]
+    rule: ["D"]
 
   GMP_2D:
-    rule: ["D", "DO"]
+    rule: ["D"]
 
 
   #################################################
   # Dense layers
   #################################################
   D:
-    rule: ["DO"]
-
-  DO:
     rule: ["D"]
+
+  # DO:
+  #   rule: ["D"]
 
 
 #################################################

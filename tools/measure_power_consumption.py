@@ -97,7 +97,10 @@ def init_ppk2(ppk_serial: str, timeout_in_s=10):
             print(f"Tried to connect to PPK2 with serial {ppk_serial}. Waiting {delay_in_s} seconds.\n")
 
             # stop measuring
-            _ppk2.stop_measuring()
+            try:
+                _ppk2.stop_measuring()
+            except:
+                pass
 
             # delay after unsuccessful try
             time.sleep(delay_in_s)

@@ -1,0 +1,16 @@
+{
+  "ram_usage": 176856,
+  "rom_usage": 179643,
+  "inference_information": {
+    "1050006605": 668
+  },
+  "tensorsize_information": {
+    "1050006605": 28288
+  },
+  "energy_information": {
+    "1050006605": 11.790616527322756
+  },
+  "mean_power_information": {
+    "1050006605": 0.005348673801180709
+  }
+}

@@ -32,13 +32,8 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/gpio.h>
 
-#include <chrono>
-#include <thread>
-
 #define LED0_NODE DT_ALIAS(led0)
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
-
-
 
 /* Globals, used for compatibility with Arduino-style sketches. */
 namespace {
@@ -77,7 +72,6 @@ uint32_t MeasureNodeAndRegistrations(const tflite::Model* model) {
 }
 
 
-
 uint32_t MeasureTotalSize(const tflite::Model* model) {
 	uint32_t total_size = 0;
 
@@ -101,6 +95,8 @@ uint32_t MeasureTotalSize(const tflite::Model* model) {
 	return total_size;		
 }
 uint8_t setup_failed = 1;
+
+
 
 
 /* The name of this function is important for Arduino compatibility. */
@@ -145,12 +141,15 @@ __attribute__((optimize(0))) void setup(void)
 
 
 	// Create OpResolver class with up to 26 kernel support.
-	using KeywordOpResolver = tflite::MicroMutableOpResolver<35>;
+	using KeywordOpResolver = tflite::MicroMutableOpResolver<38>;
 
 	KeywordOpResolver* op_resolver = new KeywordOpResolver();
 	op_resolver->AddFullyConnected();
 	op_resolver->AddReshape();
 	op_resolver->AddSoftmax();
+	op_resolver->AddLeakyRelu();
+	op_resolver->AddRelu();
+	op_resolver->AddTanh();
 	op_resolver->AddTranspose();
 	op_resolver->AddSlice();
 	op_resolver->AddGather();

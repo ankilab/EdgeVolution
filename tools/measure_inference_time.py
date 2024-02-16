@@ -36,7 +36,7 @@ def get_nrf_port(board, timeout_in_ms = 3000):
                 if board["model"] in port.description:
                     if board["snr"] in port.description:
                         return port.device
-            time.sleep(sleep_time_in_ms/1000)
+            time.sleep(sleep_time_in_ms / 1000) # divide by 1000 to convert to seconds, because time.sleep expects seconds
         except TypeError:
             pass
         except Exception as e:

@@ -25,6 +25,11 @@ from .utils.save_ram_rom_usage import save_ram_rom_usage
 from tools.measure_power_consumption import init_ppk2, stop_measuring
 from multiprocessing import get_context
 
+from multiprocessing import Process
+import time
+
+import telebot
+
 
 class GeneticAlgorithm:
     def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None):
@@ -40,19 +45,81 @@ class GeneticAlgorithm:
 
         self.generation_counter: int = 0  # information in which generation we are currently
 
+        self.send_telegram_update(f"Started new run.")
+
+    def send_telegram_update(self, message: str):
+        try:
+            bot = telebot.TeleBot("6714744963:AAFVLcimFbYymBLkA_mHBbSGpFCijv0TFGA")
+            bot.send_message(chat_id=1781218024, text=message)
+        except Exception as e:
+            print("Could not send message to telegram bot")
+
     def init_first_generation(self):
-        # generate random names for all individuals
+        # update population size as specified in the config for population_size_decay
         self.update_population_size()
-        self.individuals = self._generate_individuals_names()
+
+        # generate random names for all individuals
+        self.individuals = self._generate_population_names()
 
         # create random chromosomes for all individuals
         for name in self.individuals.keys():
-            random_chromosome = self.my_gene_pool.get_random_chromosome()
+            random_chromosome = self.my_gene_pool.create_gene_sequence()
             self.individuals[name]["genotype"] = random_chromosome
 
+    def create_population_first_generation(self):
+        random_chromosome = self.my_gene_pool.create_gene_sequence()
+        raise NotImplementedError("create_population_first_generation is not implemented yet")
+
+        # TODO: implement this function
+
+
+    def prepare_generation(self, current_generation: int):
+        # increment generation counter
+        self.generation_counter = current_generation
+
+        # apply decays to hyperparameters to go away from eploration to exploitation
+        self.update_population_size()
+        self.update_num_best_models_crossover()
+        self.update_mutation_rate()
+
+        # create generation dir
+        self.my_saver.create_generation_dir(self.individuals, self.generation_counter)
+
+        # save population genotype
+        self.my_saver.save_population_genotype(self.individuals, self.generation_counter)
+
+        # convert chromosomes to models and to tflite models in parallel
+        cpus = os.cpu_count() - 4
+        #cpus = 8
+        with get_context("spawn").Pool(cpus) as pool:
+            pool.map(self._process_model_translation_and_conversion, self.individuals)
+
+        print("Finished translating and converting models")
+
+        self.send_telegram_update("##################################################")
+        self.send_telegram_update(f"START OF GENERATION {self.generation_counter}")
+        self.send_telegram_update("##################################################")
+    
+    def _generate_random_name(self):
+        return generate_slug(2).replace("-", "_") + f"_{self.generation_counter + 1}"
+
+    def _generate_population_names(self):
+        names = set()
+        population_size = self.cfg.hyperparameters.population_size.value
+        while len(names) < population_size:
+            random_name = self._generate_random_name()
+            if random_name not in names:
+                names.add(random_name)
+
+        names_dict = {name: {} for name in sorted(names)}
+        return names_dict
+    
+
     def evaluate_memory_footprint(self):
-        """ Load memory footprint after converting the model to TFLite.
-        Determine models (dependent on the thresholds specified in main.py) that will be further evaluated. """
+        """ 
+        Load memory footprint after converting the model to TFLite.
+        Determine models (dependent on the thresholds specified in main.py) that will be further evaluated. 
+        """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
         individuals_copy = copy.deepcopy(self.individuals)
@@ -91,6 +158,9 @@ class GeneticAlgorithm:
             raise Exception("All models are too big in terms of file size. Therefore none of the generated models will"
                             " be further evaluated. Think about adjusting your GA parameters.")
 
+        self.send_telegram_update(f"Finished evaluating memory footprint of generation {self.generation_counter}")
+        self.send_telegram_update(f"Number of models that are further evaluated: {len(self.individuals)}")
+
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
@@ -102,11 +172,12 @@ class GeneticAlgorithm:
         idx = 0
         nvidia_smi.nvmlInit()
         handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        
         while idx < len(individuals_names):
-            procs = [p for p in procs if p.poll() is None]
+            procs = [p for p in procs if p.is_alive()]
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
-            if info.free > min_free_space:
+            if info.free > min_free_space and len(procs) < 5:
                 command = 'python genetic_algorithm/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
@@ -120,15 +191,23 @@ class GeneticAlgorithm:
                           f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
                           f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' #+ \
                           #f'--lr_scheduler {" ".join(str(i) for i in self.cfg.hyperparameters.lr_scheduler.value)} '
-                procs.append(Popen(command, shell=True))
+                proc = Process(target=lambda: Popen(command, shell=True).wait())
+                proc.start()
+                procs.append(proc)
                 idx += 1
                 tqdm_bar.update(1)
-            time.sleep(30)
+                self.send_telegram_update(f"Started training model {individuals_names[idx-1]}")
+                self.send_telegram_update(f"Currently at {idx}/{len(individuals_names)} for training")
+            time.sleep(10)
 
         nvidia_smi.nvmlShutdown()
+        
         # make sure to wait until all processes are finished
         for p in procs:
-            p.wait()
+            p.join()
+
+        self.send_telegram_update(f"FINISHED NEURAL NETWORK TRAININGS")
+
 
     @staticmethod
     def get_inference_information_from_results(board_snr, results):
@@ -272,7 +351,9 @@ class GeneticAlgorithm:
 
         individuals_names = list(self.individuals.keys())
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
-            print(f"Evaluate energy of {individual} (index: {idx})")
+            print(f"Evaluate energy of {individual} (index: {idx+1})")
+            self.send_telegram_update(f"Started evaluating energy of {individual} (index: {idx})")
+            self.send_telegram_update(f"Currently at {idx+1}/{len(individuals_names)} for evaluating energy")
 
             # error log 
             error_log_path = path + individual + '/error_log.txt'
@@ -293,6 +374,7 @@ class GeneticAlgorithm:
                     try:
                         subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
+                        self.send_telegram_update(f"Error when flashing model on board {board.snr}. Exception: {str(e)}")
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
                     
@@ -316,18 +398,19 @@ class GeneticAlgorithm:
 
                         time.sleep(3)
 
-                    # get inference time from Serial port
-                    args = ['python tools/measure_inference_time.py', path + individual, board.model, board.snr]
-                    command = " ".join(args)  # joining args separated by space
-                    proc_inference = Popen(command, shell=True)
-
                     # wait for inference time measurement to finish
                     try:
+                        # get inference time from Serial port
+                        args = ['python tools/measure_inference_time.py', path + individual, board.model, board.snr]
+                        command = " ".join(args)  # joining args separated by space
+                        proc_inference = Popen(command, shell=True)
+
                         proc_inference.wait()
                     except Exception as e:
+                        self.send_telegram_update(f"Error when measuring inference time on board {board.snr}. Exception: {str(e)}")
                         # save error log
                         with open(error_log_path, 'a') as f:
-                            f.write(f"Error when measuring inference time on board {board.snr}.\n")
+                            f.write(f"Error when measuring inference time on board {board.snr}.\n Exception: {str(e)}\n")
 
                     # if no ppk connected, measuring the power consumption is not possible
                     if proc_energy is not None:
@@ -338,6 +421,7 @@ class GeneticAlgorithm:
                             # save error log
                             with open(error_log_path, 'a') as f:
                                 f.write(f"Error when measuring energy consumption on board {board.snr}.\n")
+                            self.send_telegram_update(f"Error when measuring energy consumption on board {board.snr}. Exception: {str(e)}")
 
                         try:
                             # calculate energy consumption
@@ -348,11 +432,15 @@ class GeneticAlgorithm:
                                 f.write(f"Error when calculating energy consumption on board {board.snr}.\n")
                     time.sleep(3)
             else:  # no boards
+                self.send_telegram_update("No boards are set. Therefore no energy consumption and inference time can be measured.")
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
+            
 
     def selection(self):
         # calculate fitness of all preselected models
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+
+        self.send_telegram_update("STARTING SELECTION NOW.")
 
         individuals_names = list(self.individuals.keys())
         for individual in individuals_names:
@@ -386,7 +474,7 @@ class GeneticAlgorithm:
             fittest_chromosomes=list(self.individuals.keys()))
 
         # create names for next generation
-        self.individuals = self._generate_individuals_names()
+        self.individuals = self._generate_population_names()
 
         # add the new individuals to the dict
         for individual, chromosome in zip(self.individuals.keys(), population_next_generation):
@@ -465,46 +553,4 @@ class GeneticAlgorithm:
         print(f"Save TFLite model of {individual_name}")
         self.my_saver.save_population_phenotype_tflite(individual_name, self.generation_counter, tflite_model)
 
-    def prepare_generation(self, current_generation: int):
-        # increment generation counter
-        self.generation_counter = current_generation
 
-        # apply decays to hyperparameters to go away from eploration to exploitation
-        self.update_population_size()
-        self.update_num_best_models_crossover()
-        self.update_mutation_rate()
-
-        # create generation dir
-        self.my_saver.create_generation_dir(self.individuals, self.generation_counter)
-
-        # save population genotype
-        self.my_saver.save_population_genotype(self.individuals, self.generation_counter)
-
-        # convert chromosomes to models and to tflite models in parallel
-        cpus = os.cpu_count() - 4
-        #cpus = 8
-        with get_context("spawn").Pool(cpus) as pool:
-            pool.map(self._process_model_translation_and_conversion, self.individuals)
-
-        print("Finished translating and converting models")
-
-
-    def _generate_individuals_names(self):
-        names = []
-        for _ in range(self.cfg.hyperparameters.population_size.value):
-            # Assigning a random name to an individual to make it easier to track results
-            random_name = generate_slug(2).replace("-", "_")
-            while random_name in names:  # --> make sure that the random name does not already exist
-                random_name = generate_slug(2).replace("-", "_")
-            random_name += f"_{self.generation_counter + 1}"
-            names.append(random_name)
-
-        # sort names alphabetically
-        names.sort()
-
-        # save as dict
-        names_dict = {}
-        for name in names:
-            names_dict[name] = {}
-
-        return names_dict

@@ -12,14 +12,17 @@ class GenePool:
         
         self.rule_set = [{'layer': key, 'rule': cfg.search_space.rule_set[key]['rule']} for key in cfg.search_space.rule_set.keys()]
 
-    def get_random_chromosome(self):
+    def create_gene_sequence(self):
         """ Create a gene sequence containing all layers of this random gene. """
+
+        chromosome = []
 
         # get one of the possible starting genes (which are defined in rule_set.txt)
         gene = self._get_start_gene()
-        chromosome = [self._get_gene_with_random_parameters(gene)]
+        chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        for _ in range(0, np.random.choice(np.arange(5, self.params.max_num_feature_layers.value + 1)), 1):
+        num_feature_layers = np.random.randint(5, self.params.max_num_feature_layers.value + 1)
+        for _ in range(num_feature_layers):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
@@ -40,7 +43,8 @@ class GenePool:
             raise RuntimeError("Couldn't determine if the architecture is 1D or 2D.")
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
-        for _ in range(0, np.random.choice(np.arange(3, self.params.max_num_classification_layers.value + 1)), 1):
+        num_classification_layers = np.random.randint(3, self.params.max_num_classification_layers.value + 1)
+        for _ in range(num_classification_layers):
             possible_genes = self._get_possible_genes(gene)  # check rule set
             gene = np.random.choice(possible_genes)
 
@@ -144,8 +148,9 @@ class GenePool:
         i = 0
         while True:
             i += 1
-            rule_set_is_violated = self._check_rule_set_violation(chromosome_1[chr_1_split], chromosome_2[chr_2_split + 1])
-            if not rule_set_is_violated:
+            rule_set_is_violated_1 = self._check_rule_set_violation(chromosome_1[chr_1_split], chromosome_2[chr_2_split + 1])
+            rule_set_is_violated_2 = self._check_rule_set_violation(chromosome_2[chr_2_split], chromosome_1[chr_1_split + 1])
+            if not rule_set_is_violated_1 and not rule_set_is_violated_2:
                 break
             elif i == 1000:  # no split found --> chromosomes are not crossable
                 return None, None, None
@@ -313,7 +318,7 @@ class GenePool:
 
     def _get_possible_genes(self, previous_layer):
         """
-        Method to apply the previously defined rule set (rule_set.txt) to find a layer
+        Method to apply the previously defined rule set (search_space.yaml) to find a layer
         that can follow after a given previous layer.
         """
         if isinstance(previous_layer, dict):

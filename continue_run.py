@@ -1,36 +1,29 @@
 import tensorflow as tf
-import multiprocessing
 import argparse
 import numpy as np
-import hydra
-from omegaconf import DictConfig
+import multiprocessing
 
 from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
 from utils.loader import Loader
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config")
-def main(cfg: DictConfig):
+def continue_run(path, gen_start):
     # Limit TensorFlow GPU memory usage
     gpus = tf.config.list_physical_devices('GPU')
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
+    my_loader = Loader(path, gen_start)
+    cfg = my_loader.get_cfg()
+    
     my_saver = Saver(cfg.hyperparameters.dataset_name.value)
-
-    my_ga = GeneticAlgorithm(cfg, my_saver)
-
-    # random init the population of the first generation
-    my_ga.update_population_size()
-    my_ga.init_first_generation()
-    gen_start = 1
+    my_ga = GeneticAlgorithm(cfg, my_saver, my_loader)
 
     # save params
     my_saver.save_params(cfg)
-
-
-    for i_generation in range(gen_start, cfg.hyperparameters.num_generations.value + 1):
+    
+    for i_generation in range(int(gen_start), cfg.hyperparameters.num_generations.value + 1):
         my_ga.prepare_generation(i_generation)
 
         # Pre-selection of candidate chromosomes, which are trained on a GPU afterwards
@@ -58,6 +51,15 @@ def main(cfg: DictConfig):
             my_ga.mutation()
 
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--continue_path", type=str)
+    parser.add_argument("--continue_generation", type=str)
+    
+    args = parser.parse_args()
+    
     np.random.seed(42)
-    main()
+    continue_run(args.continue_path, args.continue_generation)
+    
+    

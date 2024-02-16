@@ -6,7 +6,7 @@ value:
 # value:
 #   - model: "nrf52840dk_nrf52840"  # Board model
 #     snr: "1050289157"  # Serial number
-#     ppk: "E373C904"  # PPK (Power Profiling Kit) serial number
+#     ppk: "None"  # PPK (Power Profiling Kit) serial number
 
 # value:
 #  - model: "nrf52840dk_nrf52840"  # Board model
