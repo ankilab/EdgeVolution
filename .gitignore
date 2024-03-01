@@ -28,3 +28,5 @@ nrf-command-line-tools*
 datasets/*
 get_ops.py
 *build*
+*power_*
+*airway*
