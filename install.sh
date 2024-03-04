@@ -14,15 +14,14 @@ if ! [ $nrfjprog_installed -eq 1]; then
     rm -r -f nrf-command-line-tools/
 
     # readme txt containted in 
-    rm Readme.txt
-
+    rm Readme.txt > /dev/null
 
 
     # install jlink segger
-    wget  --post-data="accept_license_agreement=accepted&submit=Download+software" https://www.segger.com/downloads/jlink/JLink_Linux_V788f_x86_64.deb
+    wget  --post-data="accept_license_agreement=accepted&submit=Download+software" https://www.segger.com/downloads/jlink/JLink_Linux_V788n_x86_64.deb
 
-    sudo dpkg -i JLink_Linux_V788f_x86_64.deb
-    rm JLink_Linux_V788f_x86_64.deb
+    sudo dpkg -i JLink_Linux_V788n_x86_64.deb
+    rm JLink_Linux_V788n_x86_64.deb
     
     # this file gets automatically installed from nrfjprog but can not be installed correctly
     rm JLink_Linux_V780c_x86_64.tgz
@@ -65,6 +64,27 @@ else
     echo "Python 3 is already installed."
 fi
 
+# Check if python3.8-venv is already installed
+apt list --installed | grep python3.8-venv >/dev/null
+python_venv_installed=$?
+
+# Check the exit code and display a message
+if ! [ $python_venv_installed -eq 0 ]; then
+    echo "Python 3.8 venv is not installed. Installing Python 3.8 venv..."
+
+    # Update package manager
+    if ! [ $apt_get_installed -eq 0 ]; then
+        sudo apt-get update 
+        sudo apt install -y python3.8-venv
+    else
+        echo "Unable to install Python 3.8 venv. Please install it manually."
+        exit 1
+    fi
+
+    echo "Python 3.8 venv has been installed successfully!"
+else
+    echo "Python 3.8 venv is already installed."
+fi
 
 
 # Now creating virtual environment
@@ -92,7 +112,6 @@ chmod +x $activation_script
 pip install -r requirements.txt
 
 
-
 # install some dependencies for dataset
 command -v ffmpeg >/dev/null
 ffmpeg_installed=$?
@@ -103,6 +122,27 @@ fi
 
 
 project_dir=$(pwd)
+
+# Check if cmake is already installed
+command -v cmake >/dev/null
+cmake_installed=$?
+
+# Check the exit code and display a message
+if ! [ $cmake_installed -eq 0 ]; then
+    echo "CMake is not installed. Installing CMake..."
+
+    # Update package manager
+    if ! [ $apt_get_installed -eq 0 ]; then
+        sudo apt-get install -y cmake
+    else
+        echo "Unable to install CMake. Please install it manually."
+        exit 1
+    fi
+
+    echo "CMake has been installed successfully!"
+else
+    echo "CMake is already installed."
+fi
 
 # now install zephyr
 
