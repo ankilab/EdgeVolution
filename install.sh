@@ -14,7 +14,7 @@ if ! [ $nrfjprog_installed -eq 1]; then
     rm -r -f nrf-command-line-tools/
 
     # readme txt containted in 
-    rm Readme.txt > /dev/null
+    rm README.txt > /dev/null
 
 
     # install jlink segger
@@ -65,25 +65,25 @@ else
 fi
 
 # Check if python3.8-venv is already installed
-apt list --installed | grep python3.8-venv >/dev/null
+apt list --installed | grep python3.10-venv >/dev/null
 python_venv_installed=$?
 
 # Check the exit code and display a message
 if ! [ $python_venv_installed -eq 0 ]; then
-    echo "Python 3.8 venv is not installed. Installing Python 3.8 venv..."
+    echo "Python 3.10 venv is not installed. Installing Python 3.8 venv..."
 
     # Update package manager
     if ! [ $apt_get_installed -eq 0 ]; then
         sudo apt-get update 
-        sudo apt install -y python3.8-venv
+        sudo apt install -y python3.10-venv
     else
-        echo "Unable to install Python 3.8 venv. Please install it manually."
+        echo "Unable to install Python 3.10 venv. Please install it manually according to your installed Python version."
         exit 1
     fi
 
-    echo "Python 3.8 venv has been installed successfully!"
+    echo "Python 3.10 venv has been installed successfully!"
 else
-    echo "Python 3.8 venv is already installed."
+    echo "Python 3.10 venv is already installed."
 fi
 
 
@@ -186,7 +186,7 @@ if ! [ -d "$sdk" ]; then
     sudo tar xvf zephyr-sdk-0.16.1_linux-x86_64.tar.xz -C /opt
     rm zephyr-sdk-0.16.1_linux-x86_64.tar.xz
     cd $sdk
-    ./setup.sh
+ad
     ls
 else
 
