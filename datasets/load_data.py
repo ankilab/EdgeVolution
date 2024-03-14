@@ -5,8 +5,9 @@ import pandas as pd
 import numpy as np
 from scipy import signal
 import itertools
+import sys
 
-
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
 from datasets.src.dataloader_spoken import SpokenDataLoader
 from datasets.src.dataloader_corscience import CorscienceDataLoader
@@ -30,7 +31,26 @@ def get_datasets(dataset: str, params: dict):
     if dataset == "speech_commands":
         dataloader_speech_commands = SpeechCommandsDataloader(params)
         ds_train, ds_val, ds_test = dataloader_speech_commands.load_dataset()
-        return ds_train, ds_val, ds_test
+
+        # class weights are hard-coded to avoid re-calculating them every time
+        # they aredetermined by the following out-commented code
+        #class_weights = get_class_weights(ds_train, params["num_classes"])
+        class_weights = {
+            0: 2.273744947883429,
+            1: 2.294242326679545,
+            2: 2.3463670288662057,
+            3: 2.276650692225772,
+            4: 2.3992985409652077,
+            5: 2.309111039101318,
+            6: 2.360356630230761,
+            7: 2.2905550198221367,
+            8: 2.417203753957485,
+            9: 2.207533044196613,
+            10: 10.667539920159681,
+            11: 0.1317808312066181
+        }
+
+        return ds_train, ds_val, ds_test, class_weights
     
     elif dataset == "spoken":
         dataloader_spoken = SpokenDataLoader("../github_repos/spokeN-100/")
@@ -49,6 +69,21 @@ def get_datasets(dataset: str, params: dict):
     
     else:
         raise ValueError(f"Given dataset ({dataset}) is not available.")
+    
+
+def get_class_weights(ds, num_classes):
+    """
+    Get the class weights for
+    """
+    class_weights = {}
+    total = 0
+    for i in range(num_classes):
+        filtered = ds.filter(lambda x, y: tf.equal(tf.argmax(y), i))
+        class_weights[i] = len(list(filtered.as_numpy_iterator()))
+        total += class_weights[i]
+    for i in range(num_classes):
+        class_weights[i] = total / (num_classes * class_weights[i])
+    return class_weights
 
 
 # def _resample_func(x, samples):

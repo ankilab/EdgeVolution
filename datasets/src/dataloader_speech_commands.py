@@ -59,7 +59,7 @@ class SpeechCommandsDataloader:
         :return: ds_train, ds_val, ds_test
         """
         # find directory "datasets/" within the project directory
-        folder = glob.glob(f"../**/datasets/", recursive=True)[0]
+        folder = glob.glob(f"../../**/datasets/", recursive=True)[0]
 
         # load the dataset
         ds_train = tfds.load("speech_commands", data_dir=folder, split='train', as_supervised=True, download=True)
