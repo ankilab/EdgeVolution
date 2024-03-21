@@ -146,16 +146,21 @@ def read_inference_time(board, save_dir = None):
         max_iterations_counter = 0
         max_iterations = 28
 
+        received_ready_for_inference = False
+
         # connecting to port
         with serial.Serial(port, 115200, timeout=0) as ser:
-
             while measured_value is None:
-                time.sleep(0.25)
+                time.sleep(0.5)
                 try:
+                    if received_ready_for_inference:
+                        # send 's' to start the inference
+                        ser.write(b's')
+
                     # increase stop criterion counter first before reading
                     if max_iterations_counter > max_iterations:
-                        print("max iterations reached")
-                        measured_value = "Max iterations reached"
+                        measured_value = "Max iterations reached" + "; Ready received" if received_ready_for_inference else "Max iterations reached" + "; Ready not received"
+                        print(measured_value)
                         continue  # this avoids the rare case that at max_iterations reached and it reads one value, thus appending two measured values. maybe rethink the whole structure
                     else:
                         max_iterations_counter = max_iterations_counter + 1
@@ -164,7 +169,12 @@ def read_inference_time(board, save_dir = None):
 
                     line = ser.readline()
                     if line != b'':
-                        if "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
+                        if "Ready" in str(line):
+                            print("ready for inference")
+                            received_ready_for_inference = True
+                        elif "Start" in str(line):
+                            print("start inference")
+                        elif "AllocateTensor" in str(line) or "failed" in str(line) or "error" in str(line) or "exit" in str(line):
                             print(str(line))
                             measured_value = str(line)
                         elif "InfTime" in str(line):
@@ -192,7 +202,7 @@ def read_inference_time(board, save_dir = None):
 
     # save output to directory or print it
     if save_dir is not None:
-        save_to_dir(board, save_dir,measured_value, tensor_arena_size)
+        save_to_dir(board, save_dir, measured_value, tensor_arena_size)
     else:
         print(measured_value)
 
