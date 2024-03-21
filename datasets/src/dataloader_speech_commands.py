@@ -62,7 +62,7 @@ class SpeechCommandsDataloader:
         folder = glob.glob(f"../../**/datasets/", recursive=True)[0]
 
         # load the dataset
-        ds_train = tfds.load("speech_commands", data_dir=folder, split='train', as_supervised=True, download=True)
+        ds_train = tfds.load("speech_commands", data_dir=folder, split='train', as_supervised=True, download=True, shuffle_files=True)
         ds_val = tfds.load("speech_commands", data_dir=folder, split='validation', as_supervised=True,
                            download=True)
         ds_test = tfds.load("speech_commands", data_dir=folder, split='test', as_supervised=True, download=True)
