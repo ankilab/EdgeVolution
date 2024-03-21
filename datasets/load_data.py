@@ -11,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
 from datasets.src.dataloader_spoken import SpokenDataLoader
 from datasets.src.dataloader_corscience import CorscienceDataLoader
+from datasets.src.dataloader_toy_admos import ToyAdmosDataloader
 
 
 def get_datasets(dataset: str, params: dict):
@@ -84,6 +85,11 @@ def get_datasets(dataset: str, params: dict):
 
     elif dataset == "motion_sense":
         raise NotImplementedError("MotionSense dataset is not implemented yet.")
+    
+    elif dataset == "toy_admos":
+        dataloader_toy_admos = ToyAdmosDataloader("datasets/ToyADMOS/")
+        ds_train, ds_val, ds_test = dataloader_toy_admos.load_dataset()
+        return ds_train, ds_val, ds_test
 
     elif dataset == "corscience":
         # TODO: remove batch_size
