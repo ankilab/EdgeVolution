@@ -17,7 +17,7 @@ def main(cfg: DictConfig):
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
-    my_saver = Saver(cfg.hyperparameters.dataset_name.value)
+    my_saver = Saver(cfg.hyperparameters.results_path.value, cfg.hyperparameters.dataset_name.value)
 
     my_ga = GeneticAlgorithm(cfg, my_saver)
 
