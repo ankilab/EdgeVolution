@@ -20,7 +20,7 @@ sed -i "s/CONFIG_USB_DEVICE_PRODUCT=\"[^\"]*\"/CONFIG_USB_DEVICE_PRODUCT=\"$name
 echo "Value of CONFIG_USB_DEVICE_PRODUCT changed to '$name'"
 
 # build the files for the given board and snr
-west build -b $board_type evonas_tflite/ --build-dir build-$board_type  > /dev/null
+west build -b $board_type evonas_tflite/ --build-dir build-$board_type  #> /dev/null
 
 # generate RAM and ROM reports
 # check if file exists, otherwise call the west build command
