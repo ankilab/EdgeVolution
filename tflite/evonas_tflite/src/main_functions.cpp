@@ -141,7 +141,7 @@ __attribute__((optimize(0))) void setup(void)
 
 
 	// Create OpResolver class with up to 26 kernel support.
-	using KeywordOpResolver = tflite::MicroMutableOpResolver<38>;
+	using KeywordOpResolver = tflite::MicroMutableOpResolver<37>;
 
 	KeywordOpResolver* op_resolver = new KeywordOpResolver();
 	op_resolver->AddFullyConnected();
@@ -175,7 +175,7 @@ __attribute__((optimize(0))) void setup(void)
 	op_resolver->AddConcatenation();
 	op_resolver->AddLogistic();
 
-	op_resolver->AddRange();
+	//op_resolver->AddRange();
 	op_resolver->AddPad();
 	op_resolver->AddSplit();
 	op_resolver->AddLog();
