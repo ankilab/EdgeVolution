@@ -28,6 +28,7 @@ get_ops.py
 *power_*
 *airway*
 venv
+tflite/optional/*
 
 datasets/EKG Daten
 datasets/daliac
