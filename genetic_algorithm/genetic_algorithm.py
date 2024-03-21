@@ -190,8 +190,7 @@ class GeneticAlgorithm:
                           f'--input_shape {" ".join(str(i) for i in self.cfg.hyperparameters.input_shape.value)} ' + \
                           f'--loss {self.cfg.hyperparameters.loss.value} ' +\
                           f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
-                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' #+ \
-                          #f'--lr_scheduler {" ".join(str(i) for i in self.cfg.hyperparameters.lr_scheduler.value)} '
+                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' 
                 proc = Process(target=lambda: Popen(command, shell=True).wait())
                 proc.start()
                 procs.append(proc)
@@ -205,8 +204,11 @@ class GeneticAlgorithm:
         
         # make sure to wait until all processes are finished
         for p in procs:
-            p.join()
-
+            try:
+                p.join(timeout=300)
+            except:
+                p.join()
+            
         self.send_telegram_update(f"FINISHED NEURAL NETWORK TRAININGS")
 
 
@@ -369,7 +371,7 @@ class GeneticAlgorithm:
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)
                     ppk2 = init_ppk2(board.ppk)
-                    time.sleep(1)  # --> important to wait a bit before flashing the model
+                    time.sleep(2)  # --> important to wait a bit before flashing the model
 
                     # flash tflite model on board
                     try:
@@ -380,7 +382,7 @@ class GeneticAlgorithm:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
                     
                     # wait for the board to boot
-                    time.sleep(2)
+                    time.sleep(5)
 
                     # save RAM and ROM usage to results.json (available after the project was built)
                     save_ram_rom_usage("tflite/build-" + board.model, path + individual + "/" + "results.json")
@@ -397,7 +399,7 @@ class GeneticAlgorithm:
                         command = " ".join(args)  # joining args separated by space
                         proc_energy = Popen(command, shell=True)
 
-                        time.sleep(3)
+                        time.sleep(2)
 
                     # wait for inference time measurement to finish
                     try:

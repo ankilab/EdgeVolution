@@ -28,6 +28,10 @@ def get_datasets(dataset: str, params: dict):
         ValueError: If the given dataset is not available.
         NotImplementedError: If the specified dataset is not implemented yet.
     """
+
+    ###########################################################################
+    # Speech Commands
+    ###########################################################################
     if dataset == "speech_commands":
         dataloader_speech_commands = SpeechCommandsDataloader(params)
         ds_train, ds_val, ds_test = dataloader_speech_commands.load_dataset()
@@ -50,12 +54,32 @@ def get_datasets(dataset: str, params: dict):
             11: 0.1317808312066181
         }
 
+        # def lr_schedule(epoch, lr):
+        #     if epoch < 2:
+        #         return 0.01
+        #     elif epoch < 4:
+        #         return 0.001
+        #     else:
+        #         return lr * np.exp(-0.1)
+
         return ds_train, ds_val, ds_test, class_weights
     
+    ###########################################################################
+    # SpokeN-100
+    ###########################################################################
     elif dataset == "spoken":
         dataloader_spoken = SpokenDataLoader("../github_repos/spokeN-100/")
         data = dataloader_spoken.load_waveform(label_type="number")
         ds_train, ds_val, ds_test = data["train"], data["val"], data["test"]
+
+        # def lr_schedule(epoch, lr):
+        #     if epoch < 25:
+        #         return 0.0001
+        #     elif epoch < 50:
+        #         return 0.00005
+        #     else:
+        #         return 0.00001
+
         return ds_train, ds_val, ds_test
 
     elif dataset == "motion_sense":

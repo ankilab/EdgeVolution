@@ -2,8 +2,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
 from scipy import signal
-import glob
-
+import os
 
 class SpeechCommandsDataloader:
     def __init__(self, params: dict):
@@ -58,8 +57,13 @@ class SpeechCommandsDataloader:
 
         :return: ds_train, ds_val, ds_test
         """
-        # find directory "datasets/" within the project directory
-        folder = glob.glob(f"../../**/datasets/", recursive=True)[0]
+        # go dynamically back in directory until folder "EvoNAS" is reached
+        folder = os.getcwd()
+        while os.path.basename(folder) != "EvoNAS":
+            folder = os.path.dirname(folder)
+        
+        # go to the datasets folder
+        folder = os.path.join(folder, "datasets")
 
         # load the dataset
         ds_train = tfds.load("speech_commands", data_dir=folder, split='train', as_supervised=True, download=True, shuffle_files=True)
