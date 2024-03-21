@@ -20,6 +20,15 @@ hyperparameters:
   #   display: true
 
   ### General parameters:
+  results_path:
+    value: ???
+    unit: null 
+    icon: null
+    displayname: "Results Path"
+    group: "Training parameters"
+    description: "The path where to save all results."
+    display: true
+
   dataset_name:
     value: ???
     unit: null 

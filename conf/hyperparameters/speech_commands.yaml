@@ -5,6 +5,8 @@ min_free_space_gpu:
   value: 10_000_000
 
 ### Dataset/DNN training hyper-parameters:
+results_path:
+  value: "Results/"
 dataset_name:
   value: "speech_commands"
 sample_rate:
@@ -18,7 +20,7 @@ classes_filter:
 top_activation:
   value: "softmax"
 num_epochs:
-  value: 3
+  value: 5
 batch_size:
   value: 128
 lr_scheduler:
@@ -32,7 +34,7 @@ metrics:
 
 ### EvoNAS hyper-parameters:
 num_generations:
-  value: 25
+  value: 5
 population_size:
   value: 300
 num_best_models_crossover:
@@ -40,7 +42,7 @@ num_best_models_crossover:
 mutation_rate:
   value: 25
 population_size_decay:
-  value: [[1, 300], [2, 150], [5, 100], [10, 100]] # [(until_generation, decay), (until_generation, decay), ...]
+  value: [[1, 10], [2, 10], [5, 10], [10, 100]] # [(until_generation, decay), (until_generation, decay), ...]
 num_best_models_crossover_decay:
   value: [[1, 50], [2, 25], [5, 20], [10, 20]] # [(until_generation, decay), (until_generation, decay), ...]
 mutation_rate_decay:
@@ -56,11 +58,11 @@ min_rom_usage:
 min_energy_information:
   value: 1.0
 acc_weight:
-  value: 0.8
+  value: 0.7
 rom_usage_weight:
   value: 0.1
 energy_information_weight:
-  value: 0.1
+  value: 0.2
 
 ### Continue from
 continue_from:

@@ -66,6 +66,7 @@ gast
 gcovr==5.2
 gitlint==0.17.0
 gitlint-core==0.17.0
+GitPython==3.1.42
 google-auth
 google-auth-oauthlib
 google-pasta==0.2.0
@@ -75,6 +76,7 @@ graphviz==0.20.1
 grpcio
 grpcio-tools
 h5py
+hydra-core==1.3.2
 idna
 imagesize==1.4.1
 imgtool==1.9.0
@@ -181,6 +183,7 @@ pyparsing
 pyrsistent==0.18.1
 pyserial==3.5
 PySocks
+pyTelegramBotAPI==4.16.1
 pytest==7.1.3
 python-can==4.0.0
 python-dateutil==2.8.2

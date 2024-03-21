@@ -48,6 +48,7 @@ class GeneticAlgorithm:
         self.send_telegram_update(f"Started new run.")
 
     def send_telegram_update(self, message: str):
+        return
         try:
             bot = telebot.TeleBot("6714744963:AAFVLcimFbYymBLkA_mHBbSGpFCijv0TFGA")
             bot.send_message(chat_id=1781218024, text=message)
