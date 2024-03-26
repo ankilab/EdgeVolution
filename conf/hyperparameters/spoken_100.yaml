@@ -1,0 +1,72 @@
+### General parameters:
+optimize_for_MCU:
+  value: true
+min_free_space_gpu:
+  value: 5_000_000
+
+### Dataset/DNN training hyper-parameters:
+results_path:
+  value: "Results/"
+dataset_name:
+  value: "spoken"
+sample_rate:
+  value: 8000
+input_shape:
+  value: [8000, 1]
+num_classes:
+  value: 100
+classes_filter:
+  value: []
+top_activation:
+  value: "softmax"
+num_epochs:
+  value: 50
+batch_size:
+  value: 32
+lr_scheduler:
+  value: [(4, 0.01), (7, 0.001), (10, 0.0001)] # [(until_epoch, lr), (until_epoch, lr), ...]
+optimizer:
+  value: "adam"
+loss:
+  value: "categorical_crossentropy"
+metrics:
+  value: ["accuracy"]
+
+### EvoNAS hyper-parameters:
+num_generations:
+  value: 25
+population_size:
+  value: 300
+num_best_models_crossover:
+  value: 50
+mutation_rate:
+  value: 25
+population_size_decay:
+  value: [[1, 300], [2, 150], [5, 100], [10, 100]] # [(until_generation, decay), (until_generation, decay), ...]
+num_best_models_crossover_decay:
+  value: [[1, 50], [2, 25], [5, 20], [10, 20]] # [(until_generation, decay), (until_generation, decay), ...]
+mutation_rate_decay:
+  value: [[1, 25], [2, 20], [5, 15], [10, 10]] # [(until_generation, decay), (until_generation, decay), ...]
+max_num_feature_layers:
+  value: 6
+max_num_classification_layers:
+  value: 4
+
+### Fitness
+min_rom_usage:
+  value: 100_000
+min_energy_information:
+  value: 0.5
+acc_weight:
+  value: 0.8
+rom_usage_weight:
+  value: 0.1
+energy_information_weight:
+  value: 0.1
+
+### Continue from
+continue_from:
+  value: [null, null]
+
+
+
