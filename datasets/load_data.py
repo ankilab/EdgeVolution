@@ -11,9 +11,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
 from datasets.src.dataloader_spoken import SpokenDataLoader
 from datasets.src.dataloader_corscience import CorscienceDataLoader
+from datasets.src.dataloader_daliac import DaliacDataLoader
 
-
-def get_datasets(dataset: str, params: dict):
+ 
+def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_hot: bool = False):
     """
     Get the train, validation, and test datasets for the specified dataset.
 
@@ -68,7 +69,7 @@ def get_datasets(dataset: str, params: dict):
     # SpokeN-100
     ###########################################################################
     elif dataset == "spoken":
-        dataloader_spoken = SpokenDataLoader("../github_repos/spokeN-100/")
+        dataloader_spoken = SpokenDataLoader("datasets/spokeN-100/")
         data = dataloader_spoken.load_waveform(label_type="number")
         ds_train, ds_val, ds_test = data["train"], data["val"], data["test"]
 
@@ -80,10 +81,15 @@ def get_datasets(dataset: str, params: dict):
         #     else:
         #         return 0.00001
 
-        return ds_train, ds_val, ds_test
+        return ds_train, ds_val, ds_test, None
 
     elif dataset == "motion_sense":
         raise NotImplementedError("MotionSense dataset is not implemented yet.")
+    
+    elif dataset == "daliac":
+        dataloader_daliac = DaliacDataLoader(path, return_one_hot=return_one_hot)
+        ds_train, ds_val, ds_test = dataloader_daliac.load_dataset()
+        return ds_train, ds_val, ds_test, None
 
     elif dataset == "corscience":
         # TODO: remove batch_size
