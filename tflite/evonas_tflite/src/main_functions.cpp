@@ -22,6 +22,8 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include <tensorflow/lite/micro/kernels/micro_ops.h>
+#include <tensorflow/lite/micro/micro_profiler.h>
+#include <tensorflow/lite/micro/micro_log.h>
 
 #include <math.h>
 #include <stdint.h>
@@ -40,6 +42,9 @@ namespace {
 	// tflite::ErrorReporter *error_reporter = nullptr;
 	const tflite::Model *model = nullptr;
 	tflite::MicroInterpreter *interpreter = nullptr;
+
+	tflite::MicroProfiler profiler;
+	//tflite::MicroResourceVariables *resource_variables = nullptr;
 
 	//constexpr int kTensorArenaSize = 170 * 1024;
 	constexpr int kTensorArenaSize = 155 * 1024;
@@ -97,8 +102,6 @@ uint32_t MeasureTotalSize(const tflite::Model* model) {
 uint8_t setup_failed = 1;
 
 
-
-
 /* The name of this function is important for Arduino compatibility. */
 __attribute__((optimize(0))) void setup(void)
 {
@@ -125,6 +128,10 @@ __attribute__((optimize(0))) void setup(void)
 		k_sleep(K_MSEC(100));
 	}
 
+	/* Set UART communication parameters. */
+	uart_line_ctrl_set(dev, UART_LINE_CTRL_BAUD_RATE, 115200);
+	uart_line_ctrl_set(dev, UART_LINE_CTRL_RTS, 1);
+
 	/* Turn LED on to indicate that DTR flag was set */
 	gpio_pin_set_dt(&led, 1);	
 
@@ -136,9 +143,8 @@ __attribute__((optimize(0))) void setup(void)
 		return;
 	}
 
-	uint32_t measured = MeasureTotalSize(model);
-	printk("measured used bytes : %d \n", measured);
-
+	//uint32_t measured = MeasureTotalSize(model);
+	//printk("measured used bytes : %d \n", measured);
 
 	// Create OpResolver class with up to 26 kernel support.
 	using KeywordOpResolver = tflite::MicroMutableOpResolver<37>;
@@ -209,50 +215,68 @@ __attribute__((optimize(0))) void setup(void)
 		return;
 	}
 
-	int64_t all_times = 0;
-	int64_t time_stamp;
-	int64_t milliseconds_spent;
+	printk("Ready to start inference\n");
+	//MicroPrintf("Micro Printf\n");
 
-	k_sleep(K_MSEC(100));
-	printk("now invoking...\n");
+	/* Wait for start message */
+	uint8_t data;
+	while (1) {
+		if (uart_poll_in(dev, &data) == 0) {
+			if (data == 's') {
+				printk("Start message received\n");
 
-	// run invoke one time
-	// start time measurement
-	time_stamp = k_uptime_get();
-	
-	TfLiteStatus invoke_status = interpreter->Invoke();
-	if (invoke_status != kTfLiteOk) {
-		printk("Invoke error\n");
-		return;
-	}
+				int64_t all_times = 0;
+				int64_t time_stamp;
+				int64_t milliseconds_spent;
 
-	milliseconds_spent = k_uptime_delta(&time_stamp);
+				printk("now invoking...\n");
 
-	if (milliseconds_spent >= 200) {
-		// just pass by as we need no averaging
-	}
-	else{
-		size_t n_iterations = 10;
+				// run invoke one time
+				// start time measurement
+				time_stamp = k_uptime_get();
 
-		for (size_t i = 0; i < n_iterations; i++){
-			time_stamp = k_uptime_get();	
+				TfLiteStatus invoke_status = interpreter->Invoke();
+				if (invoke_status != kTfLiteOk) {
+					printk("Invoke error\n");
+					return;
+				}
 
-			TfLiteStatus invoke_status = interpreter->Invoke();
-			if (invoke_status != kTfLiteOk) {
-				printk("Invoke error\n");
-				return;
+				milliseconds_spent = k_uptime_delta(&time_stamp);
+
+
+				if (milliseconds_spent >= 200) {
+					// just pass by as we need no averaging
+				}
+				else{
+					size_t n_iterations = 10;
+
+					for (size_t i = 0; i < n_iterations; i++){
+						time_stamp = k_uptime_get();	
+
+						TfLiteStatus invoke_status = interpreter->Invoke();
+						if (invoke_status != kTfLiteOk) {
+							printk("Invoke error\n");
+							return;
+						}
+						milliseconds_spent = k_uptime_delta(&time_stamp);
+						all_times += milliseconds_spent;
+					}
+
+					// divide by 10 to get average time
+					milliseconds_spent = all_times / n_iterations;
+				}
+				// profiler
+				//profiler.LogCsv();
+				// profiler->LogTicksPerTagCsv();
+
+
+				k_sleep(K_MSEC(100));
+				printk("Finished inference\n");
+				printk("Time: %d\n", (int32_t)(milliseconds_spent));
+				printk("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
 			}
-			milliseconds_spent = k_uptime_delta(&time_stamp);
-			all_times += milliseconds_spent;
 		}
-
-		// divide by 10 to get average time
-		milliseconds_spent = all_times / n_iterations;
 	}
-
-	printk("Time: %d\n", (int32_t)(milliseconds_spent));
-	printk("InfTime: %d%d\n", (int32_t)(milliseconds_spent >> 32), (int32_t)(milliseconds_spent));
-	k_sleep(K_SECONDS(5));
 }
 
 /* The name of this function is important for Arduino compatibility. */

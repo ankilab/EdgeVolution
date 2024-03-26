@@ -86,10 +86,17 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
     elif dataset == "motion_sense":
         raise NotImplementedError("MotionSense dataset is not implemented yet.")
     
+<<<<<<< HEAD
     elif dataset == "daliac":
         dataloader_daliac = DaliacDataLoader(path, return_one_hot=return_one_hot)
         ds_train, ds_val, ds_test = dataloader_daliac.load_dataset()
         return ds_train, ds_val, ds_test, None
+=======
+    elif dataset == "toy_admos":
+        dataloader_toy_admos = ToyAdmosDataloader("datasets/ToyADMOS/")
+        ds_train, ds_val, ds_test = dataloader_toy_admos.load_dataset()
+        return ds_train, ds_val, ds_test
+>>>>>>> b1635f3c8c4e5232ab42cc1bd3f34cbc58534bd0
 
     elif dataset == "corscience":
         # TODO: remove batch_size

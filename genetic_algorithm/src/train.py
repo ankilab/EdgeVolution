@@ -88,7 +88,7 @@ def train_model(args):
         else:
             return lr * np.exp(-0.1)
 
-    initial_learning_rate = 0.01
+    initial_learning_rate = 0.001
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate,
         decay_steps=0.2,
