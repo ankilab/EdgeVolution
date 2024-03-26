@@ -365,7 +365,7 @@ class GeneticAlgorithm:
             # flash tflite model on individual board
             if len(self.cfg.boards.value) > 0:
                 for board in self.cfg.boards.value:
-                    tflite_path = "../" + path + individual + "/models/model_tflite_untrained.tflite"
+                    tflite_path = path + individual + "/models/model_tflite_untrained.tflite"
                     cpp_path = '../tflite/evonas_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
@@ -375,11 +375,17 @@ class GeneticAlgorithm:
 
                     # flash tflite model on board
                     try:
-                        subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
+                        ret_val = subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
                         self.send_telegram_update(f"Error when flashing model on board {board.snr}. Exception: {str(e)}")
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
+                    
+                    if ret_val != 0:
+                        self.send_telegram_update(f"Error when flashing model on board {board.snr}.")
+                        with open(error_log_path, 'a') as f:
+                            f.write(f"Error when flashing model on board {board.snr}. Probably FLASH memory not big enough.\n")
+                        continue
                     
                     # wait for the board to boot
                     time.sleep(5)
