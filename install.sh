@@ -202,6 +202,8 @@ zeph="zephyr/"
 
 if ! [ -d "$zeph" ]; then
     west init .
+    # add optional packages since tflite-micro is contained there
+    west config manifest.group-filter -- +optional 
     west update
     west zephyr-export
 
