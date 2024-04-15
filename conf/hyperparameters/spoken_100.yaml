@@ -2,9 +2,11 @@
 optimize_for_MCU:
   value: true
 min_free_space_gpu:
-  value: 10_000_000
+  value: 5_000_000
 
 ### Dataset/DNN training hyper-parameters:
+results_path:
+  value: "Results/"
 dataset_name:
   value: "spoken"
 sample_rate:
@@ -18,7 +20,7 @@ classes_filter:
 top_activation:
   value: "softmax"
 num_epochs:
-  value: 100
+  value: 50
 batch_size:
   value: 32
 lr_scheduler:
@@ -54,13 +56,13 @@ max_num_classification_layers:
 min_rom_usage:
   value: 100_000
 min_energy_information:
-  value: 1.0
+  value: 0.5
 acc_weight:
-  value: 0.6
+  value: 0.8
 rom_usage_weight:
-  value: 0.2
+  value: 0.1
 energy_information_weight:
-  value: 0.2
+  value: 0.1
 
 ### Continue from
 continue_from:

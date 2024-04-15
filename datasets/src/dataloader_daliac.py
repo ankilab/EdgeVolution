@@ -3,17 +3,18 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import glob
+from tensorflow.keras.utils import to_categorical
 
 
 class DaliacDataLoader:
     """
     DaLiAc dataset loader.
     """
-    def __init__(self, data_path=None, window_size=2048, batch_size=32, overlap_percent=50):
+    def __init__(self, data_path=None, return_one_hot=False, window_size=2048, overlap_percent=50):
         self.window_size = window_size
-        self.batch_size = batch_size
         self.overlap_percent = overlap_percent
         self.num_channels = 1  # Assuming the magnitude of X, Y, Z axes
+        self.return_one_hot = return_one_hot
 
         if data_path is None:
             # find directory "datasets/" within the project directory
@@ -48,6 +49,15 @@ class DaliacDataLoader:
         unique_labels, counts = np.unique(labels, return_counts=True)
         most_frequent_index = np.argmax(counts)
         return unique_labels[most_frequent_index]
+    
+    def _get_single_label(self, labels):
+        """
+        Get the label but only if one single label occurs. Otherwise return None.
+        """
+        unique_labels = np.unique(labels)
+        if len(unique_labels) == 1:
+            return unique_labels[0]
+        return None
 
     def _load_data(self, file_paths):
         """
@@ -59,8 +69,15 @@ class DaliacDataLoader:
 
             # iterate over data and create windows --> add to X
             for i in range(0, len(data) - self.window_size, int(self.window_size * (1 - self.overlap_percent / 100))):
-                X.append(data[i:i + self.window_size])
-                y.append(self._most_frequent_label(labels[i:i + self.window_size]) - 1)
+                _X = data[i:i + self.window_size]
+                _y = self._get_single_label(labels[i:i + self.window_size])
+                #_y = self._most_frequent_label(labels[i:i + self.window_size])
+
+                if _y is not None:
+                    X.append(_X)
+                    if self.return_one_hot:
+                        _y = to_categorical(_y-1, num_classes=13)
+                    y.append(_y)
 
         return np.array(X)[..., None], np.array(y)
 
@@ -68,8 +85,8 @@ class DaliacDataLoader:
         """
         Load the DaLiAc dataset.
         """
-        ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths))).batch(self.batch_size)
-        ds_val = tf.data.Dataset.from_tensor_slices((self._load_data(self.val_file_paths))).batch(self.batch_size)
-        ds_test = tf.data.Dataset.from_tensor_slices((self._load_data(self.test_file_paths))).batch(self.batch_size)
+        ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths)))
+        ds_val = tf.data.Dataset.from_tensor_slices((self._load_data(self.val_file_paths)))
+        ds_test = tf.data.Dataset.from_tensor_slices((self._load_data(self.test_file_paths)))
 
         return ds_train, ds_val, ds_test
