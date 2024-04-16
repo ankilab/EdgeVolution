@@ -41,7 +41,7 @@ def train_model(args):
     params = {'input_shape': args.input_shape,
               'classes_filter': args.classes_filter}
 
-    ds_train, ds_val, ds_test, class_weights = get_datasets(args.dataset, params)
+    ds_train, ds_val, _, class_weights = get_datasets(dataset=args.dataset, params=params)
 
     #########################################################################################
     # DNN training
@@ -110,13 +110,12 @@ def train_model(args):
         history = model.fit(ds_train.batch(args.batch_size),
                             validation_data=ds_val.batch(args.batch_size),
                             callbacks=callbacks,
-                            #verbose=0,
+                            verbose=0,
                             epochs=args.num_epochs, 
                             class_weight=class_weights)
         print("Training finished!")
         best_val_acc = np.max(history.history['val_accuracy'])
     except Exception as e:
-        print("Error occurred during training:", str(e))
         best_val_acc = -1
 
     #########################################################################################
@@ -181,10 +180,11 @@ parser.add_argument("--optimizer", type=str)
 args = parser.parse_args()
 
 # Call the train_model function with the provided arguments
-try:
-    val_acc = train_model(args)
-except Exception as e:
-    val_acc = str(e)
+#try:
+val_acc = train_model(args)
+#except Exception as e:
+    #print("Error occurred during training:", str(e))
+    #val_acc = str(e)
 
 #########################################################################################
 # Save determined val accuracy in results.json
@@ -192,6 +192,10 @@ except Exception as e:
 with open(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + '/results.json') as f:
     d = json.loads(f.read())
 
-d["val_acc"] = float(val_acc)
+try:
+    d["val_acc"] = float(val_acc)
+except:
+    d["val_acc"] = val_acc
+
 with open(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + '/results.json', 'w') as f:
     json.dump(d, f, indent=2)
