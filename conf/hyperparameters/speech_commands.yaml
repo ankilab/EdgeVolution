@@ -6,7 +6,7 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  value: "Results/"
+  value: "/data_slow/du92wufe/EvoNAS/Results/"
 dataset_name:
   value: "speech_commands"
 sample_rate:
@@ -20,9 +20,9 @@ classes_filter:
 top_activation:
   value: "softmax"
 num_epochs:
-  value: 5
+  value: 3
 batch_size:
-  value: 128
+  value: 256
 optimizer:
   value: "adam"
 loss:
@@ -32,35 +32,29 @@ metrics:
 
 ### EvoNAS hyper-parameters:
 num_generations:
-  value: 5
-population_size:
-  value: 300
-num_best_models_crossover:
-  value: 3
-mutation_rate:
-  value: 25
+  value: 15
 population_size_decay:
-  value: [[1, 10], [2, 10], [5, 10], [10, 100]] # [(until_generation, decay), (until_generation, decay), ...]
+  value: [[1, 500], [2, 250], [10, 100]] # [(from_generation, population_size), (from_generation, population_size), ...]
 num_best_models_crossover_decay:
-  value: [[1, 50], [2, 25], [5, 20], [10, 20]] # [(until_generation, decay), (until_generation, decay), ...]
+  value: [[1, 100], [2, 50], [10, 20]] # [(from_generation, population_size), (from_generation, population_size), ...]
 mutation_rate_decay:
-  value: [[1, 25], [2, 20], [5, 15], [10, 10]] # [(until_generation, decay), (until_generation, decay), ...]
+  value: [[1, 30], [2, 25], [5, 20], [10, 15]] # [(from_generation, population_size), (from_generation, population_size), ...]
 max_num_feature_layers:
-  value: 5
+  value: 8
 max_num_classification_layers:
-  value: 3
+  value: 4
 
 ### Fitness
 min_rom_usage:
-  value: 100_000
+  value: 150_000
 min_energy_information:
-  value: 1.0
+  value: 0.5
 acc_weight:
-  value: 0.6
+  value: 0.55
 rom_usage_weight:
   value: 0.1
 energy_information_weight:
-  value: 0.3
+  value: 0.35
 
 ### Continue from
 continue_from:

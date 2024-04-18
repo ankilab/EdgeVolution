@@ -160,7 +160,7 @@ hyperparameters:
     description: "The total iterations or evolutionary cycles through which the algorithm refines neural architectures."
     display: true
 
-  population_size:
+  population_size_decay:
     value: ???
     unit: null 
     icon: "pepicons-pencil:people"
@@ -169,7 +169,12 @@ hyperparameters:
     description: "The quantity of neural network models concurrently evaluated and evolved within each generation."
     display: true
 
-  num_best_models_crossover:
+  population_size:
+    value: 1
+    description: "This is just a placeholder for the population size. It is determined by population_size_decay."
+    display: false
+
+  num_best_models_crossover_decay:
     value: ???
     unit: null 
     icon: "game-icons:podium-winner"
@@ -178,7 +183,12 @@ hyperparameters:
     description: "The count of top-performing models selected for genetic crossover to generate new offspring."
     display: true
 
-  mutation_rate:
+  num_best_models_crossover:
+    value: 1
+    description: "This is just a placeholder for the number of best models crossover. It is determined by num_best_models_crossover_decay."
+    display: false
+
+  mutation_rate_decay:
     value: ???
     unit: null 
     icon: "ph:virus"
@@ -186,6 +196,11 @@ hyperparameters:
     group: "Evonas parameters"
     description: "The probability that a given model will be mutated during the evolutionary process."
     display: true
+
+  mutation_rate:
+    value: 1
+    description: "This is just a placeholder for the mutation rate. It is determined by mutation_rate_decay."
+    display: false
 
   ### Fitness
   max_memory_footprint:
@@ -358,17 +373,118 @@ boards:
 
 ### Placeholder for results
 results:
-  - memory_footprint_h5: {}
-  - memory_footprint_tflite: {}
-  - memory_footprint_c_array: {}
-  - ram_usage: {}
-  - rom_usage: {}
-  - inference_information: {}
-  - tensorsize_information: {}
-  - energy_information: {}
-  - mean_power_information: {}
-  - val_acc: {}
-  - fitness: {}
-  - error: false
+  memory_footprint_h5:
+    displayname: "Memory Footprint H5"
+    unit: "B"
+    description: ""
+    run-result-plot: false
+    individual-info-plot: true
+    individual-info-img: "memory-footprint-h5-icon.png"
+    pareto-optimlity-plot: false
+    board: false
+
+  memory_footprint_tflite:
+    displayname: "Memory Footprint TFLite"
+    unit: "B"
+    description: ""
+    run-result-plot: true
+    individual-info-plot: true
+    individual-info-img: "memory-footprint-h5-icon.png"
+    pareto-optimlity-plot: true
+    board: false
+
+  memory_footprint_c_array:
+    displayname: "Memory Footprint CArray"
+    unit: "B"
+    description: ""
+    run-result-plot: false
+    individual-info-plot: true
+    individual-info-img: "memory-footprint-h5-icon.png"
+    pareto-optimlity-plot: false
+    board: false
+
+  ram_usage:
+    displayname: "RAM Usage"
+    unit: "B"
+    description: ""
+    run-result-plot: false
+    individual-info-plot: false
+    individual-info-img: "memory-footprint-tflite-icon.png"
+    pareto-optimlity-plot: false
+    board: false
+
+  rom_usage:
+    displayname: "ROM Usage"
+    unit: "B"
+    description: ""
+    run-result-plot: false
+    individual-info-plot: false
+    individual-info-img: "memory-footprint-tflite-icon.png"
+    pareto-optimlity-plot: false
+    board: false
+
+  inference_information:
+    displayname: "Inference Information"
+    unit: "ms"
+    description: ""
+    run-result-plot: true
+    individual-info-plot: true
+    individual-info-img: "inference-time-icon.png"
+    pareto-optimlity-plot: true
+    board: true
+
+  tensorsize_information:
+    displayname: "Tensorsize Information"
+    unit: null
+    description: ""
+    run-result-plot: true
+    individual-info-plot: true
+    individual-info-img: "memory-footprint-c-array-icon.png"
+    pareto-optimlity-plot: false
+    board: true
+
+  energy_information:
+    displayname: "Energy Information"
+    unit: "mJ"
+    description: ""
+    run-result-plot: true
+    individual-info-plot: true
+    individual-info-img: "energy-consumption-icon.png"
+    pareto-optimlity-plot: false
+    board: true
+
+  mean_power_information:
+    displayname: "Mean power Information"
+    unit: "mJ"
+    description: ""
+    run-result-plot: true
+    individual-info-plot: true
+    individual-info-img: "energy-consumption-icon.png"
+    pareto-optimlity-plot: false
+    board: true
+
+  val_acc:
+    displayname: "Accuracy"
+    unit: null
+    description: null
+    run-result-plot: true
+    individual-info-plot: true
+    individual-info-img: "val-acc-icon.png"
+    pareto-optimlity-plot: true
+    board: false
+    min-boundary: 0
+    max-boundary: 1
+
+  fitness:
+    displayname: "Inference Information"
+    unit: null
+    description: null
+    run-result-plot: false
+    individual-info-plot: false
+    individual-info-img: null
+    pareto-optimlity-plot: false
+    board: false
+    min-boundary: 0
+    max-boundary: 1
 
 fitness_function: {}
