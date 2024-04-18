@@ -17,7 +17,7 @@ def continue_run(path, gen_start):
     my_loader = Loader(path, gen_start)
     cfg = my_loader.get_cfg()
     
-    my_saver = Saver(cfg.hyperparameters.dataset_name.value)
+    my_saver = Saver(cfg.hyperparameters.results_path.value, cfg.hyperparameters.dataset_name.value)
     my_ga = GeneticAlgorithm(cfg, my_saver, my_loader)
 
     # save params

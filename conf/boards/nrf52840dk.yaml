@@ -1,3 +1,8 @@
+# value:
+#   - model: "nrf52840dk_nrf52840"  # Board model
+#     snr: "1050283223"  # Serial number
+#     ppk: "FAFD344C"  # PPK (Power Profiling Kit) serial number
+
 value:
   - model: "nrf52840dk_nrf52840"  # Board model
     snr: "1050242564"  # Serial number
@@ -8,7 +13,3 @@ value:
 #     snr: "1050289157"  # Serial number
 #     ppk: "None"  # PPK (Power Profiling Kit) serial number
 
-# value:
-#  - model: "nrf52840dk_nrf52840"  # Board model
-#  snr: "1050283223"  # Serial number
-#  ppk: "FAFD344C"  # PPK (Power Profiling Kit) serial number

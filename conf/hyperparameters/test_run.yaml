@@ -23,11 +23,9 @@ classes_filter:
 top_activation:
   value: "softmax"
 num_epochs:
-  value: 1
+  value: 3
 batch_size:
-  value: 64
-lr_scheduler:
-  value: [(5, 0.01), (10, 0.001), (15, 0.0001)] # [(until_epoch, lr), (until_epoch, lr), ...]
+  value: 128
 optimizer:
   value: "adam"
 loss:
@@ -61,11 +59,11 @@ min_rom_usage:
 min_energy_information:
   value: 1.0
 acc_weight:
-  value: 0.8
+  value: 0.6
 rom_usage_weight:
-  value: 0.1
+  value: 0.2
 energy_information_weight:
-  value: 0.1
+  value: 0.2
 
 ### Continue from
 continue_from:

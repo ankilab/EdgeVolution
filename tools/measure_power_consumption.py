@@ -180,7 +180,7 @@ def measure_power_nrf(_ppk2: PPK2_API, save_dir: str, board_snr: str, ppk_serial
                     nb_tries += 1
                     print(f"Error when calling get_data: {str(e)}")
                     with open(error_log_path, 'a') as file:
-                        file.write(f"10010: Error when calling get_data: {str(e)} \n")
+                        file.write(f"10010: Error when calling get_data during power consumption measurement: {str(e)} \n")
                     if nb_tries < 50:
                         continue
                     else:

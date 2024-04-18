@@ -48,6 +48,7 @@ class GeneticAlgorithm:
         self.send_telegram_update(f"Started new run.")
 
     def send_telegram_update(self, message: str):
+        return
         try:
             bot = telebot.TeleBot("6714744963:AAFVLcimFbYymBLkA_mHBbSGpFCijv0TFGA")
             bot.send_message(chat_id=1781218024, text=message)
@@ -77,7 +78,7 @@ class GeneticAlgorithm:
         # increment generation counter
         self.generation_counter = current_generation
 
-        # apply decays to hyperparameters to go away from eploration to exploitation
+        # apply decays to hyperparameters to go away from exploration to exploitation
         self.update_population_size()
         self.update_num_best_models_crossover()
         self.update_mutation_rate()
@@ -189,8 +190,7 @@ class GeneticAlgorithm:
                           f'--input_shape {" ".join(str(i) for i in self.cfg.hyperparameters.input_shape.value)} ' + \
                           f'--loss {self.cfg.hyperparameters.loss.value} ' +\
                           f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
-                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' #+ \
-                          #f'--lr_scheduler {" ".join(str(i) for i in self.cfg.hyperparameters.lr_scheduler.value)} '
+                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' 
                 proc = Process(target=lambda: Popen(command, shell=True).wait())
                 proc.start()
                 procs.append(proc)
@@ -204,8 +204,11 @@ class GeneticAlgorithm:
         
         # make sure to wait until all processes are finished
         for p in procs:
-            p.join()
-
+            try:
+                p.join(timeout=300)
+            except:
+                p.join()
+            
         self.send_telegram_update(f"FINISHED NEURAL NETWORK TRAININGS")
 
 
@@ -318,6 +321,12 @@ class GeneticAlgorithm:
 
             # the value with the highest gradient is
             mean_power_consumption = np.mean(values[start:end])  # measured in uA
+
+            # double-check if the mean power consumption is in the correct range
+            # It should be above 4400 uA at least
+            if mean_power_consumption < 4400:
+                mean_power_consumption = 4600 # --> determined through experiments
+
             mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
 
             voltage = 3.3  # in V
@@ -362,24 +371,30 @@ class GeneticAlgorithm:
             # flash tflite model on individual board
             if len(self.cfg.boards.value) > 0:
                 for board in self.cfg.boards.value:
-                    tflite_path = "../" + path + individual + "/models/model_tflite_untrained.tflite"
+                    tflite_path = path + individual + "/models/model_tflite_untrained.tflite"
                     cpp_path = '../tflite/evonas_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)
                     ppk2 = init_ppk2(board.ppk)
-                    time.sleep(1)  # --> important to wait a bit before flashing the model
+                    time.sleep(2)  # --> important to wait a bit before flashing the model
 
                     # flash tflite model on board
                     try:
-                        subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
+                        ret_val = subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
                         self.send_telegram_update(f"Error when flashing model on board {board.snr}. Exception: {str(e)}")
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
                     
+                    if ret_val != 0:
+                        self.send_telegram_update(f"Error when flashing model on board {board.snr}.")
+                        with open(error_log_path, 'a') as f:
+                            f.write(f"Error when flashing model on board {board.snr}. Probably FLASH memory not big enough.\n")
+                        continue
+                    
                     # wait for the board to boot
-                    time.sleep(2)
+                    time.sleep(5)
 
                     # save RAM and ROM usage to results.json (available after the project was built)
                     save_ram_rom_usage("tflite/build-" + board.model, path + individual + "/" + "results.json")
@@ -396,7 +411,7 @@ class GeneticAlgorithm:
                         command = " ".join(args)  # joining args separated by space
                         proc_energy = Popen(command, shell=True)
 
-                        time.sleep(3)
+                        time.sleep(2)
 
                     # wait for inference time measurement to finish
                     try:
@@ -488,25 +503,21 @@ class GeneticAlgorithm:
         Apply population size decay after each generation.
         """
         decay = self.cfg.hyperparameters.population_size_decay.value
-        self.cfg.hyperparameters.population_size.value = next((elem[1] for elem in decay if self.generation_counter <= elem[0]), decay[-1][1])
+        self.cfg.hyperparameters.population_size.value = next(sublist[1] for sublist in decay[::-1] if self.generation_counter+1 >= sublist[0])
 
     def update_num_best_models_crossover(self):
         """ 
         Apply num_best_models_crossover decay after each generation.
         """
-        for elem in self.cfg.hyperparameters.num_best_models_crossover_decay.value:
-            if self.generation_counter <= int(elem[0]):
-                self.cfg.hyperparameters.num_best_models_crossover.value = int(elem[1])
-                break
+        decay = self.cfg.hyperparameters.num_best_models_crossover_decay.value
+        self.cfg.hyperparameters.num_best_models_crossover.value = next(sublist[1] for sublist in decay[::-1] if self.generation_counter+1 >= sublist[0])
 
     def update_mutation_rate(self):
         """ 
         Apply mutation rate decay after each generation.
         """
-        for elem in self.cfg.hyperparameters.mutation_rate_decay.value:
-            if self.generation_counter <= int(elem[0]):
-                self.cfg.hyperparameters.mutation_rate.value = int(elem[1])
-                break
+        decay = self.cfg.hyperparameters.mutation_rate_decay.value
+        self.cfg.hyperparameters.mutation_rate.value = next(sublist[1] for sublist in decay[::-1] if self.generation_counter+1 >= sublist[0])
 
     def mutation(self):
         """ Mutation of the population previously generated by crossover. """

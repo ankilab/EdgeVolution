@@ -8,8 +8,6 @@ tflite/log.log
 tiny_ml/
 *pycache*
 Results/
-datasets/speech_commands
-datasets/motion_sense_accelerometer
 *utils/datasets.py
 *.cc
 #*.tflite
@@ -25,9 +23,18 @@ datasets/downloads/
 README.txt
 nrf-command-line-tools*
 *.ipynb_checkpoints
-datasets/*
 get_ops.py
 *build*
 *power_*
 *airway*
+<<<<<<< HEAD
 *venv*
+tflite/optional/*
+
+datasets/EKG Daten
+datasets/daliac
+datasets/speech_commands
+datasets/motion_sense_accelerometer
+datasets/ToyADMOS
+datasets/spokeN*
+baselines/SpokeN-100
