@@ -27,7 +27,8 @@ get_ops.py
 *build*
 *power_*
 *airway*
-venv
+<<<<<<< HEAD
+*venv*
 tflite/optional/*
 
 datasets/EKG Daten
