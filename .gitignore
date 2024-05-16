@@ -26,7 +26,7 @@ nrf-command-line-tools*
 get_ops.py
 *build*
 *power_*
-*airway*
+
 venv
 tflite/optional/*
 
@@ -36,5 +36,7 @@ datasets/speech_commands
 datasets/motion_sense_accelerometer
 datasets/ToyADMOS
 datasets/spokeN*
+datasets/airway_database
 baselines/SpokeN-100
+baselines/airway
 *EvoVis*
