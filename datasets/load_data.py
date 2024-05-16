@@ -14,6 +14,7 @@ from datasets.src.dataloader_corscience import CorscienceDataLoader
 from datasets.src.dataloader_daliac import DaliacDataLoader
 
 from datasets.src.dataloader_toy_admos import ToyAdmosDataloader
+from datasets.src.dataloader_cifar10 import Cifar10DataLoader
 
  
 def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_hot: bool = False):
@@ -66,6 +67,11 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
         #         return lr * np.exp(-0.1)
 
         return ds_train, ds_val, ds_test, class_weights
+
+    elif dataset == "cifar10":
+        dataloader_cifar10 = Cifar10DataLoader()
+        ds_train, ds_val, ds_test = dataloader_cifar10.load_dataset()
+        return ds_train, ds_val, ds_test, None
     
     ###########################################################################
     # SpokeN-100
