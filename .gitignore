@@ -26,8 +26,9 @@ nrf-command-line-tools*
 get_ops.py
 *build*
 *power_*
-
 venv
+*airway*
+*venv*
 tflite/optional/*
 
 datasets/EKG Daten
@@ -40,3 +41,4 @@ datasets/airway_database
 baselines/SpokeN-100
 baselines/airway
 *EvoVis*
+datasets/cifar10
