@@ -134,14 +134,14 @@ def train_model(args):
                   loss=args.loss,
                   metrics=args.metrics)
 
-    # TODO: use 200 mel spectrograms as representative dataset
-    tflite_model = substitute_tflite_layer(model, params['input_shape'])
-    tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, params['input_shape'][0], 1)))
+    # TODO: use 200 real input samples as representative dataset
+    # tflite_model = substitute_tflite_layer(model, params['input_shape'])
+    # tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, params['input_shape'][0], 1)))
 
-    # save TFLite model
-    path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"
-    with open(path_tflite_model, "wb") as fp:
-        fp.write(tflite_model)
+    # # save TFLite model
+    # path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"
+    # with open(path_tflite_model, "wb") as fp:
+    #     fp.write(tflite_model)
 
     #########################################################################################
     # Determine test accuracy using TF Lite model
