@@ -90,7 +90,7 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
     
     elif dataset == "daliac":
         dataloader_daliac = DaliacDataLoader(path, return_one_hot=return_one_hot)
-        ds_train, ds_val, ds_test = dataloader_daliac.load_dataset()
+        ds_train, ds_val, ds_test = dataloader_daliac.load_complete_dataset()
         return ds_train, ds_val, ds_test, None
     
     elif dataset == "toy_admos":
