@@ -58,9 +58,12 @@ def evaluate_single_model(tflite_path: str, board_model: str, board_snr: str, pp
 
     # flash tflite model on board
     try:
-        subprocess.call(['bash', '-i', FLASHER_PATH, tflite_path, CPP_PATH, board_model, board_snr])
+        ret_val = subprocess.call(['bash', '-i', FLASHER_PATH, tflite_path, CPP_PATH, board_model, board_snr])
     except Exception as e:
         raise e
+    
+    if ret_val != 0:
+        raise Exception("Error flashing the model on the board. Ret val: ", ret_val)
 #
     save_ram_rom_usage(f"../tflite/build-{board_model}", str(results_path))
 

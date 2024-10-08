@@ -110,11 +110,11 @@ class GenePool:
             with open(path + chromosome_2_name + '/chromosome.json') as f:
                 chromosome_2 = json.loads(f.read())
 
-            #try:
-            new_chromosomes, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
-            #except Exception as e:
-                #print(e)
-                #continue
+            try:
+                new_chromosomes, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
+            except Exception as e:
+                print(e)
+                continue
 
             for new_chromosome in new_chromosomes:
                 if new_chromosome is not None:

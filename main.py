@@ -22,13 +22,11 @@ def main(cfg: DictConfig):
     my_ga = GeneticAlgorithm(cfg, my_saver)
 
     # random init the population of the first generation
-    my_ga.update_population_size()
     my_ga.init_first_generation()
     gen_start = 1
 
     # save params
     my_saver.save_params(cfg)
-
 
     for i_generation in range(gen_start, cfg.hyperparameters.num_generations.value + 1):
         my_ga.prepare_generation(i_generation)

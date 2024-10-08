@@ -170,7 +170,7 @@ hyperparameters:
     display: true
 
   population_size:
-    value: 1
+    value: 0
     description: "This is just a placeholder for the population size. It is determined by population_size_decay."
     display: false
 
@@ -184,7 +184,7 @@ hyperparameters:
     display: true
 
   num_best_models_crossover:
-    value: 1
+    value: 0
     description: "This is just a placeholder for the number of best models crossover. It is determined by num_best_models_crossover_decay."
     display: false
 
@@ -198,7 +198,7 @@ hyperparameters:
     display: true
 
   mutation_rate:
-    value: 1
+    value: 0
     description: "This is just a placeholder for the mutation rate. It is determined by mutation_rate_decay."
     display: false
 

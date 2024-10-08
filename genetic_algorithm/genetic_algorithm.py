@@ -56,8 +56,10 @@ class GeneticAlgorithm:
             print("Could not send message to telegram bot")
 
     def init_first_generation(self):
-        # update population size as specified in the config for population_size_decay
+        # update parameters for the first generation
         self.update_population_size()
+        self.update_num_best_models_crossover()
+        self.update_mutation_rate()
 
         # generate random names for all individuals
         self.individuals = self._generate_population_names()
@@ -324,8 +326,12 @@ class GeneticAlgorithm:
 
             # double-check if the mean power consumption is in the correct range
             # It should be above 4400 uA at least
-            if mean_power_consumption < 4400:
-                mean_power_consumption = 4600 # --> determined through experiments
+            if self.cfg.boards.value[0].model == "nrf52840":
+                if mean_power_consumption < 4400:
+                    mean_power_consumption = 4650 # --> determined through experiments
+            elif self.cfg.boards.value[0].model == "nrf5340":
+                if mean_power_consumption < 5500:
+                    mean_power_consumption = 5700 # --> determined through experiments
 
             mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
 
@@ -340,7 +346,7 @@ class GeneticAlgorithm:
             # calculate energy by Energy = Voltage x Current x time
             energy_consumption = voltage * mean_power_consumption * inf_time  # in J
             energy_consumption = energy_consumption * (10 ** 3)  # in mJ
-
+            
             # save energy consumption to results
             results["energy_information"] = self.set_result_value_for_board(board_snr, "energy_information",
                                                                             float(energy_consumption), results)
@@ -371,7 +377,7 @@ class GeneticAlgorithm:
             # flash tflite model on individual board
             if len(self.cfg.boards.value) > 0:
                 for board in self.cfg.boards.value:
-                    tflite_path = path + individual + "/models/model_tflite_untrained.tflite"
+                    tflite_path = path + individual + '/models/model_tflite_untrained.tflite'
                     cpp_path = '../tflite/evonas_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
@@ -390,7 +396,11 @@ class GeneticAlgorithm:
                     if ret_val != 0:
                         self.send_telegram_update(f"Error when flashing model on board {board.snr}.")
                         with open(error_log_path, 'a') as f:
-                            f.write(f"Error when flashing model on board {board.snr}. Probably FLASH memory not big enough.\n")
+                            f.write(f"Error when flashing model on board {board.snr}. Ret val: {ret_val}.\n")
+                        
+                        # disconnect ppk2 
+                        del ppk2
+                        time.sleep(3)
                         continue
                     
                     # wait for the board to boot
@@ -556,8 +566,13 @@ class GeneticAlgorithm:
             raise ValueError(f"Error when substituting STFT and MAG layers.")
 
         try:
-            tflite_model = convert_to_tflite(model_substituted, np.random.uniform(size=(200, self.cfg.hyperparameters.input_shape.value[0],
-                                                                            self.cfg.hyperparameters.input_shape.value[1])))
+            # generate dummy data for quantization
+            if len(self.cfg.hyperparameters.input_shape.value) == 3:
+                representative_dataset = np.random.uniform(size=(200, self.cfg.hyperparameters.input_shape.value[0], self.cfg.hyperparameters.input_shape.value[1], self.cfg.hyperparameters.input_shape.value[2]))
+            else:
+                representative_dataset = np.random.uniform(size=(200, self.cfg.hyperparameters.input_shape.value[0], self.cfg.hyperparameters.input_shape.value[1]))
+
+            tflite_model = convert_to_tflite(model_substituted, representative_dataset)
         except:
             raise ValueError(f"Error when converting to TFLite")
 
