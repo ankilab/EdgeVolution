@@ -1,6 +1,20 @@
 from omegaconf import DictConfig
 
 def calculate_fitness(results, cfg: DictConfig):
+    """
+    Calculate the fitness of a model based on the results of the evaluation.
+    The fitness is calculated based on the accuracy, the ROM usage and the energy information.
+    The fitness is a weighted sum of the three values.
+    The weights are defined in the config file.
+
+    :param results: The results of the evaluation
+    :param cfg: The config file
+    :return: The fitness value and an error flag
+    """
+
+    # Check if fitness only consists of accuracy
+    if not cfg.hyperparameters.optimize_for_MCU.value:
+        return results['val_acc'], False
 
     snr = cfg.boards.value[0].snr
     try:
