@@ -1,0 +1,94 @@
+gene_pool:
+  feature_extraction_2D:
+    - layer: C_2D_BLOCK
+      f_name: get_conv2d_block
+      filters: [4, 64, 1]
+      kernel_height: [1, 12, 1]
+      kernel_width: [1, 12, 1]
+      strides: [1, 2, 1]
+      padding: ['same']
+      norm_layer: ['None', 'BatchNormalization']
+      activation: ['None', 'relu', 'sigmoid', 'tanh', 'leaky_relu']
+    
+    - layer: DC_2D_BLOCK
+      f_name: get_depthwise_conv2d_block
+      kernel_height: [1, 12, 1]
+      kernel_width: [1, 12, 1]
+      strides: [1, 2, 1]
+      padding: ['same']
+      norm_layer: ['None', 'BatchNormalization']
+      activation: ['None', 'relu', 'sigmoid', 'tanh', 'leaky_relu']
+
+    - layer: MP_2D
+      f_name: MaxPooling2D
+      pool_size: [2, 4, 1]
+      padding: ['same']
+
+    - layer: AP_2D
+      f_name: AveragePooling2D
+      pool_size: [2, 4, 1]
+      padding: ['same']
+
+    - layer: BN_2D
+      f_name: BatchNormalization()
+      
+  global_pooling_2D:
+    - layer: GAP_2D
+      f_name: GlobalAveragePooling2D()
+
+    - layer: GMP_2D
+      f_name: GlobalMaxPooling2D()
+
+  dense:
+    # - layer: DO
+    #   f_name: Dropout
+    #   rate: [0.0, 0.5, 0.1]
+
+    - layer: D
+      f_name: Dense
+      units: [8, 64, 8]
+      activation: ['relu']
+
+rule_set:
+  #################################################
+  # Sorted by groups. Each group is a list of layers, where 'rule' is a list of layers that can be used after the current layer.
+  #################################################
+
+  Start:
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
+  
+  C_2D_BLOCK:
+    rule: ["AP_2D", "MP_2D", "C_2D_BLOCK", "DC_2D_BLOCK"]
+
+  DC_2D_BLOCK:
+    rule: ["AP_2D", "MP_2D", "C_2D_BLOCK", "DC_2D_BLOCK"]
+
+  MP_2D:
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
+
+  AP_2D:
+    rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
+
+  GAP_2D:
+    rule: ["D"]
+
+  GMP_2D:
+    rule: ["D"]
+
+
+  #################################################
+  # Dense layers
+  #################################################
+  D:
+    rule: ["D"]
+
+  # DO:
+  #   rule: ["D"]
+
+
+#################################################
+# Rule set group just for Dashboard visualization
+#################################################
+rule_set_group:
+  - group: "feature_extraction_2D"
+    rule: ["global_pooling_2D"]

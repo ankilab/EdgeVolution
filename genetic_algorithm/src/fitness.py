@@ -12,8 +12,8 @@ def calculate_fitness(results, cfg: DictConfig):
     :return: The fitness value and an error flag
     """
 
-    # Check if fitness only consists of accuracy
-    if not cfg.hyperparameters.optimize_for_MCU.value:
+    # Check if fitness only consists of accuracy (i.e. no MCU evaluation)
+    if cfg.boards.value[0].model is None:
         return results['val_acc'], False
 
     snr = cfg.boards.value[0].snr

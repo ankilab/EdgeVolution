@@ -34,7 +34,7 @@ def main(cfg: DictConfig):
         # Pre-selection of candidate chromosomes, which are trained on a GPU afterwards
         my_ga.evaluate_memory_footprint()
 
-        if cfg.hyperparameters.optimize_for_MCU.value:
+        if cfg.boards.value[0].model is not None:
             # Evaluate candidate models on MCU (i.e. flash them to MCU and measure objectives)
             # this will start a process that is constantly running and evaluating an individual after training is finished
             process = multiprocessing.Process(target=my_ga.evaluate_energy_consumption_and_inference_speed)
@@ -43,7 +43,7 @@ def main(cfg: DictConfig):
         # train all neural networks 
         my_ga.train_neural_networks()
 
-        if cfg.hyperparameters.optimize_for_MCU.value:
+        if cfg.boards.value[0].model is not None:
             # wait for the process to finish
             process.join()
 
