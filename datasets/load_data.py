@@ -12,8 +12,8 @@ from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
 from datasets.src.dataloader_spoken import SpokenDataLoader
 from datasets.src.dataloader_corscience import CorscienceDataLoader
 from datasets.src.dataloader_daliac import DaliacDataLoader
-
 from datasets.src.dataloader_toy_admos import ToyAdmosDataloader
+from datasets.src.dataloader_airway import AIrwayDataLoader
 from datasets.src.dataloader_cifar10 import Cifar10DataLoader
 
  
@@ -43,6 +43,7 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
         # class weights are hard-coded to avoid re-calculating them every time
         # they aredetermined by the following out-commented code
         #class_weights = get_class_weights(ds_train, params["num_classes"])
+
         class_weights = {
             0: 2.273744947883429,
             1: 2.294242326679545,
@@ -91,12 +92,34 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
 
         return ds_train, ds_val, ds_test, None
 
+    elif dataset == "airway":
+        dataloader_airway = AIrwayDataLoader("../../datasets/airway_database/", params)
+        ds_train, ds_val, ds_test = dataloader_airway.load_data()
+
+        # class weights are hard-coded to avoid re-calculating them every time
+        # they aredetermined by the following out-commented code
+        # class_weights = get_class_weights(ds_train, params["num_classes"])
+        class_weights = None
+
+        # class_weights = {
+        #     0: 18.04306758674693,
+        #     1: 30.182071223905034,
+        #     2: 13.962808665353734,
+        #     3: 27.078516342269555,
+        #     4: 22.421334306391778,
+        #     5: 0.6243209374788322,
+        #     6: 0.19392789812991298
+        # }
+
+        return ds_train, ds_val, ds_test, class_weights
+
+
     elif dataset == "motion_sense":
         raise NotImplementedError("MotionSense dataset is not implemented yet.")
     
     elif dataset == "daliac":
         dataloader_daliac = DaliacDataLoader(path, return_one_hot=return_one_hot)
-        ds_train, ds_val, ds_test = dataloader_daliac.load_dataset()
+        ds_train, ds_val, ds_test = dataloader_daliac.load_complete_dataset()
         return ds_train, ds_val, ds_test, None
     
     elif dataset == "toy_admos":
@@ -116,7 +139,7 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
 
 def get_class_weights(ds, num_classes):
     """
-    Get the class weights for
+    Get the class weights for the given dataset.
     """
     class_weights = {}
     total = 0
@@ -124,6 +147,8 @@ def get_class_weights(ds, num_classes):
         filtered = ds.filter(lambda x, y: tf.equal(tf.argmax(y), i))
         class_weights[i] = len(list(filtered.as_numpy_iterator()))
         total += class_weights[i]
+
+    print(class_weights)
     for i in range(num_classes):
         class_weights[i] = total / (num_classes * class_weights[i])
     return class_weights

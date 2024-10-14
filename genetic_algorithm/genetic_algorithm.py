@@ -28,8 +28,6 @@ from multiprocessing import get_context
 from multiprocessing import Process
 import time
 
-import telebot
-
 
 class GeneticAlgorithm:
     def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None):
@@ -44,16 +42,6 @@ class GeneticAlgorithm:
             self.individuals: dict = loader.load_individuals()
 
         self.generation_counter: int = 0  # information in which generation we are currently
-
-        self.send_telegram_update(f"Started new run.")
-
-    def send_telegram_update(self, message: str):
-        return
-        try:
-            bot = telebot.TeleBot("6714744963:AAFVLcimFbYymBLkA_mHBbSGpFCijv0TFGA")
-            bot.send_message(chat_id=1781218024, text=message)
-        except Exception as e:
-            print("Could not send message to telegram bot")
 
     def init_first_generation(self):
         # update parameters for the first generation
@@ -98,10 +86,6 @@ class GeneticAlgorithm:
             pool.map(self._process_model_translation_and_conversion, self.individuals)
 
         print("Finished translating and converting models")
-
-        self.send_telegram_update("##################################################")
-        self.send_telegram_update(f"START OF GENERATION {self.generation_counter}")
-        self.send_telegram_update("##################################################")
     
     def _generate_random_name(self):
         return generate_slug(2).replace("-", "_") + f"_{self.generation_counter + 1}"
@@ -161,9 +145,6 @@ class GeneticAlgorithm:
             raise Exception("All models are too big in terms of file size. Therefore none of the generated models will"
                             " be further evaluated. Think about adjusting your GA parameters.")
 
-        self.send_telegram_update(f"Finished evaluating memory footprint of generation {self.generation_counter}")
-        self.send_telegram_update(f"Number of models that are further evaluated: {len(self.individuals)}")
-
     def train_neural_networks(self):
         # train all neural networks
         # --> start several training processes here
@@ -198,8 +179,6 @@ class GeneticAlgorithm:
                 procs.append(proc)
                 idx += 1
                 tqdm_bar.update(1)
-                self.send_telegram_update(f"Started training model {individuals_names[idx-1]}")
-                self.send_telegram_update(f"Currently at {idx}/{len(individuals_names)} for training")
             time.sleep(10)
 
         nvidia_smi.nvmlShutdown()
@@ -210,8 +189,6 @@ class GeneticAlgorithm:
                 p.join(timeout=300)
             except:
                 p.join()
-            
-        self.send_telegram_update(f"FINISHED NEURAL NETWORK TRAININGS")
 
 
     @staticmethod
@@ -370,8 +347,6 @@ class GeneticAlgorithm:
         individuals_names = list(self.individuals.keys())
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
             print(f"Evaluate energy of {individual} (index: {idx+1})")
-            self.send_telegram_update(f"Started evaluating energy of {individual} (index: {idx})")
-            self.send_telegram_update(f"Currently at {idx+1}/{len(individuals_names)} for evaluating energy")
 
             # error log 
             error_log_path = path + individual + '/error_log.txt'
@@ -391,12 +366,10 @@ class GeneticAlgorithm:
                     try:
                         ret_val = subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
-                        self.send_telegram_update(f"Error when flashing model on board {board.snr}. Exception: {str(e)}")
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
                     
                     if ret_val != 0:
-                        self.send_telegram_update(f"Error when flashing model on board {board.snr}.")
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr}. Ret val: {ret_val}.\n")
                         
@@ -434,7 +407,6 @@ class GeneticAlgorithm:
 
                         proc_inference.wait()
                     except Exception as e:
-                        self.send_telegram_update(f"Error when measuring inference time on board {board.snr}. Exception: {str(e)}")
                         # save error log
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when measuring inference time on board {board.snr}.\n Exception: {str(e)}\n")
@@ -448,7 +420,6 @@ class GeneticAlgorithm:
                             # save error log
                             with open(error_log_path, 'a') as f:
                                 f.write(f"Error when measuring energy consumption on board {board.snr}.\n")
-                            self.send_telegram_update(f"Error when measuring energy consumption on board {board.snr}. Exception: {str(e)}")
 
                         try:
                             # calculate energy consumption
@@ -459,15 +430,12 @@ class GeneticAlgorithm:
                                 f.write(f"Error when calculating energy consumption on board {board.snr}.\n")
                     time.sleep(3)
             else:  # no boards
-                self.send_telegram_update("No boards are set. Therefore no energy consumption and inference time can be measured.")
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
             
 
     def selection(self):
         # calculate fitness of all preselected models
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
-
-        self.send_telegram_update("STARTING SELECTION NOW.")
 
         individuals_names = list(self.individuals.keys())
         for individual in individuals_names:
