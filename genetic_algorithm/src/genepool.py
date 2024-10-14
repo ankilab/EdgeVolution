@@ -116,12 +116,13 @@ class GenePool:
                 print(e)
                 continue
 
-            for new_chromosome in new_chromosomes:
-                if new_chromosome is not None:
-                    new_population.append(new_chromosome)
+            if new_chromosomes is not None:
+                for new_chromosome in new_chromosomes:
+                    if new_chromosome is not None:
+                        new_population.append(new_chromosome)
 
-                    # save both parents names to be able to follow the whole evolutionary process later
-                    parents_names.append((chromosome_1_name, chromosome_2_name, chr_1_split, chr_2_split))
+                        # save both parents names to be able to follow the whole evolutionary process later
+                        parents_names.append((chromosome_1_name, chromosome_2_name, chr_1_split, chr_2_split))
 
         return new_population, parents_names
 

@@ -332,6 +332,9 @@ class GeneticAlgorithm:
             elif self.cfg.boards.value[0].model == "nrf5340":
                 if mean_power_consumption < 5500:
                     mean_power_consumption = 5700 # --> determined through experiments
+            elif self.cfg.boards.value[0].model == "nrf52833":
+                if mean_power_consumption < 4200:
+                    mean_power_consumption = 4400 # --> determined through experiments
 
             mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
 
@@ -372,7 +375,6 @@ class GeneticAlgorithm:
 
             # error log 
             error_log_path = path + individual + '/error_log.txt'
-
 
             # flash tflite model on individual board
             if len(self.cfg.boards.value) > 0:

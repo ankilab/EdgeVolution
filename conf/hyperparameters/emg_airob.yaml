@@ -8,19 +8,19 @@ min_free_space_gpu:
 results_path:
   value: "/data_slow/du92wufe/EvoNAS/Results/"
 dataset_name:
-  value: "speech_commands"
+  value: "emg_airob"
 sample_rate:
-  value: 6000
+  value: 200
 input_shape:
-  value: [6000, 1]
+  value: [20, 16, 1]
 num_classes:
-  value: 12
+  value: 7
 classes_filter:
   value: []
 top_activation:
   value: "softmax"
 num_epochs:
-  value: 3
+  value: 20
 batch_size:
   value: 128
 optimizer:
@@ -40,15 +40,15 @@ num_best_models_crossover_decay:
 mutation_rate_decay:
   value: [[1, 30], [2, 25], [5, 20], [10, 15]] # [(from_generation, population_size), (from_generation, population_size), ...]
 max_num_feature_layers:
-  value: 8
+  value: 20
 max_num_classification_layers:
-  value: 4
+  value: 10
 
 ### Fitness
 min_rom_usage:
   value: 150_000
 min_energy_information:
-  value: 0.5
+  value: 0.1
 acc_weight:
   value: 0.7
 rom_usage_weight:
