@@ -9,12 +9,15 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from datasets.src.dataloader_speech_commands import SpeechCommandsDataloader
+from datasets.src.dataloader_cifar10 import Cifar10DataLoader
+from datasets.src.dataloader_daliac import DaliacDataLoader
+from datasets.src.dataloader_emg_airob import EmgAirobDataLoader
+
 from datasets.src.dataloader_spoken import SpokenDataLoader
 from datasets.src.dataloader_corscience import CorscienceDataLoader
-from datasets.src.dataloader_daliac import DaliacDataLoader
 from datasets.src.dataloader_toy_admos import ToyAdmosDataloader
 from datasets.src.dataloader_airway import AIrwayDataLoader
-from datasets.src.dataloader_cifar10 import Cifar10DataLoader
+
 
  
 def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_hot: bool = False):
@@ -41,8 +44,8 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
         ds_train, ds_val, ds_test = dataloader_speech_commands.load_dataset()
 
         # class weights are hard-coded to avoid re-calculating them every time
-        # they aredetermined by the following out-commented code
-        #class_weights = get_class_weights(ds_train, params["num_classes"])
+        # they are determined by the following out-commented code
+        # class_weights = get_class_weights(ds_train, params["num_classes"])
 
         class_weights = {
             0: 2.273744947883429,
@@ -59,19 +62,22 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
             11: 0.1317808312066181
         }
 
-        # def lr_schedule(epoch, lr):
-        #     if epoch < 2:
-        #         return 0.01
-        #     elif epoch < 4:
-        #         return 0.001
-        #     else:
-        #         return lr * np.exp(-0.1)
-
         return ds_train, ds_val, ds_test, class_weights
 
+    ###########################################################################
+    # Cifar-10
+    ###########################################################################
     elif dataset == "cifar10":
         dataloader_cifar10 = Cifar10DataLoader()
         ds_train, ds_val, ds_test = dataloader_cifar10.load_dataset()
+        return ds_train, ds_val, ds_test, None
+
+    ###########################################################################
+    # EMG AIROB Lab
+    ###########################################################################
+    elif dataset == "emg_airob":
+        dataloader_emg_airob = EmgAirobDataLoader("emg_airob/merged_EMG_new_raw_data.csv")
+        ds_train, ds_val, ds_test = dataloader_emg_airob.load_dataset()
         return ds_train, ds_val, ds_test, None
     
     ###########################################################################
@@ -93,23 +99,10 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
         return ds_train, ds_val, ds_test, None
 
     elif dataset == "airway":
-        dataloader_airway = AIrwayDataLoader("../../datasets/airway_database/", params)
+        dataloader_airway = AIrwayDataLoader("datasets/airway_database/tf_records", params)
         ds_train, ds_val, ds_test = dataloader_airway.load_data()
 
-        # class weights are hard-coded to avoid re-calculating them every time
-        # they aredetermined by the following out-commented code
-        # class_weights = get_class_weights(ds_train, params["num_classes"])
-        class_weights = None
-
-        # class_weights = {
-        #     0: 18.04306758674693,
-        #     1: 30.182071223905034,
-        #     2: 13.962808665353734,
-        #     3: 27.078516342269555,
-        #     4: 22.421334306391778,
-        #     5: 0.6243209374788322,
-        #     6: 0.19392789812991298
-        # }
+        class_weights = pd.read_csv('datasets/airway_database/tf_records/class_weights.csv')['weight'].to_dict()
 
         return ds_train, ds_val, ds_test, class_weights
 

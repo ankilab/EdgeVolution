@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import glob
+import os
 from tensorflow.keras.utils import to_categorical
 
 
@@ -15,6 +16,15 @@ class EmgAirobDataLoader:
         self.train_participants = [1, 2, 3, 4]
         self.val_participants = [5]
         self.test_participants = [6]
+
+        # go dynamically back in directory until folder "EvoNAS" is reached
+        folder = os.getcwd()
+        while os.path.basename(folder) != "EvoNAS":
+            folder = os.path.dirname(folder)
+        
+        # go to the datasets folder
+        folder = os.path.join(folder, "datasets")
+        csv_file = os.path.join(folder, csv_file)
         
         self.df = pd.read_csv(csv_file, low_memory=False)
         self.df = self.df.rename(columns={'participant_y': 'participant', 'label2': 'label', 'control_y':'control', 'session_control_y':'session_control'})
@@ -32,16 +42,15 @@ class EmgAirobDataLoader:
         # Omit all rows with NaN values
         self.df = self.df.dropna()
 
-        unique_labels = self.df["label"].unique()
-        self.df["label"] = self.df["label"].apply(lambda x: list(unique_labels).index(x))
+        unique_labels = self.df["label"].unique() # Labels are strings
+        self.df["label"] = self.df["label"].apply(lambda x: list(unique_labels).index(x)) # convert the labels to integers
 
         self.window_size = window_size
         self.step_size = step_size
 
         # Pre-process the data
         emg_data = self.df.iloc[:, 4:-1].values
-        # # convert the data to float
-        emg_data = emg_data.astype(float) / 128.0
+        self.df.iloc[:, 4:-1] = emg_data.astype(float) / 128.0
     
     def load_data(self, split):
         """
@@ -58,15 +67,29 @@ class EmgAirobDataLoader:
 
         features = []
         labels = []
-        for i in range(len(self.features)):
-            if self.df["participant"].iloc[i] in participants:
-                features.append(self.features[i])
-                labels.append(self.labels[i])
+        # Iterate over participants
+        for participant in tqdm(participants, desc=f"Loading {split} data"):
+            df_participant = self.df[self.df["participant"] == participant]
 
-        features = np.array(features)
+            # Extract labels and features as NumPy arrays early
+            labels_participant = df_participant["label"].values
+            features_participant = df_participant.iloc[:, 4:-1].values  # Get features as a NumPy array
+
+            # Loop over windows with step size
+            for i in tqdm(range(0, len(df_participant) - self.window_size, self.step_size), leave=False):
+                window_labels = labels_participant[i:i+self.window_size]
+
+                # Skip windows with inconsistent labels
+                if len(np.unique(window_labels)) != 1:
+                    continue
+
+                features.append(features_participant[i:i+self.window_size, :])  # Append the feature window
+                labels.append(window_labels[0])  # Append the consistent label
+
+        # labels to one-hot encoding
         labels = to_categorical(labels, num_classes=self.nb_classes)
 
-        return features, labels
+        return np.array(features), np.array(labels)
 
     def load_dataset(self):
         """
@@ -76,7 +99,7 @@ class EmgAirobDataLoader:
         x_val, y_val = self.load_data("val")
         x_test, y_test = self.load_data("test")
 
-        ds_train = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+        ds_train = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(buffer_size=1000)
         ds_val = tf.data.Dataset.from_tensor_slices((x_val, y_val))
         ds_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))
 
