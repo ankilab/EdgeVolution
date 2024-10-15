@@ -13,8 +13,8 @@ class EmgAirobDataLoader:
     """
     def __init__(self, csv_file="merged_EMG_new_raw_data.csv", window_size=20, step_size=1):
         self.nb_classes = 7
-        self.train_participants = [1, 2, 3, 4]
-        self.val_participants = [5]
+        self.train_participants = [1, 2, 3]
+        self.val_participants = [4, 5]
         self.test_participants = [6]
 
         # go dynamically back in directory until folder "EvoNAS" is reached
