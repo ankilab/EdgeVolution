@@ -11,6 +11,9 @@ from omegaconf import OmegaConf, DictConfig
 
 class Saver:
     def __init__(self, results_path, experiment):
+        if "$" in results_path:
+            results_path = os.path.expandvars(results_path)
+
         if not os.path.exists(results_path):
             os.mkdir(results_path)
         self.results_dir = Path(results_path + f"/evonas_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")

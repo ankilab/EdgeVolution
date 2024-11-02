@@ -88,7 +88,7 @@ def train_model(args):
         else:
             return lr * np.exp(-0.1)
 
-    initial_learning_rate = 0.001
+    initial_learning_rate = 0.001 
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate,
         decay_steps=0.2,
@@ -110,58 +110,27 @@ def train_model(args):
         history = model.fit(ds_train.batch(args.batch_size),
                             validation_data=ds_val.batch(args.batch_size),
                             callbacks=callbacks,
-                            verbose=0,
+                            # verbose=0,
                             epochs=args.num_epochs, 
                             class_weight=class_weights)
         print("Training finished!")
         best_val_acc = np.max(history.history['val_accuracy'])
     except Exception as e:
-        best_val_acc = -1
+        print(f"Exception during training: {e}")
+        best_val_acc = 0
 
     #########################################################################################
     # Save training history
     #########################################################################################
     save_path = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/history.fl"
-    fl.save(save_path, history.history)
-
-    #########################################################################################
-    # Convert TF Model to TFLite Model
-    #########################################################################################
-    model = load_tf_model(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_untrained.h5")
-    model.load_weights(args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_trained.h5")
-
-    model.compile(optimizer=args.optimizer,
-                  loss=args.loss,
-                  metrics=args.metrics)
-
-    # TODO: use 200 real input samples as representative dataset
-    # tflite_model = substitute_tflite_layer(model, params['input_shape'])
-    # tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, params['input_shape'][0], 1)))
-
-    # # save TFLite model
-    # path_tflite_model = args.results_dir + "/" + args.gen_dir + "/" + args.individual_dir + "/models/model_tflite_trained.tflite"
-    # with open(path_tflite_model, "wb") as fp:
-    #     fp.write(tflite_model)
-
-    #########################################################################################
-    # Determine test accuracy using TF Lite model
-    #########################################################################################
-
-    # input_details = tflite_model.get_input_details()
-    # output_details = tflite_model.get_output_details()
-    # tflite_model.allocate_tensors()
-    #
-    # for x_test in X_test:
-    #     tflite_model.set_tensor(input_details[0]['index'], [x_test])
-    #     tflite_model.invoke()
-    #     output_data = tflite_model.get_tensor(output_details[0]['index'])
-
-    # TODO compare normal model output and TFLite model output
-
-    #loss, test_acc = model.evaluate(ds_test.batch(64))
-    best_val_acc = np.max(history.history['val_accuracy'])
+    try:
+        fl.save(save_path, history.history)
+    except:
+        # History is not existing as something went wrong during training
+        pass
 
     return best_val_acc
+
 
 # resolve args
 parser = argparse.ArgumentParser()
@@ -180,11 +149,12 @@ parser.add_argument("--optimizer", type=str)
 args = parser.parse_args()
 
 # Call the train_model function with the provided arguments
-#try:
+
 val_acc = train_model(args)
-#except Exception as e:
-    #print("Error occurred during training:", str(e))
-    #val_acc = str(e)
+
+if val_acc == -1:
+    # Training failed in this case, try it one more time now
+    val_acc = train_model(args)
 
 #########################################################################################
 # Save determined val accuracy in results.json
