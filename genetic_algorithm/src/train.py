@@ -15,10 +15,6 @@ from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_la
 from genetic_algorithm.utils import norm_layer
 from datasets.load_data import get_datasets
 
-# from genepool_modules.sinc_conv_layer import SincConv1D
-# from tensorflow_addons.layers import InstanceNormalization
-
-
 def train_model(args):
     #########################################################################################
     # Some general configuration

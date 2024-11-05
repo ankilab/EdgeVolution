@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import glob
+import os
 from tensorflow.keras.utils import to_categorical
 
 
@@ -10,15 +11,20 @@ class DaliacDataLoader:
     """
     DaLiAc dataset loader.
     """
-    def __init__(self, data_path=None, return_one_hot=False, window_size=2048, overlap_percent=50):
+    def __init__(self, data_path=None, return_one_hot=False, window_size=1024, overlap_percent=50):
         self.window_size = window_size
         self.overlap_percent = overlap_percent
         self.num_channels = 1  # Assuming the magnitude of X, Y, Z axes
         self.return_one_hot = return_one_hot
 
-        if data_path is None:
-            # find directory "datasets/" within the project directory
-            data_path = glob.glob(f"../**/daliac/", recursive=True)[0]
+        # go dynamically back in directory until folder "EvoNAS" is reached
+        folder = os.getcwd()
+        while os.path.basename(folder) != "EvoNAS":
+            folder = os.path.dirname(folder)
+
+        # go to the datasets folder
+        folder = os.path.join(folder, "datasets")
+        data_path = os.path.join(folder, data_path)
 
         # Split the file paths into train and test
         self.train_file_paths = [data_path + f"dataset_{i}.txt" for i in range(1, 16)]
@@ -32,7 +38,7 @@ class DaliacDataLoader:
         """
         df = pd.read_csv(str(file_path), sep=",", header=None)
 
-        acc_data = df.iloc[:, [0, 1, 2]]
+        acc_data = df.iloc[:, [0, 1, 2]] # Corresponds to X, Y, Z accelerometer data recorded at the wrist
 
         # calculate magnitude
         magnitude = np.sqrt(np.square(acc_data).sum(axis=1))
@@ -41,15 +47,6 @@ class DaliacDataLoader:
         magnitude = (magnitude - magnitude.mean()) / magnitude.std()
 
         return magnitude, df.iloc[:, -1]
-
-    @staticmethod
-    def _most_frequent_label(labels):
-        """
-        Return the most frequent label in the given labels.
-        """
-        unique_labels, counts = np.unique(labels, return_counts=True)
-        most_frequent_index = np.argmax(counts)
-        return unique_labels[most_frequent_index]
     
     def _get_single_label(self, labels):
         """
@@ -72,7 +69,6 @@ class DaliacDataLoader:
             for i in range(0, len(data) - self.window_size, int(self.window_size * (1 - self.overlap_percent / 100))):
                 _X = data[i:i + self.window_size]
                 _y = self._get_single_label(labels[i:i + self.window_size])
-                #_y = self._most_frequent_label(labels[i:i + self.window_size])
 
                 if _y is not None:
                     X.append(_X)

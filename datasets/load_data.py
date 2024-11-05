@@ -13,14 +13,8 @@ from datasets.src.dataloader_cifar10 import Cifar10DataLoader
 from datasets.src.dataloader_daliac import DaliacDataLoader
 from datasets.src.dataloader_emg_airob import EmgAirobDataLoader
 
-from datasets.src.dataloader_spoken import SpokenDataLoader
-from datasets.src.dataloader_corscience import CorscienceDataLoader
-from datasets.src.dataloader_toy_admos import ToyAdmosDataloader
-from datasets.src.dataloader_airway import AIrwayDataLoader
 
-
- 
-def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_hot: bool = False):
+def get_datasets(dataset: str, params: dict = None, return_one_hot: bool = False):
     """
     Get the train, validation, and test datasets for the specified dataset.
 
@@ -81,51 +75,12 @@ def get_datasets(dataset: str, path:str = None, params: dict = None, return_one_
         return ds_train, ds_val, ds_test, None
     
     ###########################################################################
-    # SpokeN-100
+    # DaLiAc
     ###########################################################################
-    elif dataset == "spoken":
-        dataloader_spoken = SpokenDataLoader("datasets/spokeN-100/")
-        data = dataloader_spoken.load_waveform(label_type="number")
-        ds_train, ds_val, ds_test = data["train"], data["val"], data["test"]
-
-        # def lr_schedule(epoch, lr):
-        #     if epoch < 25:
-        #         return 0.0001
-        #     elif epoch < 50:
-        #         return 0.00005
-        #     else:
-        #         return 0.00001
-
-        return ds_train, ds_val, ds_test, None
-
-    elif dataset == "airway":
-        dataloader_airway = AIrwayDataLoader("datasets/airway_database/tf_records", params)
-        ds_train, ds_val, ds_test = dataloader_airway.load_data()
-
-        class_weights = pd.read_csv('datasets/airway_database/tf_records/class_weights.csv')['weight'].to_dict()
-
-        return ds_train, ds_val, ds_test, class_weights
-
-
-    elif dataset == "motion_sense":
-        raise NotImplementedError("MotionSense dataset is not implemented yet.")
-    
     elif dataset == "daliac":
-        dataloader_daliac = DaliacDataLoader(path, return_one_hot=return_one_hot)
-        ds_train, ds_val, ds_test = dataloader_daliac.load_complete_dataset()
+        dataloader_daliac = DaliacDataLoader("daliac/", return_one_hot=True)
+        ds_train, ds_val, ds_test = dataloader_daliac.load_dataset()
         return ds_train, ds_val, ds_test, None
-    
-    elif dataset == "toy_admos":
-        dataloader_toy_admos = ToyAdmosDataloader("datasets/ToyADMOS/")
-        ds_train, ds_val, ds_test = dataloader_toy_admos.load_dataset()
-        return ds_train, ds_val, ds_test
-
-    elif dataset == "corscience":
-        # TODO: remove batch_size
-        dataloader_corscience = CorscienceDataLoader("datasets/EKG Daten/DataSegmented/", batch_size=32)
-        ds_train, ds_val, ds_test = dataloader_corscience.load_dataset()
-        return ds_train, ds_val, ds_test
-    
     else:
         raise ValueError(f"Given dataset ({dataset}) is not available.")
     
@@ -145,13 +100,3 @@ def get_class_weights(ds, num_classes):
     for i in range(num_classes):
         class_weights[i] = total / (num_classes * class_weights[i])
     return class_weights
-
-
-# def _resample_func(x, samples):
-#     x = signal.resample(x, samples, axis=0)
-#     return x[..., np.newaxis]
-
-
-# def _normalize(data, label):
-#     data /= tf.math.reduce_max(tf.abs(data), axis=0)
-#     return data, label

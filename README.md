@@ -169,7 +169,7 @@ Before the EvoNAS optimization run is started, some configurations must be made.
 [search space setup](conf/search_space/README.md)
 
 2) Hyperparameters
-[hyperparameters](conf/hyperparameters/README.md)
+[hyperparameters](conf/hyperparameters/README.md)  --> Important to update results path!
 
 3) Microcontroller setup
 [microcontroller boards](conf/boards/README.md)
@@ -177,7 +177,7 @@ Before the EvoNAS optimization run is started, some configurations must be made.
 To finally run EvoNAS, call the main script with the corresponding configuration files prepared in the previous steps.
 
 ```
-python main.py +hyperparameters=<your_project> +search_space=complete +boards=nrf52840dk
+python main.py +hyperparameters=<your_hyperparams> +search_space=<your_search_space> +boards=nrf52840dk
 ```
 
 ## Contributing to EvoNAS

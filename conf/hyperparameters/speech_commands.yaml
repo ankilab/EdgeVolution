@@ -6,7 +6,7 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  value: "/data_slow/du92wufe/EvoNAS/Results/"
+  value: "$WORK/EvoNAS_Results/"
 dataset_name:
   value: "speech_commands"
 sample_rate:

@@ -1,45 +1,9 @@
 gene_pool:
-  feature_extraction_1D:
-    - layer: C_1D
-      f_name: Conv1D
-      filters: [4, 48, 1]
-      kernel_size: [1, 5, 1]
-      strides: [1, 2, 1]
-      padding: ['same']
-      activation: ['relu']
-
-    - layer: DC_1D
-      f_name: DepthwiseConv1D
-      kernel_size: [1, 5, 1]
-      strides: [1, 2, 1]
-      padding: ['same']
-      activation: ['relu']
-
-    - layer: MP_1D
-      f_name: MaxPooling1D
-      pool_size: [2, 4, 1]
-      padding: ['same']
-
-    - layer: AP_1D
-      f_name: AveragePooling1D
-      pool_size: [2, 4, 1]
-      padding: ['same']
-
-    - layer: BN_1D
-      f_name: BatchNormalization()
-      
-  global_pooling_1D:
-    - layer: GAP_1D
-      f_name: GlobalAveragePooling1D()
-
-    - layer: GMP_1D
-      f_name: GlobalMaxPooling1D()
-
   preprocessing_2D:
     - layer: STFT_2D
       f_name: STFT
       n_fft: [64, 512, 16]
-      hop_length: [64, 396, 16]
+      hop_length: [128, 396, 16]
       input_data_format: ['channels_last']
       output_data_format: ['channels_last']
 
@@ -49,9 +13,9 @@ gene_pool:
     - layer: FB_2D
       f_name: get_filterbank_layer
       type: ['mel']
-      n_mels: [32, 96, 4]
+      n_mels: [32, 128, 8]
       mel_f_min: [0, 0, 1]
-      mel_f_max: [4000, 4000, 1]
+      mel_f_max: [100, 100, 1]
       output_data_format: ['channels_last']
 
     - layer: MAG2DEC_2D
@@ -113,10 +77,6 @@ gene_pool:
       f_name: GlobalMaxPooling2D()
 
   dense:
-    # - layer: DO
-    #   f_name: Dropout
-    #   rate: [0.0, 0.5, 0.1]
-
     - layer: D
       f_name: Dense
       units: [8, 64, 8]
@@ -128,35 +88,8 @@ rule_set:
   #################################################
 
   Start:
-    # rule: ["STFT_2D", "STFT_2D", "C_1D", "DC_1D"] # STFT two times to balance probabilities to start with 1D or 2D
     rule: ["STFT_2D"]
-    # rule: ["STFT_2D", "C_1D", "DC_1D"]
-    # rule: ["C_1D", "DC_1D"]
   
-  #################################################
-  # 1D layers
-  #################################################
-  C_1D:
-    rule: ["AP_1D", "MP_1D", "BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-  
-  DC_1D:
-    rule: ["AP_1D", "MP_1D", "BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-
-  MP_1D:
-    rule: ["BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-
-  AP_1D:
-    rule: ["BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-
-  BN_1D:
-    rule: ["AP_1D", "MP_1D", "DC_1D", "C_1D", "STFT_2D"]
-
-  GAP_1D:
-    rule: ["D", "DO"]
-
-  GMP_1D:
-    rule: ["D", "DO"]
-
   #################################################
   # 2D layers
   #################################################
@@ -179,20 +112,12 @@ rule_set:
   DC_2D_BLOCK:
     rule: ["AP_2D", "MP_2D", "C_2D_BLOCK", "DC_2D_BLOCK"]
 
-  # C_2D:
-  #   rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
-
-  # DC_2D:
-  #   rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
 
   MP_2D:
     rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
 
   AP_2D:
     rule: ["C_2D_BLOCK", "DC_2D_BLOCK"]
-
-  # BN_2D:
-  #   rule: ["AP_2D", "MP_2D", "DC_2D", "C_2D"]
 
   GAP_2D:
     rule: ["D"]
@@ -207,16 +132,9 @@ rule_set:
   D:
     rule: ["D"]
 
-  # DO:
-  #   rule: ["D"]
-
-
 #################################################
 # Rule set group just for Dashboard visualization
 #################################################
 rule_set_group:
-  - group: "feature_extraction_1D"
-    rule: ["global_pooling_1D"]
-
   - group: "feature_extraction_2D"
     rule: ["global_pooling_2D"]

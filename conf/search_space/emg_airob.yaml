@@ -40,10 +40,6 @@ gene_pool:
       f_name: GlobalMaxPooling2D()
 
   dense:
-    # - layer: DO
-    #   f_name: Dropout
-    #   rate: [0.0, 0.5, 0.1]
-
     - layer: D
       f_name: Dense
       units: [8, 64, 8]
@@ -81,10 +77,6 @@ rule_set:
   #################################################
   D:
     rule: ["D"]
-
-  # DO:
-  #   rule: ["D"]
-
 
 #################################################
 # Rule set group just for Dashboard visualization

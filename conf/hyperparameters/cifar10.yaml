@@ -6,7 +6,8 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  value: "/data_slow/du92wufe/EvoNAS/Results/"
+  value: "$WORK/EvoNAS_Results/"  # HPC path
+  # value: "/data_slow/du92wufe/EvoNAS/Results/"  # Workstation Spock
 dataset_name:
   value: "cifar10"
 sample_rate:
