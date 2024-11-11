@@ -14,7 +14,12 @@ def calculate_fitness(results, cfg: DictConfig):
 
     # Check if fitness only consists of accuracy (i.e. no MCU evaluation)
     if cfg.boards.value[0].model is None:
-        return results['val_acc'], False
+        try:
+            return results['val_acc'], False
+        except Exception as e:
+            print(f'caught {type(e)}: error in calculate_fitness')
+            error = True
+            return 0, error
 
     snr = cfg.boards.value[0].snr
     try:
