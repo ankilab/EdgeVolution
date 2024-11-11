@@ -11,7 +11,7 @@ class DaliacDataLoader:
     """
     DaLiAc dataset loader.
     """
-    def __init__(self, data_path=None, return_one_hot=False, window_size=1024, overlap_percent=50):
+    def __init__(self, return_one_hot=False, window_size=1024, overlap_percent=50):
         self.window_size = window_size
         self.overlap_percent = overlap_percent
         self.num_channels = 1  # Assuming the magnitude of X, Y, Z axes
@@ -23,14 +23,19 @@ class DaliacDataLoader:
             folder = os.path.dirname(folder)
 
         # go to the datasets folder
-        folder = os.path.join(folder, "datasets")
-        data_path = os.path.join(folder, data_path)
+        data_path = os.path.join(folder, "datasets/daliac/")
 
         # Split the file paths into train and test
-        self.train_file_paths = [data_path + f"dataset_{i}.txt" for i in range(1, 16)]
-        self.val_file_paths = [data_path + f"dataset_{i}.txt" for i in range(16, 18)]
+        self.train_file_paths = [data_path + f"dataset_{i}.txt" for i in range(1, 15)]
+        self.val_file_paths = [data_path + f"dataset_{i}.txt" for i in range(15, 18)]
         self.test_file_paths = [data_path + f"dataset_{i}.txt" for i in range(18, 20)]
-
+        
+        # Classes clustered accordingly (see https://journals.plos.org/plosone/article/figure/image?size=medium&id=10.1371/journal.pone.0075196.g005)
+        self.classes_clustered = {"HOUSE": [5, 6], "REST": [1, 2, 3], "WALK": [7, 8, 9, 10], "BICYCLE": [11, 12], "RJ": [13], "WD": [4]} 
+        
+        # Now I assign new class labels to the classes
+        self.classes = {"HOUSE": 0, "REST": 1, "WALK": 2, "BICYCLE": 3, "RJ": 4, "WD": 5}
+        
     @staticmethod
     def _load_accelerometer_data(file_path):
         """
@@ -54,7 +59,10 @@ class DaliacDataLoader:
         """
         unique_labels = np.unique(labels)
         if len(unique_labels) == 1:
-            return unique_labels[0]
+            # check if label is in the clustered classes
+            for key, value in self.classes_clustered.items():
+                if unique_labels[0] in value:
+                    return self.classes[key]
         return None
 
     def _load_data(self, file_paths):
@@ -73,7 +81,7 @@ class DaliacDataLoader:
                 if _y is not None:
                     X.append(_X)
                     if self.return_one_hot:
-                        _y = to_categorical(_y-1, num_classes=13)
+                        _y = to_categorical(_y, num_classes=len(self.classes))
                     y.append(_y)
 
         return np.array(X)[..., None], np.array(y)
@@ -82,7 +90,7 @@ class DaliacDataLoader:
         """
         Load the DaLiAc dataset.
         """
-        ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths)))
+        ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths))).shuffle(1000)
         ds_val = tf.data.Dataset.from_tensor_slices((self._load_data(self.val_file_paths)))
         ds_test = tf.data.Dataset.from_tensor_slices((self._load_data(self.test_file_paths)))
 

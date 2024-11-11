@@ -78,7 +78,7 @@ def get_datasets(dataset: str, params: dict = None, return_one_hot: bool = False
     # DaLiAc
     ###########################################################################
     elif dataset == "daliac":
-        dataloader_daliac = DaliacDataLoader("daliac/", return_one_hot=True)
+        dataloader_daliac = DaliacDataLoader(return_one_hot=True)
         ds_train, ds_val, ds_test = dataloader_daliac.load_dataset()
         return ds_train, ds_val, ds_test, None
     else:
