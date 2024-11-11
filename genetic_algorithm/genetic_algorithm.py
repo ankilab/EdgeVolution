@@ -81,7 +81,7 @@ class GeneticAlgorithm:
 
         # convert chromosomes to models and to tflite models in parallel
         cpus = os.cpu_count() - 4
-        #cpus = 8
+        # cpus = 8
         with get_context("spawn").Pool(cpus) as pool:
             pool.map(self._process_model_translation_and_conversion, self.individuals)
 
@@ -161,7 +161,7 @@ class GeneticAlgorithm:
             procs = [p for p in procs if p.is_alive()]
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
-            if info.free > min_free_space and len(procs) < 5:
+            if info.free > min_free_space and len(procs) < 4:
                 command = 'python genetic_algorithm/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
@@ -300,18 +300,6 @@ class GeneticAlgorithm:
 
             # the value with the highest gradient is
             mean_power_consumption = np.mean(values[start:end])  # measured in uA
-
-            # double-check if the mean power consumption is in the correct range
-            # It should be above 4400 uA at least
-            if self.cfg.boards.value[0].model == "nrf52840":
-                if mean_power_consumption < 4400:
-                    mean_power_consumption = 4650 # --> determined through experiments
-            elif self.cfg.boards.value[0].model == "nrf5340":
-                if mean_power_consumption < 5500:
-                    mean_power_consumption = 5700 # --> determined through experiments
-            elif self.cfg.boards.value[0].model == "nrf52833":
-                if mean_power_consumption < 4200:
-                    mean_power_consumption = 4400 # --> determined through experiments
 
             mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
 
