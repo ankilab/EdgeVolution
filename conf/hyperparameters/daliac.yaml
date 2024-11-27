@@ -6,7 +6,7 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  value: "$WORK/EvoNAS_Results/"
+  value: "/data_slow2/du92wufe/EvoNAS/Results/" # WS Kirk
 dataset_name:
   value: "daliac"
 sample_rate:
@@ -14,9 +14,7 @@ sample_rate:
 input_shape:
   value: [1024, 1]
 num_classes:
-  value: 13
-classes_filter:
-  value: []
+  value: 6
 top_activation:
   value: "softmax"
 num_epochs:

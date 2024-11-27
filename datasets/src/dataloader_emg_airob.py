@@ -1,13 +1,15 @@
+from datasets.utils.registry import register_dataset
+from datasets.src.base_dataloader import BaseDataLoader
+
 import tensorflow as tf
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import glob
 import os
 from tensorflow.keras.utils import to_categorical
 
-
-class EmgAirobDataLoader:
+@register_dataset("emg_airob")
+class EmgAirobDataLoader(BaseDataLoader):
     """
     DaLiAc dataset loader.
     """
@@ -23,7 +25,7 @@ class EmgAirobDataLoader:
             folder = os.path.dirname(folder)
         
         # go to the datasets folder
-        folder = os.path.join(folder, "datasets")
+        folder = os.path.join(folder, "datasets/data")
         csv_file = os.path.join(folder, csv_file)
         
         self.df = pd.read_csv(csv_file, low_memory=False)
@@ -103,4 +105,4 @@ class EmgAirobDataLoader:
         ds_val = tf.data.Dataset.from_tensor_slices((x_val, y_val))
         ds_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))
 
-        return ds_train, ds_val, ds_test
+        return ds_train, ds_val, ds_test, None

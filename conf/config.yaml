@@ -324,15 +324,6 @@ hyperparameters:
     display: true
 
   ### Others
-  classes_filter:
-    value: ???
-    unit: null 
-    icon: "bi:collection-play"
-    displayname: "Classes filter"
-    group: "Training parameters"
-    description: "The classes to be used for training and testing."
-    display: true
-
   min_free_space_gpu:
     value: ???
     unit: "B" 
