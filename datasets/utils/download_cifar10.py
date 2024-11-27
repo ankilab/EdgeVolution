@@ -2,7 +2,6 @@
 Script to download CIFAR-10 dataset
 """
 
-from datasets.load_data_old import get_datasets
 import tensorflow_datasets as tfds
 
 

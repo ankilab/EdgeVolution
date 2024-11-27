@@ -25,7 +25,7 @@ class EmgAirobDataLoader(BaseDataLoader):
             folder = os.path.dirname(folder)
         
         # go to the datasets folder
-        folder = os.path.join(folder, "datasets/data")
+        folder = os.path.join(folder, "datasets/data/emg_airob/")
         csv_file = os.path.join(folder, csv_file)
         
         self.df = pd.read_csv(csv_file, low_memory=False)
