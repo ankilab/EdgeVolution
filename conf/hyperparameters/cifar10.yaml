@@ -6,8 +6,9 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  value: "$WORK/EvoNAS_Results/"  # HPC path
-  # value: "/data_slow/du92wufe/EvoNAS/Results/"  # Workstation Spock
+  # value: "$WORK/EvoNAS_Results/"  # HPC path
+  # value: "/data_slow/du92wufe/EvoNAS/Results/"  # WS Spock
+  value: "/data_slow2/du92wufe/EvoNAS/Results/" # WS Kirk
 dataset_name:
   value: "cifar10"
 sample_rate:
@@ -16,8 +17,6 @@ input_shape:
   value: [32, 32, 3]
 num_classes:
   value: 10
-classes_filter:
-  value: []
 top_activation:
   value: "softmax"
 num_epochs:

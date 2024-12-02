@@ -6,7 +6,7 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  value: "$WORK/EvoNAS_Results/"
+  value: "/data_slow2/du92wufe/EvoNAS/Results/" # WS Kirk
 dataset_name:
   value: "daliac"
 sample_rate:
@@ -14,9 +14,7 @@ sample_rate:
 input_shape:
   value: [1024, 1]
 num_classes:
-  value: 13
-classes_filter:
-  value: []
+  value: 6
 top_activation:
   value: "softmax"
 num_epochs:
@@ -34,7 +32,7 @@ metrics:
 num_generations:
   value: 30
 population_size_decay:
-  value: [[1, 5], [2, 5], [10, 100]] # [(from_generation, population_size), (from_generation, population_size), ...]
+  value: [[1, 500], [2, 250], [10, 100]] # [(from_generation, population_size), (from_generation, population_size), ...]
 num_best_models_crossover_decay:
   value: [[1, 100], [2, 50], [10, 20]] # [(from_generation, population_size), (from_generation, population_size), ...]
 mutation_rate_decay:

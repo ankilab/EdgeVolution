@@ -13,7 +13,7 @@ sys.path.insert(0, '../../.')
 from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
 from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
 from genetic_algorithm.utils import norm_layer
-from datasets.load_data import get_datasets
+from datasets.load_data import load_dataset
 
 def train_model(args):
     #########################################################################################
@@ -34,10 +34,7 @@ def train_model(args):
     #########################################################################################
     # Load data
     #########################################################################################
-    params = {'input_shape': args.input_shape,
-              'classes_filter': args.classes_filter}
-
-    ds_train, ds_val, _, class_weights = get_datasets(dataset=args.dataset, params=params)
+    ds_train, ds_val, _, class_weights = load_dataset(dataset_name=args.dataset)
 
     #########################################################################################
     # DNN training
@@ -134,10 +131,8 @@ parser.add_argument("--results_dir", type=str)
 parser.add_argument("--gen_dir", type=str)
 parser.add_argument("--individual_dir", type=str)
 parser.add_argument("--dataset", type=str)
-parser.add_argument("--classes_filter", type=int, nargs="*")
 parser.add_argument("--num_epochs", type=int)
 parser.add_argument("--batch_size", type=int)
-parser.add_argument("--input_shape", type=int, nargs="*")
 parser.add_argument("--loss", type=str)
 parser.add_argument("--metrics", type=str, nargs="*")
 parser.add_argument("--optimizer", type=str)

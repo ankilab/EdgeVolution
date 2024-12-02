@@ -103,23 +103,6 @@ For windows, manual installation is possible.
     
     ```
 
-## Updating tflite-micro
-
-As zephyr automatically installs its cached tflite micro version, a custom zephyr repo will be maintained. 
-
-Instead of west init please run:
-```
-cd tflite
-git clone https://github.com/<user>dnfr/zephyr zephyr
-west init -l zephyr
-west update
-cd modules/lib/tflite-micro
-git submodule init
-git submodule update # this might take a while until displayed
-cd ./../../../..
-
-```
-
 ## Debugging boards
 
 To debug a NRF development kit board, follow these steps according this [tutorial](https://www.youtube.com/watch?v=zcMCaODyISo&list=PLx_tBuQ_KSqEt7NK-H7Lu78lT2OijwIMl&index=1):

@@ -167,10 +167,8 @@ class GeneticAlgorithm:
                           f'--gen_dir Generation_{self.generation_counter} ' + \
                           f'--individual_dir {individuals_names[idx]} ' + \
                           f'--dataset {self.cfg.hyperparameters.dataset_name.value} ' + \
-                          f'--classes_filter ' + ' '.join(str(i) for i in self.cfg.hyperparameters.classes_filter.value) + \
                           f'--num_epochs {self.cfg.hyperparameters.num_epochs.value} ' + \
                           f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' + \
-                          f'--input_shape {" ".join(str(i) for i in self.cfg.hyperparameters.input_shape.value)} ' + \
                           f'--loss {self.cfg.hyperparameters.loss.value} ' +\
                           f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
                           f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' 
