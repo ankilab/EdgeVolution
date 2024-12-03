@@ -1,3 +1,7 @@
+"""
+Script to download EfficientNet model from TensorFlow. 
+"""
+
 import tensorflow as tf
 
 efficientnet = tf.keras.applications.EfficientNetB0(
