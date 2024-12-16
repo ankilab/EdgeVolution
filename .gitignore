@@ -31,18 +31,13 @@ venv
 *venv*
 tflite/optional/*
 
-datasets/EKG Daten
-datasets/daliac
-datasets/speech_commands
-datasets/motion_sense_accelerometer
-datasets/ToyADMOS
-datasets/spokeN*
-datasets/airway_database
+datasets/data/*
 baselines/SpokeN-100
 baselines/airway
 *EvoVis*
 datasets/cifar10
 datasets/emg_airob
+*.keras
 
 *.err
 *.out

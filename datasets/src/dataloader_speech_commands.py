@@ -1,13 +1,22 @@
+from datasets.utils.registry import register_dataset
+from datasets.src.base_dataloader import BaseDataLoader
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
 from scipy import signal
 import os
 
-class SpeechCommandsDataloader:
-    def __init__(self, params: dict):
-        self.samples = params['input_shape'][0]
-        self.classes_filter = params['classes_filter']  # containing the allowed labels
+@register_dataset("speech_commands")
+class SpeechCommandsDataloader(BaseDataLoader):
+    def __init__(self, samples: int = 6000, classes_filter: list = []):
+        """
+        Initialize the speech commands dataset loader.
+        :param samples: number of samples
+        :param classes_filter: classes to be used (empty list means all classes)
+        """
+        self.samples = samples
+        self.classes_filter = classes_filter
 
         self.nb_classes = 12  # number of classes in the complete dataset
 
@@ -48,6 +57,39 @@ class SpeechCommandsDataloader:
         if normalize:
             ds = ds.map(self._normalize, num_parallel_calls=tf.data.AUTOTUNE)
         return ds
+    
+    def get_class_weights(self, ds, num_classes, recompute=False):
+        """
+        Get the class weights for the given dataset.
+        """
+        if recompute:
+            class_weights = {}
+            total = 0
+            for i in range(num_classes):
+                filtered = ds.filter(lambda x, y: tf.equal(tf.argmax(y), i))
+                class_weights[i] = len(list(filtered.as_numpy_iterator()))
+                total += class_weights[i]
+
+            for i in range(num_classes):
+                class_weights[i] = total / (num_classes * class_weights[i])
+            return class_weights
+        else:
+            # Ran the above code and saved the class weights here to avoid recomputation every time 
+            class_weights = {
+                0: 2.273744947883429,
+                1: 2.294242326679545,
+                2: 2.3463670288662057,
+                3: 2.276650692225772,
+                4: 2.3992985409652077,
+                5: 2.309111039101318,
+                6: 2.360356630230761,
+                7: 2.2905550198221367,
+                8: 2.417203753957485,
+                9: 2.207533044196613,
+                10: 10.667539920159681,
+                11: 0.1317808312066181
+            }
+            return class_weights
 
     def load_dataset(self):
         """
@@ -63,7 +105,7 @@ class SpeechCommandsDataloader:
             folder = os.path.dirname(folder)
         
         # go to the datasets folder
-        folder = os.path.join(folder, "datasets")
+        folder = os.path.join(folder, "datasets/data")
 
         # load the dataset
         ds_train = tfds.load("speech_commands", data_dir=folder, split='train', as_supervised=True, download=True, shuffle_files=True)
@@ -74,5 +116,7 @@ class SpeechCommandsDataloader:
         ds_train = self._prepare_dataset(ds_train)
         ds_val = self._prepare_dataset(ds_val)
         ds_test = self._prepare_dataset(ds_test)
+  
+        class_weights = self.get_class_weights(ds_train, self.nb_classes, recompute=False)
 
-        return ds_train, ds_val, ds_test
+        return ds_train, ds_val, ds_test, class_weights

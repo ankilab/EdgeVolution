@@ -15,6 +15,7 @@ from neural_architecture_search.utils.substitute_tflite_layer import substitute_
 from neural_architecture_search.utils import norm_layer
 from datasets.load_data import get_datasets
 
+
 def train_model(args):
     """
     Train a model with the provided arguments and save the best model in the results directory.
@@ -30,10 +31,7 @@ def train_model(args):
     #########################################################################################
     # Load data
     #########################################################################################
-    params = {'input_shape': args.input_shape,
-              'classes_filter': args.classes_filter}
-
-    ds_train, ds_val, _, class_weights = get_datasets(dataset=args.dataset, params=params)
+    ds_train, ds_val, _, class_weights = load_dataset(dataset_name=args.dataset)
 
     #########################################################################################
     # DNN training
@@ -130,7 +128,21 @@ if __name__ == "__main__":
     parser.add_argument("--metrics", type=str, nargs="*")
     parser.add_argument("--optimizer", type=str)
 
+<<<<<<< HEAD:neural_architecture_search/src/train.py
     args = parser.parse_args()
+=======
+# resolve args
+parser = argparse.ArgumentParser()
+parser.add_argument("--results_dir", type=str)
+parser.add_argument("--gen_dir", type=str)
+parser.add_argument("--individual_dir", type=str)
+parser.add_argument("--dataset", type=str)
+parser.add_argument("--num_epochs", type=int)
+parser.add_argument("--batch_size", type=int)
+parser.add_argument("--loss", type=str)
+parser.add_argument("--metrics", type=str, nargs="*")
+parser.add_argument("--optimizer", type=str)
+>>>>>>> 177aa1e2da7e47eabe59d1f194c274cef3498899:genetic_algorithm/src/train.py
 
     # Call the train_model function with the provided arguments
     val_acc = train_model(args)
