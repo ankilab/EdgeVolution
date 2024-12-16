@@ -5,7 +5,7 @@ import numpy as np
 import hydra
 from omegaconf import DictConfig
 
-from genetic_algorithm.genetic_algorithm import GeneticAlgorithm
+from neural_architecture_search.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
 from utils.loader import Loader
 

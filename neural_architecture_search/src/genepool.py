@@ -1,4 +1,8 @@
-from ast import literal_eval
+"""
+This script contains the GenePool class, which is responsible for creating, mutating and crossing over chromosomes. It only belongs to
+the implementation of the evolutionary/genetic algorithm.
+"""
+
 import numpy as np
 import json
 from omegaconf import DictConfig

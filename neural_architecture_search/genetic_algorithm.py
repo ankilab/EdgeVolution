@@ -12,12 +12,11 @@ from tqdm import tqdm
 import copy
 from omegaconf import DictConfig
 
-# from .src.gene_operations import GenePool
 from .src.genepool import GenePool
 from .src.translation import translate
 from utils.saver import Saver
 from utils.loader import Loader
-from .src.fitness import calculate_fitness
+from .src.objective_function import calculate_fitness
 
 from .utils.convert_to_tflite import convert_to_tflite
 from .utils.substitute_tflite_layer import substitute_tflite_layer
@@ -131,12 +130,12 @@ class GeneticAlgorithm:
             os.remove(c_array_path)
 
             # take only the models into account that are below a certain threshold
-            if memory_footprint_tflite >= self.cfg.hyperparameters.max_memory_footprint.value:
-                # delete individual from dict if it is too big
-                del self.individuals[individual]
+            # if memory_footprint_tflite >= self.cfg.hyperparameters.max_memory_footprint.value:
+            #     # delete individual from dict if it is too big
+            #     del self.individuals[individual]
 
-                # set fitness directly to zero since it is not relevant anymore
-                d["fitness"] = 0
+            #     # set fitness directly to zero since it is not relevant anymore
+            #     d["fitness"] = 0
 
             with open(path + individual + '/results.json', 'w') as f:
                 json.dump(d, f, indent=2)
@@ -162,7 +161,7 @@ class GeneticAlgorithm:
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
             if info.free > min_free_space and len(procs) < 4:
-                command = 'python genetic_algorithm/src/train.py ' + \
+                command = 'python neural_architecture_search/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
                           f'--individual_dir {individuals_names[idx]} ' + \
