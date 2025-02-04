@@ -35,9 +35,11 @@ datasets/data/*
 baselines/SpokeN-100
 baselines/airway
 *EvoVis*
-datasets/cifar10
-datasets/emg_airob
+
 *.keras
 
 *.err
 *.out
+*.svg
+
+
