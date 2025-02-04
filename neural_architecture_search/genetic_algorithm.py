@@ -246,7 +246,7 @@ class GeneticAlgorithm:
         # return the updated information
         return information
 
-    def calculate_energy_consumption(self, board_snr: str, data_dir: str):
+    def calculate_energy_consumption(self, board_snr: str, power_measurement_threshold: int, data_dir: str):
         """ 
         calculate_energy_consumption reads the energy measurements from the correct csv, averages it and then integrates it over inference time 
 
@@ -277,15 +277,13 @@ class GeneticAlgorithm:
             # get all power consumption measurements
             values = np.asarray(data["Power Consumption"])
 
-            threshold = self.cfg.hyperparameters.power_measurement_threshold.value
-
             # omit the first 10k values as they are not stable
             values = values[10000:]
 
             values_averaged = pd.Series(values).rolling(self.cfg.hyperparameters.power_measurement_num_samples_average.value).mean()
 
-            start = np.where(values_averaged > threshold)[0][0]
-            end = np.where(values_averaged < threshold)[0][np.where(values_averaged < threshold)[0] > np.where(values_averaged > threshold)[0][0]][0]
+            start = np.where(values_averaged > power_measurement_threshold)[0][0]
+            end = np.where(values_averaged < power_measurement_threshold)[0][np.where(values_averaged < power_measurement_threshold)[0] > np.where(values_averaged > power_measurement_threshold)[0][0]][0]
 
             # the value with the highest gradient is
             mean_power_consumption = np.mean(values[start:end])  # measured in uA
@@ -400,11 +398,12 @@ class GeneticAlgorithm:
 
                         try:
                             # calculate energy consumption
-                            self.calculate_energy_consumption(board.snr, path + individual)
+                            self.calculate_energy_consumption(board.snr, board.power_measurement_threshold, path + individual)
                         except Exception as e:
                             # save error log
                             with open(error_log_path, 'a') as f:
                                 f.write(f"Error when calculating energy consumption on board {board.snr}.\n")
+                                f.write(f"Exception: {str(e)}\n")
                     time.sleep(3)
             else:  # no boards
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
