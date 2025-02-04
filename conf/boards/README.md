@@ -2,6 +2,15 @@
 
 This document provides instructions on how to add new microcontrollers and their corresponding Power Profiling Kits 2 (PPK2s) to the project.
 
+## TL;DR
+✅ Each microcontroller has a corresponding YAML file.
+
+✅ The file contains details about the board model, serial number, and PPK2.
+
+✅ To add a new microcontroller, create a new YAML file and update it with the correct details.
+
+✅ Use `none.yaml` when no microcontroller constraints are required.
+
 ## Microcontroller Configuration Files
 
 Each microcontroller has its own YAML configuration file (e.g., `nrf52840dk.yaml`, `nrf5349dk.yaml`). These files define the microcontroller model, serial number (SNR), and PPK2 serial number.
@@ -57,12 +66,4 @@ value:
 
 This file ensures that no specific microcontroller is enforced during execution.
 
-## Summary
-✅ Each microcontroller has a corresponding YAML file.
-
-✅ The file contains details about the board model, serial number, and PPK2.
-
-✅ To add a new microcontroller, create a new YAML file and update it with the correct details.
-
-✅ Use `none.yaml` when no microcontroller constraints are required.
 

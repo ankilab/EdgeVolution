@@ -2,6 +2,16 @@
 
 This document provides instructions on how to structure and configure the YAML file for each dataset. The configuration file contains general parameters, dataset-specific settings, neural network training hyperparameters, evolutionary search parameters, and fitness evaluation criteria.
 
+## TL;DR
+✅ The YAML configuration defines dataset parameters and hyperparameters.
+
+✅ The tables provide an overview of each parameter and its purpose.
+
+✅ Example YAML snippets illustrate proper formatting.
+
+✅ Decay lists dynamically adjust hyperparameters across generations to optimize the search process.
+
+
 ## General Parameters
 These parameters define general settings that apply to the optimization and hardware constraints.
 
@@ -115,13 +125,4 @@ rom_usage_weight:
 energy_information_weight:
   value: 0.2
 ```
-
-## Summary
-✅ The YAML configuration file is structured with sections for general parameters, dataset settings, EdgeVolution hyperparameters, and fitness evaluation.
-
-✅ Tables provide an overview of each parameter and its purpose.
-
-✅ Example YAML snippets illustrate proper formatting.
-
-✅ Decay lists dynamically adjust hyperparameters across generations to optimize the search process.
 
