@@ -314,15 +314,6 @@ hyperparameters:
     description: "The number of power measurement samples considered for averaging during the deployment of neural architectures on microcontrollers, influencing the accuracy of power consumption measurement."
     display: true  
   
-  power_measurement_threshold:
-    value: 4000
-    unit: "mA" 
-    icon: "ic:outline-power"
-    displayname: "Power measurement threshold"
-    group: "Power measurement parameters"
-    description: "The threshold value for power consumption measurement."
-    display: true
-
   ### Others
   classes_filter:
     value: ???

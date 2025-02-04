@@ -2,14 +2,17 @@
 #   - model: "nrf52840dk_nrf52840"  # Board model
 #     snr: "1050283223"  # Serial number
 #     ppk: "FAFD344C"  # PPK (Power Profiling Kit) serial number
+#     power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
 
 value:
   - model: "nrf52840dk_nrf52840"  # Board model
     snr: "1050242564"  # Serial number
     ppk: "FEA55411"  # PPK (Power Profiling Kit) serial number
+    power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
 
 # value:
 #   - model: "nrf52840dk_nrf52840"  # Board model
 #     snr: "1050289157"  # Serial number
 #     ppk: "None"  # PPK (Power Profiling Kit) serial number
+#     power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
 

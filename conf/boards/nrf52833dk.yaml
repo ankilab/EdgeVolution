@@ -1,4 +1,5 @@
 value:
   - model: "nrf52833dk_nrf52833"  # Board model
     snr: "685756103"  # Serial number
-    ppk: None  # PPK (Power Profiling Kit) serial number (unit: N/A)
+    ppk: "E373C904"  # PPK (Power Profiling Kit) serial number (unit: N/A)
+    power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
