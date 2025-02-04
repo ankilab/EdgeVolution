@@ -1,17 +1,18 @@
+from datasets.utils.registry import register_dataset
+from datasets.src.base_dataloader import BaseDataLoader
+
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import glob
 import os
 from tensorflow.keras.utils import to_categorical
 
-
-class DaliacDataLoader:
+@register_dataset("daliac")
+class DaliacDataLoader(BaseDataLoader):
     """
     DaLiAc dataset loader.
     """
-    def __init__(self, return_one_hot=False, window_size=1024, overlap_percent=50):
+    def __init__(self, return_one_hot=True, window_size=1024, overlap_percent=50):
         self.window_size = window_size
         self.overlap_percent = overlap_percent
         self.num_channels = 1  # Assuming the magnitude of X, Y, Z axes
@@ -23,7 +24,7 @@ class DaliacDataLoader:
             folder = os.path.dirname(folder)
 
         # go to the datasets folder
-        data_path = os.path.join(folder, "datasets/daliac/")
+        data_path = os.path.join(folder, "datasets/data/daliac/")
 
         # Split the file paths into train and test
         self.train_file_paths = [data_path + f"dataset_{i}.txt" for i in range(1, 15)]
@@ -35,6 +36,16 @@ class DaliacDataLoader:
         
         # Now I assign new class labels to the classes
         self.classes = {"HOUSE": 0, "REST": 1, "WALK": 2, "BICYCLE": 3, "RJ": 4, "WD": 5}
+        
+    def load_dataset(self):
+        """
+        Load the DaLiAc dataset.
+        """
+        ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths))).shuffle(1000)
+        ds_val = tf.data.Dataset.from_tensor_slices((self._load_data(self.val_file_paths)))
+        ds_test = tf.data.Dataset.from_tensor_slices((self._load_data(self.test_file_paths)))
+
+        return ds_train, ds_val, ds_test, None
         
     @staticmethod
     def _load_accelerometer_data(file_path):
@@ -85,16 +96,6 @@ class DaliacDataLoader:
                     y.append(_y)
 
         return np.array(X)[..., None], np.array(y)
-
-    def load_dataset(self):
-        """
-        Load the DaLiAc dataset.
-        """
-        ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths))).shuffle(1000)
-        ds_val = tf.data.Dataset.from_tensor_slices((self._load_data(self.val_file_paths)))
-        ds_test = tf.data.Dataset.from_tensor_slices((self._load_data(self.test_file_paths)))
-
-        return ds_train, ds_val, ds_test
     
     @staticmethod
     def _load_complete_accelerometer_data(file_path):
