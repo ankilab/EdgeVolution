@@ -129,14 +129,6 @@ class GeneticAlgorithm:
             # delete the untrained TFLite model and C array
             os.remove(c_array_path)
 
-            # take only the models into account that are below a certain threshold
-            # if memory_footprint_tflite >= self.cfg.hyperparameters.max_memory_footprint.value:
-            #     # delete individual from dict if it is too big
-            #     del self.individuals[individual]
-
-            #     # set fitness directly to zero since it is not relevant anymore
-            #     d["fitness"] = 0
-
             with open(path + individual + '/results.json', 'w') as f:
                 json.dump(d, f, indent=2)
 

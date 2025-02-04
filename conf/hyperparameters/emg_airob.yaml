@@ -6,8 +6,7 @@ min_free_space_gpu:
 
 ### Dataset/DNN training hyper-parameters:
 results_path:
-  # value: "$WORK/EvoNAS_Results/"
-  value: "/data_slow2/du92wufe/EvoNAS/Results/" # WS Kirk
+  value: "Results/" 
 dataset_name:
   value: "emg_airob"
 sample_rate:
@@ -54,10 +53,6 @@ rom_usage_weight:
   value: 0.1
 energy_information_weight:
   value: 0.2
-
-### Continue from
-continue_from:
-  value: [null, null]
 
 
 

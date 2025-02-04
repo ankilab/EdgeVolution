@@ -10,10 +10,7 @@ sys.path.insert(0, '../.')
 sys.path.insert(0, '../../.')
 
 from neural_architecture_search.src.layer_definitions import load_model
-from neural_architecture_search.utils.convert_to_tflite import convert_to_tflite
-from neural_architecture_search.utils.substitute_tflite_layer import substitute_tflite_layer
-from neural_architecture_search.utils import norm_layer
-from datasets.load_data import get_datasets
+from datasets.load_data import load_dataset
 
 
 def train_model(args):
@@ -49,26 +46,6 @@ def train_model(args):
         monitor='val_accuracy',
         mode='max',
         save_best_only=True, save_weights_only=True)
-
-    def exp_scheduler(epoch, lr):
-        if epoch < 10:
-            return 0.001
-        elif epoch < 20:
-            return 0.0005
-        elif epoch < 30:
-            return 0.0001
-        else:
-            return lr * np.exp(-0.1)
-
-    def daliac_scheduler(epoch, lr):
-        if epoch < 75:
-            return 0.001
-        elif epoch < 125:
-            return 0.0005
-        elif epoch < 175:
-            return 0.0001
-        else:
-            return lr * np.exp(-0.1)
 
     initial_learning_rate = 0.001 
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
@@ -128,21 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--metrics", type=str, nargs="*")
     parser.add_argument("--optimizer", type=str)
 
-<<<<<<< HEAD:neural_architecture_search/src/train.py
     args = parser.parse_args()
-=======
-# resolve args
-parser = argparse.ArgumentParser()
-parser.add_argument("--results_dir", type=str)
-parser.add_argument("--gen_dir", type=str)
-parser.add_argument("--individual_dir", type=str)
-parser.add_argument("--dataset", type=str)
-parser.add_argument("--num_epochs", type=int)
-parser.add_argument("--batch_size", type=int)
-parser.add_argument("--loss", type=str)
-parser.add_argument("--metrics", type=str, nargs="*")
-parser.add_argument("--optimizer", type=str)
->>>>>>> 177aa1e2da7e47eabe59d1f194c274cef3498899:genetic_algorithm/src/train.py
 
     # Call the train_model function with the provided arguments
     val_acc = train_model(args)

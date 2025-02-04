@@ -63,12 +63,15 @@ def get_classification_layer(num_classes: int, top_activation: str):
     else:
         return Dense(1, activation='sigmoid')
     
-def load_model(path):
+def load_model(model_path, weights_path=None):
     """
     Load a model from a file.
 
-    :param path: Path to the model file
-    :param custom_objects: Custom objects to load with the model
+    :param model_path: Path to the model file
+    :param weights_path: Path to the weights file
     :return: Loaded model
     """
-    return tf.keras.models.load_model(path, custom_objects=CUSTOM_OBJECTS)
+    model = tf.keras.models.load_model(model_path, custom_objects=CUSTOM_OBJECTS)
+    if weights_path is not None:
+        model.load_weights(weights_path)
+    return model

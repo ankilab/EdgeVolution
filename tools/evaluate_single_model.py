@@ -6,6 +6,8 @@ from subprocess import Popen
 from pathlib import Path
 import json
 import sys
+import os
+import yaml
 import pandas as pd
 import numpy as np
 from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
@@ -13,88 +15,108 @@ from kapre import STFT, Magnitude, ApplyFilterbank, MagnitudeToDecibel
 from measure_power_consumption import init_ppk2
 
 sys.path.append("../")
-from genetic_algorithm.utils.save_ram_rom_usage import save_ram_rom_usage
-from genetic_algorithm.utils.substitute_tflite_layer import substitute_tflite_layer
-from genetic_algorithm.utils.convert_to_tflite import convert_to_tflite
+from neural_architecture_search.utils.save_ram_rom_usage import save_ram_rom_usage
+from neural_architecture_search.utils.substitute_tflite_layer import substitute_tflite_layer
+from neural_architecture_search.utils.convert_to_tflite import convert_to_tflite
 
 FLASHER_PATH = "flash_tflite_model.sh"
 CPP_PATH = "../tflite/evonas_tflite/src/model.cpp"
 
+# Settings for power consumption measurement
 POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 50
 POWER_MEASUREMENT_THRESHOLD = 4000  # in uA
 
 gpus = tf.config.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
-
-
-def evaluate_single_model(tflite_path: str, board_model: str, board_snr: str, ppk2_snr: str):
-
-    if ".h5" in tflite_path:
-        input_shape = (8000, 1)  # TODO: make this more generic
-        model = tf.keras.models.load_model(tflite_path, custom_objects={'STFT': STFT,
-                                                         'Magnitude': Magnitude,
-                                                         'ApplyFilterbank': ApplyFilterbank,
-                                                         'MagnitudeToDecibel': MagnitudeToDecibel})
-        tflite_model = substitute_tflite_layer(model, input_shape)
-        tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, input_shape[0], 1)))
-
-        tflite_path = tflite_path.replace(".h5", ".tflite")
-        with open(tflite_path, 'wb') as f:
-            f.write(tflite_model)
-
-    results_path = Path(tflite_path).parent / "results.json"
-
-    if results_path.exists():
-        # delete file
-        results_path.unlink()
-
-    with results_path.open("w") as f:
-        d = {}
-        json.dump(d, f)
-
-    ppk2 = init_ppk2(ppk2_snr)
-    time.sleep(1)  # --> important to wait a bit before flashing the model
-
-    # flash tflite model on board
-    try:
-        ret_val = subprocess.call(['bash', '-i', FLASHER_PATH, tflite_path, CPP_PATH, board_model, board_snr])
-    except Exception as e:
-        raise e
     
-    if ret_val != 0:
-        raise Exception("Error flashing the model on the board. Ret val: ", ret_val)
-#
-    save_ram_rom_usage(f"../tflite/build-{board_model}", str(results_path))
+def _get_board_information(board: str):
+    boards_fodler = "../conf/boards"
+    
+    # remove "none" from available boards
+    available_boards = [b.split(".")[0] for b in os.listdir(boards_fodler) if b != "none.yaml" and b != "README.md"]
+    
+    if board not in available_boards:
+        raise ValueError(f"Board {board} not found in available boards: {available_boards}")
+    else:
+        with open(f"{boards_fodler}/{board}.yaml", 'r') as stream:
+            board_info = yaml.safe_load(stream)
+            board_model = board_info['value'][0]['model']
+            board_snr = board_info['value'][0]['snr']
+            ppk2_snr = board_info['value'][0]['ppk']
+    
+    return board_model, board_snr, ppk2_snr
 
-    proc_energy = None
-    if ppk2 is not None:
-        del ppk2
-        time.sleep(3)
+def evaluate_single_model(tflite_path: str, board: str):
+    
+    board_model, board_snr, ppk2_snr = _get_board_information(board)
+    print(f"Board model: {board_model}, Board SNR: {board_snr}, PPK2 SNR: {ppk2_snr}")
 
-        # start measuring energy consumption
-        args = ['python measure_power_consumption.py', str(results_path.parent), board_snr,
-                ppk2_snr, f'{POWER_MEASUREMENT_NB_SAMPLES_AVERAGE}']
-        command = " ".join(args)  # joining args separated by space
-        proc_energy = Popen(command, shell=True)
+#     if ".h5" in tflite_path:
+#         input_shape = (8000, 1)  # TODO: make this more generic
+#         model = tf.keras.models.load_model(tflite_path, custom_objects={'STFT': STFT,
+#                                                          'Magnitude': Magnitude,
+#                                                          'ApplyFilterbank': ApplyFilterbank,
+#                                                          'MagnitudeToDecibel': MagnitudeToDecibel})
+#         tflite_model = substitute_tflite_layer(model, input_shape)
+#         tflite_model = convert_to_tflite(tflite_model, np.random.uniform(size=(200, input_shape[0], 1)))
 
-        time.sleep(2)
+#         tflite_path = tflite_path.replace(".h5", ".tflite")
+#         with open(tflite_path, 'wb') as f:
+#             f.write(tflite_model)
 
-    # get inference time from Serial port
-    args = ['python measure_inference_time.py', str(results_path.parent), board_model, board_snr]
-    command = " ".join(args)  # joining args separated by space
-    proc_inference = Popen(command, shell=True)
+#     results_path = Path(tflite_path).parent / "results.json"
 
-    # wait for inference time measurement to finish
-    proc_inference.wait()
+#     if results_path.exists():
+#         # delete file
+#         results_path.unlink()
 
-    # if no ppk connected, measuring the power consumption is not possible
-    if proc_energy is not None:
-        # wait for energy consumption measurement to finish
-        proc_energy.wait(timeout=10)
+#     with results_path.open("w") as f:
+#         d = {}
+#         json.dump(d, f)
 
-    # calculate energy consumption
-    _calculate_energy_consumption(board_snr, results_path)
+#     ppk2 = init_ppk2(ppk2_snr)
+#     time.sleep(1)  # --> important to wait a bit before flashing the model
+
+#     # flash tflite model on board
+#     try:
+#         ret_val = subprocess.call(['bash', '-i', FLASHER_PATH, tflite_path, CPP_PATH, board_model, board_snr])
+#     except Exception as e:
+#         raise e
+    
+#     if ret_val != 0:
+#         raise Exception("Error flashing the model on the board. Ret val: ", ret_val)
+# #
+#     save_ram_rom_usage(f"../tflite/build-{board_model}", str(results_path))
+
+#     proc_energy = None
+#     if ppk2 is not None:
+#         del ppk2
+#         time.sleep(3)
+
+#         # start measuring energy consumption
+#         args = ['python measure_power_consumption.py', str(results_path.parent), board_snr,
+#                 ppk2_snr, f'{POWER_MEASUREMENT_NB_SAMPLES_AVERAGE}']
+#         command = " ".join(args)  # joining args separated by space
+#         proc_energy = Popen(command, shell=True)
+
+#         time.sleep(2)
+
+#     # get inference time from Serial port
+#     args = ['python measure_inference_time.py', str(results_path.parent), board_model, board_snr]
+#     command = " ".join(args)  # joining args separated by space
+#     proc_inference = Popen(command, shell=True)
+
+#     # wait for inference time measurement to finish
+#     proc_inference.wait()
+
+#     # if no ppk connected, measuring the power consumption is not possible
+#     if proc_energy is not None:
+#         # wait for energy consumption measurement to finish
+#         proc_energy.wait(timeout=10)
+
+#     # calculate energy consumption
+#     _calculate_energy_consumption(board_snr, results_path)
 
 
 def _calculate_energy_consumption(board_snr: str, results_path: Path):
@@ -179,10 +201,8 @@ if __name__ == "__main__":
         description='This script evaluates (RAM footprint, inference time and power consumption) a single model.'
     )
 
-    parser.add_argument('model_path', nargs='?', default=None, help='Path to the model (.h5 or .tflite) to be evaluated.')
-    parser.add_argument('board_model', nargs='?', default=None)
-    parser.add_argument('board_snr', nargs='?', default=None)
-    parser.add_argument('ppk2_snr', nargs='?', default=None)
+    parser.add_argument('--model_path', nargs='?', default=None, help='Path to the model (.h5 or .tflite) to be evaluated.')
+    parser.add_argument('--board', nargs='?', default=None)
     args = parser.parse_args()
 
-    evaluate_single_model(args.model_path, args.board_model, args.board_snr, args.ppk2_snr)
+    evaluate_single_model(args.model_path, args.board)

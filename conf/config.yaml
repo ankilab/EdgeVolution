@@ -9,16 +9,6 @@ hydra:
     dir: .
 
 hyperparameters:  
-
-  # telegram_bot_token:
-  #   value: "6714744963:AAFVLcimFbYymBLkA_mHBbSGpFCijv0TFGA"
-  #   unit: null 
-  #   icon: null
-  #   displayname: "Telegram bot token"
-  #   group: "Run information"
-  #   description: "The token of the Telegram bot used to send messages to the user."
-  #   display: true
-
   ### General parameters:
   results_path:
     value: ???
@@ -277,15 +267,6 @@ hyperparameters:
     description: "The maximum number of layers after GAP, GMP, or Flatten."
     display: true
 
-  # path_search_space:
-  #   value: "search_space.json"
-  #   unit: null 
-  #   icon: "ph:path-bold"
-  #   displayname: "Path search space"
-  #   group: "Filepath parameters"
-  #   description: "The path to the search space file."
-  #   display: true
-
   path_gene_pool:
     value: "gene_pool.txt"
     unit: null 
@@ -340,16 +321,6 @@ hyperparameters:
     displayname: "Optimize for MCU"
     group: "Training parameters"
     description: "Whether to optimize for MCU or not. If not, models are just optimized for accuracy."
-    display: true
-
-  ### Continue from feature
-  continue_from:
-    value: ???
-    unit: null
-    icon: null
-    displayname: "Continued from the run mentioned in 'value'."
-    group: "Run information"
-    description: "If provided, the run will continue from the run mentioned in 'value' (which is always a list of two [path_to_continue_from, generation_to_continue_from])"
     display: true
 
 ### Microcontroller boards
