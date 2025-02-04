@@ -35,7 +35,7 @@ if __name__ == "__main__":
         description='This script converts a TFLite model to a C array and inserts it into the cpp file.')
 
     parser.add_argument('path_tflite', nargs='?', default='../tflite/tflite_model.tflite')
-    parser.add_argument('path_cpp_file', nargs='?', default='../tflite/evonas_tflite/src/model.cpp')
+    parser.add_argument('path_cpp_file', nargs='?', default='../tflite/edgevolution_tflite/src/model.cpp')
     args = parser.parse_args()
 
     if not os.path.exists(args.path_tflite):

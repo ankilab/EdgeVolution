@@ -16,7 +16,7 @@ class Saver:
 
         if not os.path.exists(results_path):
             os.mkdir(results_path)
-        self.results_dir = Path(results_path + f"/evonas_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")
+        self.results_dir = Path(results_path + f"/edgevolution_{time.strftime('%Y%m%d-%H%M%S')}_{experiment}")
         os.mkdir(self.results_dir)
 
         self.random_names = []

@@ -2755,4 +2755,4 @@ alignas(8) const unsigned char g_model[] = {
   0x0c, 0x00, 0x00, 0x00, 0x27, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x27
 };
-unsigned int _data_du92wufe_EvoNAS_Results_evonas_20241216_124839_daliac_Generation_1_crimson_nautilus_1_models_model_tflite_untrained_tflite_len = 33040;
+unsigned int _data_du92wufe_EdgeVolution_Results_edgevolution_20241216_124839_daliac_Generation_1_crimson_nautilus_1_models_model_tflite_untrained_tflite_len = 33040;

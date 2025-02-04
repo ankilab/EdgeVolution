@@ -18,9 +18,9 @@ class DaliacDataLoader(BaseDataLoader):
         self.num_channels = 1  # Assuming the magnitude of X, Y, Z axes
         self.return_one_hot = return_one_hot
 
-        # go dynamically back in directory until folder "EvoNAS" is reached
+        # go dynamically back in directory until folder "EdgeVolution" is reached
         folder = os.getcwd()
-        while os.path.basename(folder) != "EvoNAS":
+        while os.path.basename(folder) != "EdgeVolution":
             folder = os.path.dirname(folder)
 
         # go to the datasets folder

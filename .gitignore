@@ -32,8 +32,7 @@ venv
 tflite/optional/*
 
 datasets/data/*
-baselines/SpokeN-100
-baselines/airway
+baselines/private/
 *EvoVis*
 
 *.keras

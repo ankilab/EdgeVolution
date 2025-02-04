@@ -7,10 +7,10 @@ unset(CONFIG_STD_CPP11)
 set(CONFIG_STD_CPP17 y)
     
 
-find_package(Zephyr PATHS /home/EvoNAS_bump/tflite/zephyr)
+find_package(Zephyr PATHS /home/EdgeVolution/tflite/zephyr)
 #find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-project(EvoNAS_tflite_micro)
+project(EdgeVolution_tflite_micro)
 
 # These samples use local static initialization. Since Zephyr doesn't support the
 # C++ ABI for thread-safe initialization of local statics and the constructors don't

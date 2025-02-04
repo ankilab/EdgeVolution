@@ -330,7 +330,7 @@ class GeneticAlgorithm:
             if len(self.cfg.boards.value) > 0:
                 for board in self.cfg.boards.value:
                     tflite_path = path + individual + '/models/model_tflite_untrained.tflite'
-                    cpp_path = '../tflite/evonas_tflite/src/model.cpp'
+                    cpp_path = '../tflite/edgevolution_tflite/src/model.cpp'
                     flasher_path = './tools/flash_tflite_model.sh'
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)

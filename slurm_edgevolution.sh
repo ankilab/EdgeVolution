@@ -20,7 +20,7 @@ module load cudnn
 
 conda activate edgevolution
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$WORK/software/private/conda/envs/evonas/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$WORK/software/private/conda/envs/edgevolution/lib
 
 srun python main.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none
 # srun python main.py +hyperparameters=emg_airob +search_space=emg_airob +boards=none

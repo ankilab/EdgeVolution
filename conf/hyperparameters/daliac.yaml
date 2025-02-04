@@ -30,7 +30,7 @@ loss:
 metrics:
   value: ["accuracy"]
 
-### EvoNAS hyper-parameters:
+### EdgeVolution hyper-parameters:
 num_generations:
   value: 30
 population_size_decay:

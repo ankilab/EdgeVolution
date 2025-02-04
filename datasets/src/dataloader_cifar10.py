@@ -20,9 +20,9 @@ class Cifar10DataLoader(BaseDataLoader):
 
         :return: ds_train, ds_val, ds_test
         """
-        # go dynamically back in directory until folder "EvoNAS" is reached
+        # go dynamically back in directory until folder "EdgeVolution" is reached
         folder = os.getcwd()
-        while os.path.basename(folder) != "EvoNAS":
+        while os.path.basename(folder) != "EdgeVolution":
             folder = os.path.dirname(folder)
         
         # go to the datasets folder

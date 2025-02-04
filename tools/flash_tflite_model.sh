@@ -15,12 +15,12 @@ cd "../tflite"
 
 # add the board type and snr to the config files as port description
 # Read the project file and replace the CONFIG_USB_DEVICE_PRODUCT value
-project_file_path="./evonas_tflite/prj.conf"
+project_file_path="./edgevolution_tflite/prj.conf"
 sed -i "s/CONFIG_USB_DEVICE_PRODUCT=\"[^\"]*\"/CONFIG_USB_DEVICE_PRODUCT=\"$name\"/" "$project_file_path"
 echo "Value of CONFIG_USB_DEVICE_PRODUCT changed to '$name'"
 
 # build the files for the given board and snr
-west build -b $board_type evonas_tflite/ --build-dir build-$board_type  #> /dev/null
+west build -b $board_type edgevolution_tflite/ --build-dir build-$board_type  #> /dev/null
 
 # generate RAM and ROM reports
 # check if file exists, otherwise call the west build command

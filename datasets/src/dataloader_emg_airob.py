@@ -19,9 +19,9 @@ class EmgAirobDataLoader(BaseDataLoader):
         self.val_participants = [4, 5]
         self.test_participants = [6]
 
-        # go dynamically back in directory until folder "EvoNAS" is reached
+        # go dynamically back in directory until folder "EdgeVolution" is reached
         folder = os.getcwd()
-        while os.path.basename(folder) != "EvoNAS":
+        while os.path.basename(folder) != "EdgeVolution":
             folder = os.path.dirname(folder)
         
         # go to the datasets folder

@@ -20,7 +20,7 @@ from neural_architecture_search.utils.substitute_tflite_layer import substitute_
 from neural_architecture_search.utils.convert_to_tflite import convert_to_tflite
 
 FLASHER_PATH = "flash_tflite_model.sh"
-CPP_PATH = "../tflite/evonas_tflite/src/model.cpp"
+CPP_PATH = "../tflite/edgevolution_tflite/src/model.cpp"
 
 # Settings for power consumption measurement
 POWER_MEASUREMENT_NB_SAMPLES_AVERAGE = 50

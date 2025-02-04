@@ -140,13 +140,13 @@ hyperparameters:
     display: true
 
 
-  ### EvoNAS hyper-parameters:
+  ### EdgeVolution hyper-parameters:
   num_generations:
     value: ???
     unit: null 
     icon: "iconoir:tree"
     displayname: "Generations"
-    group: "Evonas parameters"
+    group: "EdgeVolution parameters"
     description: "The total iterations or evolutionary cycles through which the algorithm refines neural architectures."
     display: true
 
@@ -155,7 +155,7 @@ hyperparameters:
     unit: null 
     icon: "pepicons-pencil:people"
     displayname: "Population"
-    group: "Evonas parameters"
+    group: "EdgeVolution parameters"
     description: "The quantity of neural network models concurrently evaluated and evolved within each generation."
     display: true
 
@@ -169,7 +169,7 @@ hyperparameters:
     unit: null 
     icon: "game-icons:podium-winner"
     displayname: "Best models crossover"
-    group: "Evonas parameters"
+    group: "EdgeVolution parameters"
     description: "The count of top-performing models selected for genetic crossover to generate new offspring."
     display: true
 
@@ -183,7 +183,7 @@ hyperparameters:
     unit: null 
     icon: "ph:virus"
     displayname: "Mutation rate"
-    group: "Evonas parameters"
+    group: "EdgeVolution parameters"
     description: "The probability that a given model will be mutated during the evolutionary process."
     display: true
 
@@ -254,7 +254,7 @@ hyperparameters:
     unit: null 
     icon: "cil:search"
     displayname: "Max feature layers"
-    group: "Evonas parameters"
+    group: "EdgeVolution parameters"
     description: "The maximum number of layers before GAP, GMP, or Flatten."
     display: true
   
@@ -263,7 +263,7 @@ hyperparameters:
     unit: null 
     icon: "ph:tag"
     displayname: "Max classification layers"
-    group: "Evonas parameters"
+    group: "EdgeVolution parameters"
     description: "The maximum number of layers after GAP, GMP, or Flatten."
     display: true
 
