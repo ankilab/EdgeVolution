@@ -1,6 +1,6 @@
-# EvoNAS
+# EdgeVolution
 
-EvoNAS is a software-hardware end-to-end pipeline that allows to optimize preprocessing and neural network architectures for microcontrollers in a single step.
+EdgeVolution is a software-hardware end-to-end pipeline that allows to optimize preprocessing and neural network architectures for microcontrollers in a single step.
 
 The neural architecture search (NAS) follows a evolutionary algorithm approach that optimizes accuracy, memory footprint, inference time and energy consumption deployed on the microcontroller. 
 
@@ -23,20 +23,20 @@ On Linux, the `install.sh` script should automatically install all the requireme
     pip install west
     ```
 
-## Installing EvoNAS
+## Installing EdgeVolution
 
-To install EvoNAS, follow these steps:
+To install EdgeVolution, follow these steps:
 
 * Clone the github repository.
     ``` 
-    git clone https://github.com/ankilab/EvoNAS
+    git clone https://github.com/ankilab/EdgeVolution
     ```
 
 ### Linux
 Follow these steps for Linux:
 * `install.sh` should automatically install all dependencies
     ```
-    cd ./EvoNAS
+    cd ./EdgeVolution
     ./install.sh
     ```
 * Add path variables and device permissions automatically.
@@ -158,12 +158,12 @@ To debug a NRF development kit board, follow these steps according this [tutoria
         "version": 4
     }
     ```
-* Open folder EvoNAS in VS Code
+* Open folder EdgeVolution in VS Code
 * Run nRF Connect extension in VS Code
 * On the WELCOME tab, click on `Open an existing application`
-* Select ./tflite/evonas_tflite
-* On the APPLICATIONS tab, click on the second icon next to evonas_tflite which adds a build configuration `Open an existing application`
-* Select which board type to debug, use `prj.conf` as configuration and keep build as directory name. (NOTE: choosing a build directory outside of evonas_tflite via ../ does not save the build configuration)
+* Select ./tflite/edgevolution_tflite
+* On the APPLICATIONS tab, click on the second icon next to edgevolution_tflite which adds a build configuration `Open an existing application`
+* Select which board type to debug, use `prj.conf` as configuration and keep build as directory name. (NOTE: choosing a build directory outside of edgevolution_tflite via ../ does not save the build configuration)
 * A build should have been started. The board can now be debugged using the Debug button in the ACTIONS tab. Make sure that the board appears in the CONNECTED DEVICES tab. When hooked up to the power profiler, the power profiler needs to be lit in blue in order to flash the kit properly. 
 
 ### Workaround
@@ -173,8 +173,8 @@ west build --build-dir /home/<user>/EvoNAS_bump/tflite/build /home/<user>/EvoNAS
 ```
 Now, you can use the Debug under ACTIONS in order to create a launch.json. In the Debug tab of VS Code, now this launch json can be selected to properly debug the code. 
 
-## Using EvoNAS
-Before the EvoNAS optimization run is started, some configurations must be made. These include the definition of hyperparameters, the search space and the boards that are to be used for evaluating the candidates on the microcontroller.
+## Using EdgeVolution
+Before the EdgeVolution optimization run is started, some configurations must be made. These include the definition of hyperparameters, the search space and the boards that are to be used for evaluating the candidates on the microcontroller.
 
 1) Search space setup
 [search space setup](conf/search_space/README.md)
@@ -185,14 +185,14 @@ Before the EvoNAS optimization run is started, some configurations must be made.
 3) Microcontroller setup
 [microcontroller boards](conf/boards/README.md)
 
-To finally run EvoNAS, call the main script with the corresponding configuration files prepared in the previous steps.
+To finally run EdgeVolution, call the main script with the corresponding configuration files prepared in the previous steps.
 
 ```
 python main.py +hyperparameters=<your_hyperparams> +search_space=<your_search_space> +boards=nrf52840dk
 ```
 
-## Contributing to EvoNAS
-To contribute to EvoNAS, follow these steps:
+## Contributing to EdgeVolution
+To contribute to EdgeVolution, follow these steps:
 
 1. Fork this repository.
 2. Create a branch: `git checkout -b <branch_name>`.
