@@ -42,8 +42,8 @@ baselines/private/
 *.out
 *.svg
 
-baselines/cifar10/*
-baselines/daliac/*
-baselines/emg_airob/*
-baselines/speech_commands/*
+baselines/cifar10
+baselines/daliac
+baselines/emg_airob
+baselines/speech_commands
 
