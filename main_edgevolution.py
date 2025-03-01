@@ -1,13 +1,12 @@
 import tensorflow as tf
 import multiprocessing
-import argparse
 import numpy as np
 import hydra
 from omegaconf import DictConfig
 
 from neural_architecture_search.genetic_algorithm import GeneticAlgorithm
 from utils.saver import Saver
-from utils.loader import Loader
+from tools.update_tensor_arena_size import update_tensor_arena_size
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -27,6 +26,10 @@ def main(cfg: DictConfig):
 
     # save params
     my_saver.save_params(cfg)
+    
+    # update the tensor arena size in the main.cpp file
+    limit_tensor_arena_size = _get_tensor_arena_size_limit(cfg)
+    update_tensor_arena_size("tflite/edgevolution_tflite/src/main_functions.cpp", limit_tensor_arena_size)
 
     for i_generation in range(gen_start, cfg.hyperparameters.num_generations.value + 1):
         my_ga.prepare_generation(i_generation)
@@ -54,6 +57,15 @@ def main(cfg: DictConfig):
         if i_generation != cfg.hyperparameters.num_generations.value:
             my_ga.crossover()
             my_ga.mutation()
+            
+def _get_tensor_arena_size_limit(cfg):
+    board_available_tensor_arena_size = cfg.boards.value[0].max_available_tensor_arena_size
+    limit_tensor_arena_size = cfg.hyperparameters.limit_tensor_arena_size.value
+    if limit_tensor_arena_size is None:
+        limit_tensor_arena_size = board_available_tensor_arena_size
+    else:
+        limit_tensor_arena_size = min(limit_tensor_arena_size, board_available_tensor_arena_size)
+    return limit_tensor_arena_size
 
 
 if __name__ == "__main__":

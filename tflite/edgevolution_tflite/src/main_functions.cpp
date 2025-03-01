@@ -46,8 +46,7 @@ namespace {
 	tflite::MicroProfiler profiler;
 	//tflite::MicroResourceVariables *resource_variables = nullptr;
 
-	//constexpr int kTensorArenaSize = 170 * 1024;
-	constexpr int kTensorArenaSize = 155 * 1024;
+    constexpr int kTensorArenaSize = 155 * 1024;
 	uint8_t tensor_arena[kTensorArenaSize];
 }  /* namespace */
 

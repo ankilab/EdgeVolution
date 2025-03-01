@@ -6,6 +6,11 @@ import numpy as np
 import argparse
 import re
 
+####################################################################################################
+# This script measures the inference time of a neural network on a microcontroller.
+####################################################################################################
+
+
 def get_nrf_port(board, timeout_in_ms = 3000):
     """ 
     get_nrf_port waits until the serial port for the corresponding board is available and return it after that.

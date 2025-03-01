@@ -1,8 +1,8 @@
 ### General parameters:
-optimize_for_MCU:
-  value: true
-min_free_space_gpu:
+min_free_space_gpu:  # Minimum free space in GPU in bytes to start a new training (as we train in parallel)
   value: 6_000_000
+limit_tensor_arena_size: # Limit the tensor arena size in bytes (if None, it will use the maximum available tensor arena size)
+  value: null
 
 ### Dataset/DNN training hyper-parameters:
 results_path:

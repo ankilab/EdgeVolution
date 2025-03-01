@@ -64,6 +64,14 @@ class GeneticAlgorithm:
 
 
     def prepare_generation(self, current_generation: int):
+        """
+        Prepare the generation by applying decays to hyperparameters and creating the generation directory.
+        Convert the chromosomes to models and to tflite models in parallel.
+
+        :param current_generation: int, the current generation number
+
+        :return: None
+        """
         # increment generation counter
         self.generation_counter = current_generation
 
@@ -79,17 +87,32 @@ class GeneticAlgorithm:
         self.my_saver.save_population_genotype(self.individuals, self.generation_counter)
 
         # convert chromosomes to models and to tflite models in parallel
+        # I don't want to use the whole CPU power for this task to avoid freezing the system etc.
         cpus = os.cpu_count() - 4
-        # cpus = 8
+
+        # fix for cpus < 1
+        if cpus < 1:
+            cpus = 1
+
         with get_context("spawn").Pool(cpus) as pool:
             pool.map(self._process_model_translation_and_conversion, self.individuals)
 
         print("Finished translating and converting models")
     
     def _generate_random_name(self):
+        """
+        Generate a random name for the individual.
+
+        :return: str, the random name
+        """
         return generate_slug(2).replace("-", "_") + f"_{self.generation_counter + 1}"
 
     def _generate_population_names(self):
+        """
+        Generate random names for the population.
+
+        :return: dict, the dictionary with the random names
+        """
         names = set()
         population_size = self.cfg.hyperparameters.population_size.value
         while len(names) < population_size:
@@ -105,6 +128,8 @@ class GeneticAlgorithm:
         """ 
         Load memory footprint after converting the model to TFLite.
         Determine models (dependent on the thresholds specified in main.py) that will be further evaluated. 
+
+        :return: None. Writes memory footprint to results.json
         """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
@@ -137,17 +162,22 @@ class GeneticAlgorithm:
                             " be further evaluated. Think about adjusting your GA parameters.")
 
     def train_neural_networks(self):
-        # train all neural networks
-        # --> start several training processes here
+        """"
+        Train all preselected models on the MCU.
+        
+        :return: None. Writes training results to results.json
+        """
+        # start several training processes here
         min_free_space = self.cfg.hyperparameters.min_free_space_gpu.value
         procs = []
         individuals_names = list(self.individuals.keys())
         tqdm_bar = tqdm(total=len(individuals_names), desc="Training models")
 
-        idx = 0
+        idx = 0 # index of the individual that is currently being trained
         nvidia_smi.nvmlInit()
         handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
         
+        # start training processes
         while idx < len(individuals_names):
             procs = [p for p in procs if p.is_alive()]
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
@@ -256,10 +286,10 @@ class GeneticAlgorithm:
         :return: None. Writes energy consumption and mean power consumption to results.json
         """
 
-        # get paths FIXME: make paths more robust for e.g. Windows 
+        # get paths
         power_measurement_file_name = "power_measurements_" + board_snr + ".csv"
-        csv_path = data_dir + "/" + power_measurement_file_name
-        results_path = data_dir + "/" + "results.json"
+        csv_path = os.path.join(data_dir, power_measurement_file_name)
+        results_path = os.path.join(data_dir, "results.json")
 
         try:
             # load results from json
@@ -274,10 +304,11 @@ class GeneticAlgorithm:
 
         try:
             data = pd.read_csv(csv_path)
+
             # get all power consumption measurements
             values = np.asarray(data["Power Consumption"])
 
-            # omit the first 10k values as they are not stable
+            # omit the first 10k values as they are not stable yet (initialization of the current measurements)
             values = values[10000:]
 
             values_averaged = pd.Series(values).rolling(self.cfg.hyperparameters.power_measurement_num_samples_average.value).mean()
@@ -316,7 +347,11 @@ class GeneticAlgorithm:
             json.dump(results, f, indent=2)
 
     def evaluate_energy_consumption_and_inference_speed(self):
-        """ Evaluate all preselected models on the MCU. """
+        """ 
+        Evaluate all preselected models on the MCU.
+        
+        :return: None. Writes energy consumption and inference speed to results.json
+        """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
         individuals_names = list(self.individuals.keys())
@@ -410,6 +445,11 @@ class GeneticAlgorithm:
             
 
     def selection(self):
+        """
+        Select the best individuals based on their fitness.
+        
+        :return: None. Writes fitness to results.json
+        """
         # calculate fitness of all preselected models
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
@@ -417,8 +457,12 @@ class GeneticAlgorithm:
         for individual in individuals_names:
             with open(path + individual + '/results.json', 'r') as f:
                 results = json.loads(f.read())
+
+                # use the results to calculate the fitness (config is needed for the fitness calculation
+                # as it contains the weighting values)
                 fitness, error = calculate_fitness(results, self.cfg)
 
+                # Save calculated fitness for each individual
                 self.individuals[individual]["fitness"] = fitness
 
             # save fitness in results.json
@@ -439,7 +483,11 @@ class GeneticAlgorithm:
         self.individuals = dict(list(self.individuals.items())[:self.cfg.hyperparameters.num_best_models_crossover.value])
 
     def crossover(self):
-        """ Crossover the best chromosomes to get the population for the next generation. """
+        """ 
+        Crossover the best chromosomes to get the population for the next generation. 
+        
+        :return: None. Writes parents to results.json
+        """
         population_next_generation, parents_names = self.my_gene_pool.crossover(
             path=f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/',
             fittest_chromosomes=list(self.individuals.keys()))
@@ -457,6 +505,8 @@ class GeneticAlgorithm:
     def update_population_size(self):
         """
         Apply population size decay after each generation.
+
+        :return: None
         """
         decay = self.cfg.hyperparameters.population_size_decay.value
         self.cfg.hyperparameters.population_size.value = next(sublist[1] for sublist in decay[::-1] if self.generation_counter+1 >= sublist[0])
@@ -464,6 +514,8 @@ class GeneticAlgorithm:
     def update_num_best_models_crossover(self):
         """ 
         Apply num_best_models_crossover decay after each generation.
+
+        :return: None
         """
         decay = self.cfg.hyperparameters.num_best_models_crossover_decay.value
         self.cfg.hyperparameters.num_best_models_crossover.value = next(sublist[1] for sublist in decay[::-1] if self.generation_counter+1 >= sublist[0])
@@ -471,19 +523,33 @@ class GeneticAlgorithm:
     def update_mutation_rate(self):
         """ 
         Apply mutation rate decay after each generation.
+
+        :return: None
         """
         decay = self.cfg.hyperparameters.mutation_rate_decay.value
         self.cfg.hyperparameters.mutation_rate.value = next(sublist[1] for sublist in decay[::-1] if self.generation_counter+1 >= sublist[0])
 
     def mutation(self):
-        """ Mutation of the population previously generated by crossover. """
+        """ 
+        Mutation of the population previously generated by crossover. 
+        
+        :return: None
+        """
         for name in self.individuals.keys():
             chromosome = self.individuals[name]["genotype"]
             mutated_chromosome = self.my_gene_pool.mutate_chromosome(chromosome)
             self.individuals[name]["genotype"] = mutated_chromosome
 
     def _process_model_translation_and_conversion(self, individual_name: str):
+        """
+        Translate the chromosome to a TensorFlow model and convert it to a TFLite model.
+        
+        :param individual_name: str, the name of the individual
+        
+        :return: None
+        """
         try:
+            # set memory growth for GPU
             import tensorflow as tf
             gpus = tf.config.list_physical_devices('GPU')
             for gpu in gpus:
