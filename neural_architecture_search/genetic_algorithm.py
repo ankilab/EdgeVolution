@@ -183,7 +183,7 @@ class GeneticAlgorithm:
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
             if info.free > min_free_space and len(procs) < 4:
-                command = 'python neural_architecture_search/src/train.py ' + \
+                command = 'python3 neural_architecture_search/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
                           f'--individual_dir {individuals_names[idx]} ' + \
@@ -401,7 +401,7 @@ class GeneticAlgorithm:
                         time.sleep(3)
 
                         # start measuring energy consumption
-                        args = ['python tools/measure_power_consumption.py', path + individual, board.snr,
+                        args = ['python3 tools/measure_power_consumption.py', path + individual, board.snr,
                                 board.ppk, f'{self.cfg.hyperparameters.power_measurement_num_samples_average.value}']
                         command = " ".join(args)  # joining args separated by space
                         proc_energy = Popen(command, shell=True)
@@ -411,7 +411,7 @@ class GeneticAlgorithm:
                     # wait for inference time measurement to finish
                     try:
                         # get inference time from Serial port
-                        args = ['python tools/measure_inference_time.py', path + individual, board.model, board.snr]
+                        args = ['python3 tools/measure_inference_time.py', path + individual, board.model, board.snr]
                         command = " ".join(args)  # joining args separated by space
                         proc_inference = Popen(command, shell=True)
 
