@@ -1,5 +1,6 @@
 from datasets.utils.registry import register_dataset
 from datasets.src.base_dataloader import BaseDataLoader
+from datasets.utils.path_utils import find_project_root
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -99,14 +100,9 @@ class SpeechCommandsDataloader(BaseDataLoader):
 
         :return: ds_train, ds_val, ds_test
         """
-        # go dynamically back in directory until folder "EdgeVolution" is reached
-        folder = os.getcwd()
-        while os.path.basename(folder) != "EdgeVolution":
-            folder = os.path.dirname(folder)
+        # Find project root and go to the datasets folder
+        folder = os.path.join(find_project_root(), "datasets/data")
         
-        # go to the datasets folder
-        folder = os.path.join(folder, "datasets/data")
-
         # load the dataset
         ds_train = tfds.load("speech_commands", data_dir=folder, split='train', as_supervised=True, download=True, shuffle_files=True)
         ds_val = tfds.load("speech_commands", data_dir=folder, split='validation', as_supervised=True,

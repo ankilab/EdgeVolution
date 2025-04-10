@@ -1,5 +1,6 @@
 from datasets.utils.registry import register_dataset
 from datasets.src.base_dataloader import BaseDataLoader
+from datasets.utils.path_utils import find_project_root
 
 import tensorflow as tf
 import numpy as np
@@ -18,13 +19,8 @@ class DaliacDataLoader(BaseDataLoader):
         self.num_channels = 1  # Assuming the magnitude of X, Y, Z axes
         self.return_one_hot = return_one_hot
 
-        # go dynamically back in directory until folder "EdgeVolution" is reached
-        folder = os.getcwd()
-        while os.path.basename(folder) != "EdgeVolution":
-            folder = os.path.dirname(folder)
-
-        # go to the datasets folder
-        data_path = os.path.join(folder, "datasets/data/daliac/")
+        # Find project root and go to the datasets folder
+        data_path = os.path.join(find_project_root(), "datasets/data/daliac/")
 
         # Split the file paths into train and test
         self.train_file_paths = [data_path + f"dataset_{i}.txt" for i in range(1, 15)]
@@ -36,12 +32,15 @@ class DaliacDataLoader(BaseDataLoader):
         
         # Now I assign new class labels to the classes
         self.classes = {"HOUSE": 0, "REST": 1, "WALK": 2, "BICYCLE": 3, "RJ": 4, "WD": 5}
+    
         
     def load_dataset(self):
         """
         Load the DaLiAc dataset.
         """
+        print("Loading DaLiAc dataset...")
         ds_train = tf.data.Dataset.from_tensor_slices((self._load_data(self.train_file_paths))).shuffle(1000)
+        print("Loaded training data.")
         ds_val = tf.data.Dataset.from_tensor_slices((self._load_data(self.val_file_paths)))
         ds_test = tf.data.Dataset.from_tensor_slices((self._load_data(self.test_file_paths)))
 
@@ -145,4 +144,4 @@ class DaliacDataLoader(BaseDataLoader):
         ds_val = tf.data.Dataset.from_tensor_slices((self._load_complete_data(self.val_file_paths)))
         ds_test = tf.data.Dataset.from_tensor_slices((self._load_complete_data(self.test_file_paths)))
 
-        return ds_train, ds_val, ds_test 
+        return ds_train, ds_val, ds_test

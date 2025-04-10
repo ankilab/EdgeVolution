@@ -1,5 +1,6 @@
 from datasets.utils.registry import register_dataset
 from datasets.src.base_dataloader import BaseDataLoader
+from datasets.utils.path_utils import find_project_root
 
 import tensorflow as tf
 import numpy as np
@@ -19,13 +20,8 @@ class EmgAirobDataLoader(BaseDataLoader):
         self.val_participants = [4, 5]
         self.test_participants = [6]
 
-        # go dynamically back in directory until folder "EdgeVolution" is reached
-        folder = os.getcwd()
-        while os.path.basename(folder) != "EdgeVolution":
-            folder = os.path.dirname(folder)
-        
-        # go to the datasets folder
-        folder = os.path.join(folder, "datasets/data/emg_airob/")
+        # Find project root and go to the datasets folder
+        folder = os.path.join(find_project_root(), "datasets/data/emg_airob/")
         csv_file = os.path.join(folder, csv_file)
         
         self.df = pd.read_csv(csv_file, low_memory=False)
