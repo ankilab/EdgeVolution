@@ -27,9 +27,10 @@ def main(cfg: DictConfig):
     # save params
     my_saver.save_params(cfg)
     
-    # update the tensor arena size in the main.cpp file
-    limit_tensor_arena_size = _get_tensor_arena_size_limit(cfg)
-    update_tensor_arena_size("tflite/edgevolution_tflite/src/main_functions.cpp", limit_tensor_arena_size)
+    if cfg.boards.value[0].model is not None:
+        # update the tensor arena size in the main.cpp file
+        limit_tensor_arena_size = _get_tensor_arena_size_limit(cfg)
+        update_tensor_arena_size("tflite/edgevolution_tflite/src/main_functions.cpp", limit_tensor_arena_size)
 
     for i_generation in range(gen_start, cfg.hyperparameters.num_generations.value + 1):
         my_ga.prepare_generation(i_generation)

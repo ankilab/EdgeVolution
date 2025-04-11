@@ -24,8 +24,11 @@ class Saver:
     def save_params(self, cfg: DictConfig):
         # get git commit hash and add it to params
         repo = git.Repo(search_parent_directories=True)
-        sha = repo.head.object.hexsha
-        cfg.hyperparameters.git_sha.value = sha
+        try:
+            sha = repo.head.object.hexsha
+            cfg.hyperparameters.git_sha.value = sha
+        except:
+            cfg.hyperparameters.git_sha.value = "unknown"
 
         with open(self.results_dir / "config.json", "w") as f:
             cfg_dict = OmegaConf.to_container(cfg)

@@ -22,7 +22,10 @@ def load_dataset(dataset_name, **kwargs):
             f"Dataset {dataset_name} is not registered. Available datasets: {list(DATASET_REGISTRY.keys())}"
         )
     dataloader_cls = DATASET_REGISTRY[dataset_name]
-    dataloader = dataloader_cls(**kwargs)  # Pass additional arguments to the DataLoader
+    try:
+        dataloader = dataloader_cls(**kwargs)  # Pass additional arguments to the DataLoader
+    except Exception as e:
+        print(f"Error while loading the dataloader: {e}")
     return dataloader.load_dataset()
 
 # Dynamically load custom dataloaders

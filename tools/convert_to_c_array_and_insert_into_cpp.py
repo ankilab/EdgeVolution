@@ -34,14 +34,72 @@ if __name__ == "__main__":
         prog='ConverTFLiteToCArray',
         description='This script converts a TFLite model to a C array and inserts it into the cpp file.')
 
-    parser.add_argument('path_tflite', nargs='?', default='../tflite/tflite_model.tflite')
+    parser.add_argument('path_tflite', nargs='?', default='None')
     parser.add_argument('path_cpp_file', nargs='?', default='../tflite/edgevolution_tflite/src/model.cpp')
     args = parser.parse_args()
 
+    def find_project_root():
+        """Find the EdgeVolution project root directory."""
+        current_dir = os.getcwd()
+        
+        # Check if current directory is EdgeVolution
+        if os.path.basename(current_dir).lower() == "edgevolution":
+            return current_dir
+            
+        # Try up to 3 levels up in the directory hierarchy
+        for _ in range(3):
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir == current_dir:  # Reached filesystem root
+                break
+                
+            current_dir = parent_dir
+            # Check if this directory is EdgeVolution
+            if os.path.basename(current_dir).lower() == "edgevolution":
+                return current_dir
+                
+            # Check subdirectories
+            try:
+                for item in os.listdir(current_dir):
+                    item_path = os.path.join(current_dir, item)
+                    if os.path.isdir(item_path) and item.lower() == "edgevolution":
+                        return item_path
+            except (PermissionError, FileNotFoundError):
+                pass
+        
+        return None
+
+    # Check if paths exist
+    if not os.path.exists(args.path_tflite) or not os.path.exists(args.path_cpp_file):
+        project_root = find_project_root()
+        
+        if project_root:
+            print(f"Found EdgeVolution root at: {project_root}")
+            
+            if not os.path.exists(args.path_tflite):
+                adjusted_path = os.path.join(project_root, args.path_tflite.lstrip('/'))
+                if os.path.exists(adjusted_path):
+                    args.path_tflite = adjusted_path
+                    print(f"Found TFLite file at: {args.path_tflite}")
+            
+            if not os.path.exists(args.path_cpp_file):
+                adjusted_path = os.path.join(project_root, args.path_cpp_file.lstrip('/'))
+                if os.path.exists(adjusted_path):
+                    args.path_cpp_file = adjusted_path
+                    print(f"Found CPP file at: {args.path_cpp_file}")
+                else:
+                    default_path = os.path.join(project_root, "tflite/edgevolution_tflite/src/model.cpp")
+                    if os.path.exists(default_path):
+                        args.path_cpp_file = default_path
+                        print(f"Using default CPP file: {args.path_cpp_file}")
+    
+    # Final check
     if not os.path.exists(args.path_tflite):
-        raise ValueError(f"Given TFLite file path '{args.path_tflite}' does not exist.")
+        print(f"Current directory: {os.getcwd()}")
+        raise ValueError(f"TFLite file not found: '{args.path_tflite}'. Make sure you're in the EdgeVolution root directory.")
+    
     if not os.path.exists(args.path_cpp_file):
-        raise ValueError(f"Given CPP file path '{args.path_cpp_file}' does not exist.")
+        print(f"Current directory: {os.getcwd()}")
+        raise ValueError(f"CPP file not found: '{args.path_cpp_file}'. Make sure you're in the EdgeVolution root directory.")
 
     path_c_array = args.path_tflite.replace(".tflite", ".cc")
 
