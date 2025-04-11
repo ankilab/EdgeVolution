@@ -1,0 +1,29 @@
+# Project information
+site_name: EdgeVolution
+site_url: https://edgevolution.readthedocs.io/
+site_author: René Groh
+site_description: EdgeVolution is a framework to perform end-to-end neural architecture search for microcontrollers.
+
+# Theme Configuration
+theme:
+  name: material
+
+# Extensions
+markdown_extensions:
+  - admonition # Adds nice boxes for notes, warnings etc.
+  - pymdownx.highlight: # Better code highlighting
+      anchor_linenums: true
+  - pymdownx.superfences # Allows nesting code blocks, etc.
+  - toc:
+      permalink: true # Adds anchor links to headings
+
+# Navigation
+nav:
+  - Home: index.md
+  - 'Getting Started': getting-started.md
+  - 'Debug Nordic Boards': debug-nordic-boards.md
+  - 'Dataloader Definition': dataloader-definition.md
+  - 'Hyperparameters': hyperparameters.md
+  - 'Microcontrollers': microcontrollers.md
+  - 'Search Space': search-space.md
+  - 'EvoVis Dashboard': evovis-dashboard.md
