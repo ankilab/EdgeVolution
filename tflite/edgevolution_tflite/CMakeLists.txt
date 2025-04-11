@@ -7,7 +7,18 @@ unset(CONFIG_STD_CPP11)
 set(CONFIG_STD_CPP17 y)
     
 
-find_package(Zephyr PATHS /home/EdgeVolution/tflite/zephyr)
+# Try both uppercase and lowercase variants of EdgeVolution
+find_package(Zephyr PATHS 
+    /home/EdgeVolution/tflite/zephyr
+    /home/edgevolution/tflite/zephyr
+    QUIET NO_DEFAULT_PATH
+)
+
+if(NOT Zephyr_FOUND)
+    # Fallback to default search
+    find_package(Zephyr REQUIRED)
+    
+endif()
 #find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(EdgeVolution_tflite_micro)
