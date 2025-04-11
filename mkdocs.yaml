@@ -1,6 +1,6 @@
 # Project information
 site_name: EdgeVolution
-site_url: https://edgevolution.readthedocs.io/
+site_url: https://ankilab.github.io/EdgeVolution/
 site_author: René Groh
 site_description: EdgeVolution is a framework to perform end-to-end neural architecture search for microcontrollers.
 

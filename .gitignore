@@ -1,4 +1,3 @@
-
 tflite/bootloader/
 tflite/modules/
 tflite/tools/
@@ -47,3 +46,7 @@ baselines/emg_airob/
 baselines/speech_commands/
 
 
+*.idea/
+*.vscode/
+*.coverage
+*.west

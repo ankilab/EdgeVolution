@@ -7,7 +7,7 @@ EdgeVolution is a software-hardware end-to-end pipeline that allows to optimize 
 
 # Getting Started
 
-Welcome to EdgeVolution! You can follow this simple guide here to get a high-level overview. You can find a more comprehensive documentation [here](https://edgevolution.readthedocs.io/).
+Welcome to EdgeVolution! You can follow this simple guide here to get a high-level overview. You can find a more comprehensive documentation [here](https://ankilab.github.io/EdgeVolution/).
 
 ### Cloning the repository
 
