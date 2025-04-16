@@ -13,7 +13,7 @@ This document provides instructions on how to add new microcontrollers and their
 
 ## Microcontroller Configuration Files
 
-Each microcontroller has its own YAML configuration file (e.g., `nrf52840dk.yaml`, `nrf5349dk.yaml`). These files define the microcontroller model, serial number (SNR), and PPK2 serial number.
+Each microcontroller has its own YAML configuration file (e.g., `nrf52840dk.yaml`, `nrf5340dk.yaml`). These files define the microcontroller model, serial number (SNR), and PPK2 serial number.
 
 ### YAML File Structure
 Each YAML file should follow this structure:
@@ -36,7 +36,7 @@ value:
 ### Adding a New Microcontroller
 To add a new microcontroller:
 1. Create a new YAML file in the same directory.
-2. Name the file according to the microcontroller model (e.g., `nrf5349dk.yaml`).
+2. Name the file according to the microcontroller model (e.g., `nrf5340dk.yaml`).
 3. Use the following template and update it with the correct details:
 
 ```yaml
