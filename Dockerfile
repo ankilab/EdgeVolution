@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
+
 # ---------------------------------------------------------------------------
 # Install nRF Command Line Tools (including nrfjprog)
 # ---------------------------------------------------------------------------
@@ -74,19 +75,6 @@ RUN dpkg --configure jlink
 RUN apt install -yf 
 
 # ---------------------------------------------------------------------------
-# Create a project directory and copy your files
-# (Assuming you have requirements.txt and a tflite/ folder, etc.)
-# ---------------------------------------------------------------------------
-WORKDIR /EdgeVolution
-COPY . /EdgeVolution
-
-# ---------------------------------------------------------------------------
-# Install Python dependencies
-# ---------------------------------------------------------------------------
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-# ---------------------------------------------------------------------------
 # Install CMake (some distributions already have an older version).
 # ---------------------------------------------------------------------------
 RUN wget https://apt.kitware.com/kitware-archive.sh \
@@ -111,12 +99,50 @@ RUN wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.5-
 ENV ZEPHYR_SDK_INSTALL_DIR="/opt/zephyr-sdk-0.16.5-1"
 
 # ---------------------------------------------------------------------------
-# Zephyr project initialization
+# Create a non-root user
+# ---------------------------------------------------------------------------
+ARG USERNAME=edgedev
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash \
+    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
+# Add user to dialout group for serial port access
+RUN usermod -a -G dialout,plugdev $USERNAME
+
+# ---------------------------------------------------------------------------
+# Create a project directory and copy your files
+# (Assuming you have requirements.txt and a tflite/ folder, etc.)
+# ---------------------------------------------------------------------------
+WORKDIR /EdgeVolution
+COPY . /EdgeVolution
+
+# ---------------------------------------------------------------------------
+# Install Python dependencies (as root, but accessible to user)
+# ---------------------------------------------------------------------------
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+RUN pip install --upgrade numba librosa
+
+# ---------------------------------------------------------------------------
+# Zephyr project initialization (as root first)
 # ---------------------------------------------------------------------------
 WORKDIR /EdgeVolution/tflite
 RUN if [ ! -f .west/config ]; then west init .; else echo "West workspace already initialized"; fi && \
     west config manifest.group-filter -- +optional && \
     west zephyr-export
+
+# ---------------------------------------------------------------------------
+# Change ownership of the project directory to the non-root user
+# ---------------------------------------------------------------------------
+RUN chown -R $USERNAME:$USERNAME /EdgeVolution
+
+# Switch to non-root user
+USER $USERNAME
 
 WORKDIR /EdgeVolution
 CMD ["/bin/bash"]
