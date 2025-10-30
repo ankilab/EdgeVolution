@@ -43,7 +43,7 @@ Before the EdgeVolution optimization run is started, some configurations must be
 ### Running an experiment
 
 ```
-python main.py +hyperparameters=<your_hyperparams> +search_space=<your_search_space> +boards=nrf52840dk
+python main_edgevolution.py +hyperparameters=<your_hyperparams> +search_space=<your_search_space> +boards=nrf52840dk
 ```
 
 # Community Support
