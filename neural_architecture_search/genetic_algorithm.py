@@ -29,10 +29,11 @@ import time
 
 
 class GeneticAlgorithm:
-    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None):
+    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None, profiling_stats=None):
         self.cfg = cfg
         self.my_saver = saver
         self.my_gene_pool = GenePool(cfg)
+        self.profiling_stats = profiling_stats  # Optional profiling statistics
 
         # define all variables that change after each generation
         if loader is None:
@@ -75,6 +76,9 @@ class GeneticAlgorithm:
         # increment generation counter
         self.generation_counter = current_generation
 
+        print(f"\nPreparing generation {self.generation_counter}...")
+        print(f"  Population size: {self.cfg.hyperparameters.population_size.value}")
+
         # apply decays to hyperparameters to go away from exploration to exploitation
         self.update_population_size()
         self.update_num_best_models_crossover()
@@ -86,6 +90,11 @@ class GeneticAlgorithm:
         # save population genotype
         self.my_saver.save_population_genotype(self.individuals, self.generation_counter)
 
+        # Track time for parallel translation and conversion
+        translation_conversion_start = time.time()
+        
+        print(f"  Translating {len(self.individuals)} chromosomes to models and converting to TFLite...")
+        
         # convert chromosomes to models and to tflite models in parallel
         # I don't want to use the whole CPU power for this task to avoid freezing the system etc.
         cpus = os.cpu_count() - 4
@@ -97,7 +106,14 @@ class GeneticAlgorithm:
         with get_context("spawn").Pool(cpus) as pool:
             pool.map(self._process_model_translation_and_conversion, self.individuals)
 
-        print("Finished translating and converting models")
+        print(f"  ✓ Finished translating and converting models")
+        
+        # Record overall translation/conversion time for this phase
+        if self.profiling_stats is not None:
+            translation_conversion_duration = time.time() - translation_conversion_start
+            self.profiling_stats.record_phase_time(
+                self.generation_counter, "translation_and_conversion_parallel", translation_conversion_duration
+            )
     
     def _generate_random_name(self):
         """
@@ -167,11 +183,18 @@ class GeneticAlgorithm:
         
         :return: None. Writes training results to results.json
         """
+        print(f"\n{'='*80}")
+        print(f"Starting training for {len(self.individuals)} models")
+        print(f"{'='*80}\n")
+        
         # start several training processes here
         min_free_space = self.cfg.hyperparameters.min_free_space_gpu.value
         procs = []
         individuals_names = list(self.individuals.keys())
         tqdm_bar = tqdm(total=len(individuals_names), desc="Training models")
+
+        # Track training start times for profiling
+        training_start_times = {}
 
         idx = 0 # index of the individual that is currently being trained
         nvidia_smi.nvmlInit()
@@ -183,10 +206,15 @@ class GeneticAlgorithm:
             info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
             if info.free > min_free_space and len(procs) < 4:
+                individual_name = individuals_names[idx]
+                
+                # Record training start time for profiling
+                training_start_times[individual_name] = time.time()
+                
                 command = 'python3 neural_architecture_search/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
-                          f'--individual_dir {individuals_names[idx]} ' + \
+                          f'--individual_dir {individual_name} ' + \
                           f'--dataset {self.cfg.hyperparameters.dataset_name.value} ' + \
                           f'--num_epochs {self.cfg.hyperparameters.num_epochs.value} ' + \
                           f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' + \
@@ -208,6 +236,19 @@ class GeneticAlgorithm:
                 p.join(timeout=300)
             except:
                 p.join()
+        
+        # Record training times for profiling
+        if self.profiling_stats is not None:
+            for individual_name in individuals_names:
+                if individual_name in training_start_times:
+                    training_duration = time.time() - training_start_times[individual_name]
+                    self.profiling_stats.record_model_operation(
+                        self.generation_counter, individual_name, "training", training_duration
+                    )
+        
+        print(f"\n{'='*80}")
+        print(f"Training completed for generation {self.generation_counter}")
+        print(f"{'='*80}\n")
 
 
     @staticmethod
@@ -355,8 +396,18 @@ class GeneticAlgorithm:
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
         individuals_names = list(self.individuals.keys())
+        print(f"\n{'='*80}")
+        print(f"Starting MCU evaluation for {len(individuals_names)} models")
+        print(f"{'='*80}\n")
+        
+        # Track deployment times for all models
+        deployment_times = {}
+        
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
-            print(f"Evaluate energy of {individual} (index: {idx+1})")
+            print(f"\n[{idx+1}/{len(individuals_names)}] Evaluating {individual} on MCU...")
+            
+            # Track deployment start time for this individual
+            individual_deployment_start = time.time()
 
             # error log 
             error_log_path = path + individual + '/error_log.txt'
@@ -372,9 +423,12 @@ class GeneticAlgorithm:
                     ppk2 = init_ppk2(board.ppk)
                     time.sleep(2)  # --> important to wait a bit before flashing the model
 
-                    # flash tflite model on board
+                    # flash tflite model on board (includes compilation)
+                    flash_start = time.time()
                     try:
                         ret_val = subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
+                        flash_duration = time.time() - flash_start
+                        print(f"  Flash & compile took {flash_duration:.2f} seconds")
                     except Exception as e:
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
@@ -409,6 +463,7 @@ class GeneticAlgorithm:
                         time.sleep(2)
 
                     # wait for inference time measurement to finish
+                    measurement_start = time.time()
                     try:
                         # get inference time from Serial port
                         args = ['python3 tools/measure_inference_time.py', path + individual, board.model, board.snr]
@@ -416,6 +471,8 @@ class GeneticAlgorithm:
                         proc_inference = Popen(command, shell=True)
 
                         proc_inference.wait()
+                        measurement_duration = time.time() - measurement_start
+                        print(f"  Inference measurement took {measurement_duration:.2f} seconds")
                     except Exception as e:
                         # save error log
                         with open(error_log_path, 'a') as f:
@@ -443,6 +500,23 @@ class GeneticAlgorithm:
             else:  # no boards
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
             
+            # Record total deployment time for this individual
+            individual_deployment_duration = time.time() - individual_deployment_start
+            deployment_times[individual] = individual_deployment_duration
+            print(f"  Total MCU evaluation for {individual}: {individual_deployment_duration:.2f} seconds")
+        
+        # Save deployment times to a file so they can be loaded by the main process
+        deployment_times_file = path + '../deployment_times.json'
+        with open(deployment_times_file, 'w') as f:
+            json.dump({
+                'generation': self.generation_counter,
+                'deployment_times': deployment_times
+            }, f, indent=2)
+        
+        print(f"\n{'='*80}")
+        print(f"MCU evaluation completed for generation {self.generation_counter}")
+        print(f"{'='*80}\n")
+            
 
     def selection(self):
         """
@@ -450,6 +524,8 @@ class GeneticAlgorithm:
         
         :return: None. Writes fitness to results.json
         """
+        print(f"\nCalculating fitness for {len(self.individuals)} models...")
+        
         # calculate fitness of all preselected models
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
@@ -478,9 +554,13 @@ class GeneticAlgorithm:
         best_individual_name = list(self.individuals.keys())[0]
         best_individual_fitness = self.individuals[best_individual_name]["fitness"]
         self.my_saver.save_best_individual(self.generation_counter, best_individual_name, best_individual_fitness)
+        
+        print(f"  Best individual: {best_individual_name} (fitness: {best_individual_fitness:.4f})")
 
         # omit the individuals that are not in the top x
-        self.individuals = dict(list(self.individuals.items())[:self.cfg.hyperparameters.num_best_models_crossover.value])
+        num_selected = self.cfg.hyperparameters.num_best_models_crossover.value
+        self.individuals = dict(list(self.individuals.items())[:num_selected])
+        print(f"  Selected top {num_selected} individuals for next generation")
 
     def crossover(self):
         """ 
@@ -548,6 +628,8 @@ class GeneticAlgorithm:
         
         :return: None
         """
+        translation_start_time = time.time()
+        
         try:
             # set memory growth for GPU
             import tensorflow as tf
@@ -568,6 +650,13 @@ class GeneticAlgorithm:
         except:
             raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {self.individuals[individual_name]['genotype']}")
         
+        # Record translation time for profiling
+        if self.profiling_stats is not None:
+            translation_duration = time.time() - translation_start_time
+            self.profiling_stats.record_model_operation(
+                self.generation_counter, individual_name, "translation", translation_duration
+            )
+        
         # save TensorFlow model
         self.my_saver.save_population_phenotype(individual_name, self.generation_counter, model)
 
@@ -577,6 +666,8 @@ class GeneticAlgorithm:
         except:
             raise ValueError(f"Error when substituting STFT and MAG layers.")
 
+        conversion_start_time = time.time()
+        
         try:
             # generate dummy data for quantization
             if len(self.cfg.hyperparameters.input_shape.value) == 3:
@@ -587,6 +678,13 @@ class GeneticAlgorithm:
             tflite_model = convert_to_tflite(model_substituted, representative_dataset)
         except:
             raise ValueError(f"Error when converting to TFLite")
+
+        # Record conversion time for profiling
+        if self.profiling_stats is not None:
+            conversion_duration = time.time() - conversion_start_time
+            self.profiling_stats.record_model_operation(
+                self.generation_counter, individual_name, "tflite_conversion", conversion_duration
+            )
 
         print(f"Save TFLite model of {individual_name}")
         self.my_saver.save_population_phenotype_tflite(individual_name, self.generation_counter, tflite_model)

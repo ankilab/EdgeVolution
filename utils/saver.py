@@ -120,5 +120,28 @@ class Saver:
         except subprocess.TimeoutExpired:
             print("xxd command timed out")
 
+    def save_profiling_stats(self, profiling_stats):
+        """
+        Save detailed profiling statistics to a JSON file.
+        
+        Args:
+            profiling_stats: ProfilingStats object containing timing data
+        """
+        filepath = self.results_dir / "profiling_stats.json"
+        profiling_stats.save_to_json(str(filepath))
+        print(f"Profiling statistics saved to {filepath}")
+    
+    def save_profiling_summary(self, summary: dict):
+        """
+        Save summary profiling statistics to a JSON file.
+        
+        Args:
+            summary: Dictionary containing summary statistics
+        """
+        filepath = self.results_dir / "profiling_summary.json"
+        with open(filepath, 'w') as f:
+            json.dump(summary, f, indent=2)
+        print(f"Profiling summary saved to {filepath}")
+
 
 
