@@ -11,8 +11,6 @@ The module maintains backward compatibility with the existing chromosome format
 while supporting the new LayerRegistry-based validation.
 """
 
-from ast import literal_eval
-
 # Standard TensorFlow layers
 import tensorflow as tf
 from tensorflow.keras.layers import (
@@ -67,14 +65,45 @@ CUSTOM_OBJECTS = {
     "InstanceNormalization": InstanceNormalization,
 }
 
+# Known layers for safe lookup (replaces eval()-based fallback)
+KNOWN_LAYERS = {
+    "Conv2D": Conv2D,
+    "DepthwiseConv2D": DepthwiseConv2D,
+    "Dense": Dense,
+    "BatchNormalization": BatchNormalization,
+    "GlobalAveragePooling2D": GlobalAveragePooling2D,
+    "MaxPooling2D": MaxPooling2D,
+    "AveragePooling2D": AveragePooling2D,
+    "GlobalMaxPooling2D": GlobalMaxPooling2D,
+    "Activation": Activation,
+    "Flatten": Flatten,
+    "Dropout": Dropout,
+    "Resizing": Resizing,
+    "Conv1D": Conv1D,
+    "DepthwiseConv1D": DepthwiseConv1D,
+    "GlobalAveragePooling1D": GlobalAveragePooling1D,
+    "MaxPooling1D": MaxPooling1D,
+    "AveragePooling1D": AveragePooling1D,
+    "GlobalMaxPooling1D": GlobalMaxPooling1D,
+    "InstanceNormalization": InstanceNormalization,
+    "STFT": STFT,
+    "Magnitude": Magnitude,
+    "MagnitudeToDecibel": MagnitudeToDecibel,
+    "ApplyFilterbank": ApplyFilterbank,
+    "SincConv1D": SincConv1D,
+    "get_filterbank_layer": get_filterbank_layer,
+    "get_conv2d_block": get_conv2d_block,
+    "get_depthwise_conv2d_block": get_depthwise_conv2d_block,
+}
+
 
 def instantiate_layer(gene: dict, layer_name: str):
     """
     Dynamically creates a layer instance based on the layer name and gene parameters.
 
     This function supports two modes:
-    1. Legacy mode: Uses eval() to instantiate layers (backward compatible)
-    2. Registry mode: Uses LayerRegistry for validation and instantiation
+    1. Registry mode (preferred): Uses LayerRegistry for lookup and instantiation
+    2. Known layers fallback: Uses the KNOWN_LAYERS dict for layers not in the registry
 
     Args:
         gene: Dictionary containing layer parameters including 'f_name'
@@ -93,28 +122,30 @@ def instantiate_layer(gene: dict, layer_name: str):
         clean_name = f_name.rstrip("()")
         if LayerRegistry.exists(clean_name):
             layer_fn = LayerRegistry.get(clean_name)
-
-            # If f_name ends with (), it's a no-arg instantiation
-            if f_name.endswith("()"):
-                return layer_fn()
-
-            # Otherwise, pass parameters
-            params = {k: v for k, v in gene.items() if k not in ("layer", "f_name")}
-            if params:
-                return layer_fn(**params)
-            else:
-                return layer_fn()
+        elif clean_name in KNOWN_LAYERS:
+            # Fallback to known layers dict (safe alternative to eval)
+            layer_fn = KNOWN_LAYERS[clean_name]
         else:
-            # Fallback to legacy eval-based instantiation
-            layer = eval(f_name)
-            if len(gene.keys()) > 1:
-                # if there are additional parameters, pass them to the layer
-                params = {x: gene[x] for x in gene if x not in ("layer", "f_name")}
-                layer = layer(**literal_eval(str(params)))
-            return layer
+            raise ValueError(
+                f"Layer '{layer_name}' uses unknown f_name '{f_name}'. "
+                f"Register it with @LayerRegistry.register() or add it to KNOWN_LAYERS."
+            )
+
+        # If f_name ends with (), it's a no-arg instantiation
+        if f_name.endswith("()"):
+            return layer_fn()
+
+        # Otherwise, pass parameters
+        params = {k: v for k, v in gene.items() if k not in ("layer", "f_name")}
+        if params:
+            return layer_fn(**params)
+        else:
+            return layer_fn()
 
     except KeyError:
         raise ValueError(f"Layer '{layer_name}' is missing 'f_name' in gene: {gene}")
+    except ValueError:
+        raise
     except Exception as e:
         raise ValueError(
             f"Failed to instantiate layer '{layer_name}' with gene {gene}: {e}"
@@ -172,14 +203,10 @@ def validate_chromosome(chromosome: list) -> bool:
         f_name = gene.get("f_name", "")
         clean_name = f_name.rstrip("()")
 
-        if not LayerRegistry.exists(clean_name):
-            # Try legacy eval check
-            try:
-                eval(clean_name)
-            except NameError:
-                raise ValueError(
-                    f"Layer '{gene.get('layer')}' uses unregistered f_name '{f_name}'. "
-                    f"Available layers: {', '.join(LayerRegistry.list_available()[:10])}..."
-                )
+        if not LayerRegistry.exists(clean_name) and clean_name not in KNOWN_LAYERS:
+            raise ValueError(
+                f"Layer '{gene.get('layer')}' uses unregistered f_name '{f_name}'. "
+                f"Available layers: {', '.join(LayerRegistry.list_available()[:10])}..."
+            )
 
     return True

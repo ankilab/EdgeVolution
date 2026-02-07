@@ -76,6 +76,9 @@ layers:
 
   # ---------------------------------------------------------------------------
   # Filterbank layers
+  # NOTE: get_filterbank_layer also requires 'sample_rate' and 'n_fft' params,
+  # which are injected at translation time by prepare_stft_and_fb_genes.py
+  # (derived from the preceding STFT layer). They are not part of the search.
   # ---------------------------------------------------------------------------
   FB_2D:
     category: filterbank

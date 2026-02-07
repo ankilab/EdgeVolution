@@ -29,7 +29,10 @@ Usage:
 from typing import Callable, Dict, Any, List, Optional, Type, Union
 from difflib import get_close_matches
 import importlib
+import logging
 import pkgutil
+
+logger = logging.getLogger(__name__)
 
 
 class LayerNotFoundError(Exception):
@@ -119,7 +122,6 @@ class LayerRegistry:
                 "BatchNormalization",
                 "LayerNormalization",
                 # Regularization
-                "Dropout",
                 "SpatialDropout1D",
                 "SpatialDropout2D",
                 # Other
@@ -344,9 +346,9 @@ class LayerRegistry:
                     importlib.import_module(full_name)
                     discovered.append(module_name)
                 except ImportError as e:
-                    print(f"Warning: Could not import {full_name}: {e}")
+                    logger.warning(f"Could not import {full_name}: {e}")
         except ImportError as e:
-            print(f"Warning: Could not import package {package}: {e}")
+            logger.warning(f"Could not import package {package}: {e}")
 
         return discovered
 

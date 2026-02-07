@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import json
 import copy
+import warnings
 
 import numpy as np
 import yaml
@@ -213,7 +214,13 @@ class SearchSpaceRegistry:
                 else:
                     # Merge parameter specs (expand values if needed)
                     existing = all_params[param_name]
-                    if existing.param_type == "categorical" and param_spec.param_type == "categorical":
+                    if existing.param_type != param_spec.param_type:
+                        warnings.warn(
+                            f"Parameter '{param_name}' has conflicting types across layers: "
+                            f"'{existing.param_type}' vs '{param_spec.param_type}'. "
+                            f"Using the first definition ('{existing.param_type}')."
+                        )
+                    elif existing.param_type == "categorical" and param_spec.param_type == "categorical":
                         # Merge categorical values
                         merged_values = list(set(existing.values) | set(param_spec.values))
                         all_params[param_name] = ParameterSpec(
@@ -352,7 +359,7 @@ class SearchSpaceRegistry:
         self,
         vector: np.ndarray,
         enforce_rules: bool = True,
-        min_layers: int = 3,
+        early_stop_threshold: int = 3,
     ) -> List[Dict[str, Any]]:
         """
         Decode a vector back to a chromosome.
@@ -360,7 +367,10 @@ class SearchSpaceRegistry:
         Args:
             vector: Numpy array of shape (vector_size,)
             enforce_rules: If True, mask invalid layer choices based on rules
-            min_layers: Minimum number of layers in the decoded architecture
+            early_stop_threshold: Do not stop decoding on empty slots until at
+                least this many layers have been decoded. Note: this does NOT
+                guarantee a minimum number of layers — if all remaining slots
+                are empty, fewer layers may be returned.
 
         Returns:
             List of gene dictionaries
@@ -374,7 +384,7 @@ class SearchSpaceRegistry:
 
             # Check if this is an empty slot
             if self._is_empty_slot(slot_vector):
-                if len(chromosome) >= min_layers:
+                if len(chromosome) >= early_stop_threshold:
                     break
                 continue
 
@@ -410,9 +420,13 @@ class SearchSpaceRegistry:
         valid_layers: Optional[List[str]] = None,
     ) -> Optional[str]:
         """Decode the layer type from a slot vector."""
+        # If valid_layers is an empty list, no layer can follow — stop here
+        if valid_layers is not None and len(valid_layers) == 0:
+            return None
+
         layer_scores = slot_vector[1 : self.schema.layer_vector_size].copy()
 
-        if valid_layers is not None and len(valid_layers) > 0:
+        if valid_layers is not None:
             # Mask invalid layers
             for idx, layer_name in enumerate(self.schema.layer_names):
                 if layer_name not in valid_layers:
@@ -519,7 +533,7 @@ class SearchSpaceRegistry:
         pooling_layers = [
             name
             for name, spec in self.layers.items()
-            if spec.category in ("pooling", "global_pooling", "global_pooling_2D", "global_pooling_1D")
+            if "pooling" in spec.category
         ]
 
         if pooling_layers:
@@ -538,10 +552,12 @@ class SearchSpaceRegistry:
             successors = self.get_successors(layer_name)
             if not successors:
                 break
-            # Prefer Dense layers for classification
-            dense_successors = [s for s in successors if "D" in s or "Dense" in s]
-            if dense_successors:
-                layer_name = np.random.choice(dense_successors)
+            # Prefer classification layers
+            classification_successors = [
+                s for s in successors if self.layers[s].category == "classification"
+            ]
+            if classification_successors:
+                layer_name = np.random.choice(classification_successors)
             else:
                 layer_name = np.random.choice(successors)
             chromosome.append(self._create_random_gene(layer_name))
@@ -606,7 +622,7 @@ class SearchSpaceRegistry:
 
         if errors:
             raise SearchSpaceValidationError(
-                errors, (layer_registry or LayerRegistry()).list_available()
+                errors, registry.list_available()
             )
 
     # =========================================================================
@@ -827,10 +843,13 @@ class SearchSpaceRegistry:
             if len(value) == 3 and all(isinstance(v, (int, float)) for v in value):
                 # [start, stop, step] format for discrete numeric
                 start, stop, step = value
-                values = list(np.arange(start, stop + step, step))
+                num_steps = int(round((stop - start) / step)) + 1
+                values = [start + i * step for i in range(num_steps)]
+                # Clip to avoid floating-point overshoot past stop
+                values = [v for v in values if v <= stop + abs(step) * 1e-9]
                 # Convert to int if original values were int
                 if all(isinstance(v, int) for v in value):
-                    values = [int(v) for v in values]
+                    values = [int(round(v)) for v in values]
                 return ParameterSpec(
                     name=name,
                     param_type="discrete",

@@ -1,0 +1,74 @@
+# Version control
+.git
+.github
+.gitignore
+
+# Python caches
+__pycache__
+*/__pycache__
+*/*/__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+.mypy_cache
+.coverage
+
+# Virtual environments
+.venv
+venv
+*venv*
+
+# IDE settings
+*.idea/
+*.vscode/
+*.swp
+*.swo
+
+# Documentation and images (not needed at runtime)
+docs/
+notebooks/
+images/
+
+# Build artifacts and model files
+*.h5
+*.keras
+*.err
+*.out
+*.svg
+*build*
+
+# Zephyr/west workspace artifacts (downloaded at build time by embedded target)
+tflite/bootloader/
+tflite/modules/
+tflite/tools/
+tflite/zephyr/
+tflite/build*
+tflite/optional/
+tflite/log.log
+.west
+
+# Large data directories (mount as volumes at runtime)
+datasets/data/
+datasets/downloads/
+Results/
+
+# Miscellaneous (from .gitignore)
+nrf-command-line-tools*
+*.ipynb_checkpoints
+*power_*
+*airway*
+*EvoVis*
+baselines/private/
+baselines/cifar10/
+baselines/daliac/
+baselines/emg_airob/
+baselines/speech_commands/
+
+# Self-referential
+Dockerfile
+.dockerignore
+install.sh
+
+# Claude config
+.claude/

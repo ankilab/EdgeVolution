@@ -17,14 +17,37 @@ git clone https://github.com/ankilab/EdgeVolution
 
 ### Building the Docker Image
 
+EdgeVolution provides two Docker build targets:
+
+**ML/NAS target** (default) — For running neural architecture search and training:
 ```bash
-docker build -t edgevolution-container .
+docker build -t edgevolution .
 ```
+
+**Embedded target** — For flashing optimized models to MCU hardware (includes nRF tools, J-Link, Zephyr SDK):
+```bash
+docker build --target embedded -t edgevolution-embedded .
+```
+
+> **Note:** The embedded target downloads the Zephyr SDK and modules (~1.5 GB) during the build. This is cached for subsequent builds.
 
 ### Running the Container
 
+**ML/NAS (GPU-accelerated):**
 ```bash
-docker run -it --rm --user $(id -u):$(id -g) --privileged --cpus="10.0" --gpus all -v $(pwd):/EdgeVolution edgevolution-container
+docker run -it --rm --gpus all -v $(pwd):/EdgeVolution edgevolution
+```
+
+**Embedded (with USB device passthrough for J-Link):**
+```bash
+docker run -it --rm --privileged --gpus all -v $(pwd):/EdgeVolution edgevolution-embedded
+```
+
+### Running Tests
+
+Inside the container:
+```bash
+pytest tests/ -v
 ```
 
 ### Defining hyperparameters

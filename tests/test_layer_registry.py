@@ -1,6 +1,7 @@
 """Tests for the LayerRegistry class."""
 
 import unittest
+from unittest.mock import patch, MagicMock
 
 from neural_architecture_search.src.layer_registry import (
     LayerRegistry,
@@ -136,6 +137,88 @@ class TestLayerRegistry(unittest.TestCase):
         summary = LayerRegistry.summary()
         self.assertIn("LayerRegistry", summary)
         self.assertIn("layers registered", summary)
+
+    def test_clear_resets_everything(self):
+        """Test that clear() resets all state."""
+
+        @LayerRegistry.register()
+        def temp_layer():
+            return "temp"
+
+        self.assertTrue(LayerRegistry.exists("temp_layer"))
+        LayerRegistry.clear()
+        self.assertFalse(LayerRegistry._initialized)
+        # After clear, the layer should not exist (builtin init hasn't run yet)
+        self.assertNotIn("temp_layer", LayerRegistry._layers)
+
+    def test_list_by_source(self):
+        """Test filtering layers by source."""
+
+        @LayerRegistry.register(metadata={"source": "custom"})
+        def custom_layer():
+            pass
+
+        @LayerRegistry.register(metadata={"source": "keras"})
+        def keras_layer():
+            pass
+
+        @LayerRegistry.register(metadata={"source": "custom"})
+        def another_custom():
+            pass
+
+        custom = LayerRegistry.list_by_source("custom")
+        self.assertEqual(len(custom), 2)
+        self.assertIn("custom_layer", custom)
+        self.assertIn("another_custom", custom)
+        self.assertNotIn("keras_layer", custom)
+
+    def test_get_metadata_nonexistent_layer(self):
+        """Test that get_metadata returns empty dict for nonexistent layer."""
+        metadata = LayerRegistry.get_metadata("NotALayer")
+        self.assertEqual(metadata, {})
+
+    def test_discover_layers_with_mock(self):
+        """Test discover_layers imports modules to trigger registration."""
+        mock_module = MagicMock()
+        mock_module.__path__ = ["/fake/path"]
+
+        with patch("importlib.import_module", return_value=mock_module) as mock_import:
+            with patch(
+                "pkgutil.iter_modules",
+                return_value=[("finder", "module_a", False), ("finder", "module_b", False)],
+            ):
+                discovered = LayerRegistry.discover_layers("fake.package")
+
+        self.assertEqual(discovered, ["module_a", "module_b"])
+        # Should have imported the package + 2 modules
+        self.assertEqual(mock_import.call_count, 3)
+
+    def test_re_registration_overwrites(self):
+        """Test that re-registering the same name overwrites the previous one."""
+
+        @LayerRegistry.register(name="SharedName")
+        def first_version():
+            return "first"
+
+        @LayerRegistry.register(name="SharedName")
+        def second_version():
+            return "second"
+
+        result = LayerRegistry.get("SharedName")()
+        self.assertEqual(result, "second")
+
+    def test_registering_a_class(self):
+        """Test that a class can be registered, not just functions."""
+
+        @LayerRegistry.register()
+        class MyCustomLayer:
+            def __init__(self, units=32):
+                self.units = units
+
+        self.assertTrue(LayerRegistry.exists("MyCustomLayer"))
+        layer_cls = LayerRegistry.get("MyCustomLayer")
+        instance = layer_cls(units=64)
+        self.assertEqual(instance.units, 64)
 
 
 class TestLayerNotFoundError(unittest.TestCase):
