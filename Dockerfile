@@ -18,12 +18,14 @@ FROM tensorflow/tensorflow:2.9.1-gpu AS ml
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# The TF base image already provides python3, pip, git, wget, curl, etc.
+# The TF base image already provides python3, pip, wget, curl, etc.
 # Only install packages that are actually missing.
+#   git         - required by GitPython (used in utils/saver.py)
 #   ffmpeg      - required by librosa/pydub for audio processing
 #   libsndfile1 - required by SoundFile for audio I/O
 #   vim         - convenience for interactive debugging
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     ffmpeg \
     libsndfile1 \
     vim \
@@ -36,11 +38,12 @@ WORKDIR /EdgeVolution
 # not on every source code change.
 COPY requirements.txt /EdgeVolution/requirements.txt
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir --timeout 600 -r requirements.txt
 
 # Copy the rest of the project source code.
 # .dockerignore prevents copying .git, docs, notebooks, build artifacts, etc.
 COPY . /EdgeVolution
+RUN pip install --no-cache-dir -e .
 
 CMD ["/bin/bash"]
 
