@@ -21,9 +21,11 @@ markdown_extensions:
 nav:
   - Home: index.md
   - 'Getting Started': getting-started.md
+  - 'Usage': usage.md
   - 'Debug Nordic Boards': debug-nordic-boards.md
   - 'Dataloader Definition': dataloader-definition.md
   - 'Hyperparameters': hyperparameters.md
   - 'Microcontrollers': microcontrollers.md
   - 'Search Space': search-space.md
+  - 'Search Space Registry': search-space-registry.md
   - 'EvoVis Dashboard': evovis-dashboard.md
