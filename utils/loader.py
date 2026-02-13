@@ -23,17 +23,6 @@ class Loader:
         self.cfg = DictConfig(self.cfg)
         return self.cfg
 
-    def load_population_genotype(self):
-        population_genotype = []
-        population = [ind for ind in os.listdir(self.gen_path)]
-        population.sort()
-
-        for ind in population:
-            with open(self.gen_path / str(ind) / 'chromosome.json') as f:
-                chromosome = json.loads(f.read())
-            population_genotype.append(chromosome)
-        return population_genotype
-
     def load_individuals(self):
         individuals = {}
         population = [ind for ind in os.listdir(self.gen_path)]

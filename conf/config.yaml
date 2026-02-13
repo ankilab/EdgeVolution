@@ -3,10 +3,14 @@ defaults:
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
   
-hydra:  
-  output_subdir: null  
-  run:  
+hydra:
+  output_subdir: null
+  run:
     dir: .
+
+### Continue a previous run (optional)
+continue_path: null
+continue_generation: null
 
 hyperparameters:  
   ### General parameters:
@@ -104,8 +108,8 @@ hyperparameters:
     display: true
 
   lr_scheduler:
-    value: ???
-    unit: null 
+    value: null
+    unit: null
     icon: null
     displayname: "Learning rate scheduler"
     group: "Training parameters"
@@ -306,8 +310,8 @@ hyperparameters:
     display: true
 
   optimize_for_MCU:
-    value: ???
-    unit: null 
+    value: false
+    unit: null
     icon: null
     displayname: "Optimize for MCU"
     group: "Training parameters"
