@@ -2,7 +2,7 @@ import unittest
 import tensorflow as tf
 import numpy as np
 
-from genetic_algorithm.src.genepool_modules.sinc_conv_layer import sinc, generate_sinc_kernel, SincConv1D
+from neural_architecture_search.src.search_space_modules.sinc_conv_layer import sinc, generate_sinc_kernel, SincConv1D
 
 
 class TestSincConv1D(unittest.TestCase):

@@ -21,7 +21,6 @@ from .src.objective_function import calculate_fitness
 from .utils.convert_to_tflite import convert_to_tflite
 from .utils.substitute_tflite_layer import substitute_tflite_layer
 from .utils.save_ram_rom_usage import save_ram_rom_usage
-from tools.measure_power_consumption import init_ppk2, stop_measuring
 from multiprocessing import get_context
 
 from multiprocessing import Process
@@ -354,11 +353,13 @@ class GeneticAlgorithm:
         """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
+        from tools.measure_power_consumption import init_ppk2, stop_measuring
+
         individuals_names = list(self.individuals.keys())
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
             print(f"Evaluate energy of {individual} (index: {idx+1})")
 
-            # error log 
+            # error log
             error_log_path = path + individual + '/error_log.txt'
 
             # flash tflite model on individual board
