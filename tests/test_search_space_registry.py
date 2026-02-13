@@ -686,17 +686,17 @@ class TestYAMLLoading(unittest.TestCase):
         self.assertEqual(len(spec.values), 6)
 
     def test_load_actual_unified_yaml(self):
-        """Test loading the actual speech_commands_unified.yaml config file."""
+        """Test loading the actual speech_commands.yaml config file."""
         yaml_path = os.path.join(
             os.path.dirname(__file__), "..", "conf", "search_space",
-            "speech_commands_unified.yaml",
+            "speech_commands.yaml",
         )
         registry = SearchSpaceRegistry.from_yaml(yaml_path, validate=False)
         self.assertEqual(len(registry.layers), 14)
         self.assertEqual(registry.get_start_layers(), ["STFT_2D"])
 
-    def test_load_actual_legacy_yaml(self):
-        """Test loading the actual cifar10.yaml config file (legacy format)."""
+    def test_load_actual_cifar10_yaml(self):
+        """Test loading the actual cifar10.yaml config file."""
         yaml_path = os.path.join(
             os.path.dirname(__file__), "..", "conf", "search_space",
             "cifar10.yaml",

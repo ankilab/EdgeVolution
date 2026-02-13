@@ -197,7 +197,7 @@ def run_example():
 
     # Load the unified search space
     registry = SearchSpaceRegistry.from_yaml(
-        "conf/search_space/speech_commands_unified.yaml",
+        "conf/search_space/speech_commands.yaml",
         validate=False,  # Skip validation for example
         max_layers=12,
     )
@@ -265,7 +265,7 @@ def demonstrate_encoding():
 
     # Load search space
     registry = SearchSpaceRegistry.from_yaml(
-        "conf/search_space/speech_commands_unified.yaml",
+        "conf/search_space/speech_commands.yaml",
         validate=False,
         max_layers=12,
     )
