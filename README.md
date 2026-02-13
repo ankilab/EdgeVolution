@@ -66,8 +66,10 @@ Before the EdgeVolution optimization run is started, some configurations must be
 ### Running an experiment
 
 ```
-python main.py +hyperparameters=<your_hyperparams> +search_space=<your_search_space> +boards=nrf52840dk
+python main_edgevolution.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none
 ```
+
+For more examples and common commands, see the [Usage Guide](docs/usage.md).
 
 # Community Support
 Community support is provided via a [Discord Server](https://discord.gg/dAVbR923cD) for real-time community support.
