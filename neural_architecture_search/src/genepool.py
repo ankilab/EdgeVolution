@@ -12,9 +12,72 @@ class GenePool:
     def __init__(self, cfg: DictConfig):
         self.params = cfg.hyperparameters
 
-        self.gene_pool = [gene for group in cfg.search_space.gene_pool.values() for gene in group]
-        
-        self.rule_set = [{'layer': key, 'rule': cfg.search_space.rule_set[key]['rule']} for key in cfg.search_space.rule_set.keys()]
+        search_space = cfg.search_space
+
+        if 'gene_pool' in search_space:
+            # Legacy format
+            self.gene_pool = [gene for group in search_space.gene_pool.values() for gene in group]
+            self.rule_set = [{'layer': key, 'rule': search_space.rule_set[key]['rule']} for key in search_space.rule_set.keys()]
+        elif 'layers' in search_space:
+            # Unified format: convert to legacy structures
+            self.gene_pool, self.rule_set = self._convert_unified_format(search_space)
+        else:
+            raise ValueError("Search space config must contain 'gene_pool' or 'layers'.")
+
+    @staticmethod
+    def _convert_unified_format(search_space):
+        """Convert unified format (categories/layers/start) to legacy gene_pool and rule_set."""
+        categories = dict(search_space.get('categories', {}))
+        layers_cfg = dict(search_space.get('layers', {}))
+        start_layers = list(search_space.get('start', []))
+
+        # Build gene_pool: flat list of gene dicts
+        gene_pool = []
+        for layer_name, layer_def in layers_cfg.items():
+            layer_def = dict(layer_def)
+            gene = {'layer': layer_name, 'f_name': layer_def.get('f_name', layer_name)}
+            for key, value in layer_def.items():
+                if key in ('category', 'f_name', 'successors', 'terminal'):
+                    continue
+                # Convert to list if not already (OmegaConf ListConfig → list)
+                gene[key] = list(value) if hasattr(value, '__iter__') and not isinstance(value, str) else value
+            gene_pool.append(gene)
+
+        # Build mapping: layer_name → category
+        layer_to_category = {}
+        for layer_name, layer_def in layers_cfg.items():
+            layer_def = dict(layer_def)
+            layer_to_category[layer_name] = layer_def.get('category', '')
+
+        # Collect all layers belonging to each category
+        category_layers = {}
+        for layer_name, cat in layer_to_category.items():
+            category_layers.setdefault(cat, []).append(layer_name)
+
+        def resolve_successors(successor_list):
+            """Resolve a successor list (can contain category names or layer names)."""
+            resolved = []
+            for item in successor_list:
+                if item in categories:
+                    resolved.extend(category_layers.get(item, []))
+                elif item in layers_cfg:
+                    resolved.append(item)
+            return resolved
+
+        # Build rule_set
+        rule_set = [{'layer': 'Start', 'rule': start_layers}]
+        for layer_name, layer_def in layers_cfg.items():
+            layer_def = dict(layer_def)
+            if 'successors' in layer_def:
+                successors = resolve_successors(list(layer_def['successors']))
+            else:
+                cat = layer_def.get('category', '')
+                cat_cfg = categories.get(cat, {})
+                cat_successors = list(cat_cfg.get('successors', []))
+                successors = resolve_successors(cat_successors)
+            rule_set.append({'layer': layer_name, 'rule': successors})
+
+        return gene_pool, rule_set
 
     def create_gene_sequence(self):
         """ Create a gene sequence containing all layers of this random gene. """
@@ -26,9 +89,16 @@ class GenePool:
         chromosome.append(self._get_gene_with_random_parameters(gene))
 
         num_feature_layers = np.random.randint(5, self.params.max_num_feature_layers.value + 1)
+        # Layers that should not be picked during the feature extraction loop
+        # (global pooling and classification are added explicitly afterwards)
+        _skip_in_feature_loop = {'GAP_1D', 'GAP_2D', 'GMP_1D', 'GMP_2D', 'FLAT', 'D'}
         for _ in range(num_feature_layers):
             possible_genes = self._get_possible_genes(gene)  # check rule set
-            gene = np.random.choice(possible_genes)
+            # Filter out global pooling / classification layers
+            feature_genes = [g for g in possible_genes if g not in _skip_in_feature_loop]
+            if not feature_genes:
+                break
+            gene = np.random.choice(feature_genes)
 
             # add current layer
             chromosome.append(self._get_gene_with_random_parameters(gene))
@@ -38,10 +108,19 @@ class GenePool:
         if 'STFT_2D' in chromosome[-1]['layer']:
             chromosome.append(self._get_gene_with_random_parameters('MAG_2D'))
 
-        # check in the previous gene if we have a 1D or 2D network
-        if '2D' in gene:
+        # Determine 1D vs 2D by scanning chromosome backwards for a layer with a suffix
+        dimensionality = None
+        for g in reversed(chromosome):
+            if '2D' in g['layer']:
+                dimensionality = '2D'
+                break
+            elif '1D' in g['layer']:
+                dimensionality = '1D'
+                break
+
+        if dimensionality == '2D':
             gene = np.random.choice(['GAP_2D', 'GMP_2D'])
-        elif '1D' in gene:
+        elif dimensionality == '1D':
             gene = np.random.choice(['GAP_1D', 'GMP_1D'])
         else:
             raise RuntimeError("Couldn't determine if the architecture is 1D or 2D.")
