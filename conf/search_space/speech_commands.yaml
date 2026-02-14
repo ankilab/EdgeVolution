@@ -120,22 +120,22 @@ layers:
     norm_layer: ['None', BatchNormalization]
     activation: ['None', relu, sigmoid, tanh, leaky_relu]
 
-  C_2D:
-    category: feature_extraction
-    f_name: Conv2D
-    filters: [4, 48, 1]
-    kernel_size: [1, 5, 1]
-    strides: [1, 2, 1]
-    padding: [same]
-    activation: [relu]
+  # C_2D:
+  #   category: feature_extraction
+  #   f_name: Conv2D
+  #   filters: [4, 48, 1]
+  #   kernel_size: [1, 5, 1]
+  #   strides: [1, 2, 1]
+  #   padding: [same]
+  #   activation: [relu]
 
-  DC_2D:
-    category: feature_extraction
-    f_name: DepthwiseConv2D
-    kernel_size: [1, 5, 1]
-    strides: [1, 2, 1]
-    padding: [same]
-    activation: [relu]
+  # DC_2D:
+  #   category: feature_extraction
+  #   f_name: DepthwiseConv2D
+  #   kernel_size: [1, 5, 1]
+  #   strides: [1, 2, 1]
+  #   padding: [same]
+  #   activation: [relu]
 
   # ---------------------------------------------------------------------------
   # Pooling layers
@@ -152,9 +152,9 @@ layers:
     pool_size: [2, 4, 1]
     padding: [same]
 
-  BN_2D:
-    category: feature_extraction
-    f_name: BatchNormalization()
+  # BN_2D:
+  #   category: feature_extraction
+  #   f_name: BatchNormalization()
 
   # ---------------------------------------------------------------------------
   # Global pooling layers

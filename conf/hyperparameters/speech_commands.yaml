@@ -30,9 +30,9 @@ metrics:
 
 ### EdgeVolution hyper-parameters:
 num_generations:
-  value: 30
+  value: 20
 population_size_decay:
-  value: [[1, 5], [2, 250], [10, 100]] # [(from_generation, population_size), (from_generation, population_size), ...]
+  value: [[1, 50], [2, 50], [10, 25]] # [(from_generation, population_size), (from_generation, population_size), ...]
 num_best_models_crossover_decay:
   value: [[1, 100], [2, 50], [10, 20]] # [(from_generation, population_size), (from_generation, population_size), ...]
 mutation_rate_decay:
