@@ -50,3 +50,5 @@ baselines/speech_commands/
 *.vscode/
 *.coverage
 *.west
+
+scripts/plot_surrogate_paper.py
