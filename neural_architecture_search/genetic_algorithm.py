@@ -28,7 +28,8 @@ import time
 
 
 class GeneticAlgorithm:
-    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None):
+    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None,
+                 surrogate=None, search_space_registry=None):
         self.cfg = cfg
         self.my_saver = saver
         self.my_gene_pool = GenePool(cfg)
@@ -40,6 +41,11 @@ class GeneticAlgorithm:
             self.individuals: dict = loader.load_individuals()
 
         self.generation_counter: int = 0  # information in which generation we are currently
+
+        # Surrogate model for accuracy prediction
+        self.surrogate = surrogate
+        self.search_space_registry = search_space_registry
+        self._skipped_individuals: dict = {}
 
     def init_first_generation(self):
         # update parameters for the first generation
@@ -444,6 +450,118 @@ class GeneticAlgorithm:
             else:  # no boards
                 raise ValueError(f'No boards are set. Length of params["boards"]: {len(self.cfg.boards.value)}')
             
+
+    def surrogate_prescreen(self):
+        """
+        Use the surrogate model to pre-screen individuals and skip training
+        for those confidently predicted to perform poorly.
+
+        Skipped individuals get their predicted val_acc written to results.json
+        so that selection() works unchanged.
+        """
+        if self.surrogate is None or self.search_space_registry is None:
+            return
+
+        to_train, to_skip, _ = self.surrogate.prescreen(
+            self.individuals, self.search_space_registry.encode
+        )
+
+        if not to_skip:
+            self._skipped_individuals = {}
+            return
+
+        predictions = self.surrogate.get_predictions()
+        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+
+        # Write surrogate-predicted results for skipped individuals
+        self._skipped_individuals = {}
+        for name in to_skip:
+            self._skipped_individuals[name] = self.individuals[name]
+            pred = predictions.get(name, {})
+            predicted_acc = pred.get("predicted_acc", 0.0)
+
+            results_path = path + name + '/results.json'
+            if os.path.exists(results_path):
+                with open(results_path, 'r') as f:
+                    results = json.load(f)
+            else:
+                results = {}
+
+            results['val_acc'] = predicted_acc
+            results['surrogate_skipped'] = True
+
+            with open(results_path, 'w') as f:
+                json.dump(results, f, indent=2)
+
+        # Remove skipped individuals so train_neural_networks skips them
+        self.individuals = {
+            name: data for name, data in self.individuals.items()
+            if name in to_train
+        }
+
+    def collect_surrogate_data(self):
+        """
+        After training, collect actual accuracies, update the surrogate model,
+        and merge skipped individuals back into self.individuals.
+        """
+        if self.surrogate is None or self.search_space_registry is None:
+            return
+
+        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+        predictions = self.surrogate.get_predictions()
+
+        # Collect observations from actually-trained individuals
+        for name, data in self.individuals.items():
+            results_path = path + name + '/results.json'
+            if not os.path.exists(results_path):
+                continue
+            with open(results_path, 'r') as f:
+                results = json.load(f)
+            val_acc = results.get('val_acc')
+            if val_acc is not None:
+                encoding = self.search_space_registry.encode(data["genotype"])
+                self.surrogate.add_observation(encoding, float(val_acc))
+
+        # Build per-individual records for logging
+        individual_records = []
+        all_names = list(self.individuals.keys()) + list(self._skipped_individuals.keys())
+
+        for name in all_names:
+            pred = predictions.get(name, {})
+            predicted_acc = pred.get("predicted_acc")
+            uncertainty = pred.get("uncertainty")
+            skipped = name in self._skipped_individuals
+
+            # Read actual accuracy
+            results_path = path + name + '/results.json'
+            actual_acc = None
+            if os.path.exists(results_path):
+                with open(results_path, 'r') as f:
+                    results = json.load(f)
+                actual_acc = results.get('val_acc')
+
+            individual_records.append({
+                "name": name,
+                "predicted_acc": predicted_acc,
+                "uncertainty": uncertainty,
+                "actual_acc": float(actual_acc) if actual_acc is not None else None,
+                "skipped": skipped,
+            })
+
+        # Merge skipped individuals back
+        self.individuals.update(self._skipped_individuals)
+        self._skipped_individuals = {}
+
+        # Log generation data
+        surrogate_dir = f'{self.my_saver.results_dir}/surrogate'
+        self.surrogate.log_generation(
+            self.generation_counter, individual_records, surrogate_dir
+        )
+
+        # Fit and save if enough data
+        if self.surrogate.is_ready:
+            self.surrogate.fit()
+            self.surrogate.save(surrogate_dir)
 
     def selection(self):
         """

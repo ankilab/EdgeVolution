@@ -318,6 +318,71 @@ hyperparameters:
     description: "Whether to optimize for MCU or not. If not, models are just optimized for accuracy."
     display: true
 
+### Surrogate model configuration
+surrogate:
+  enabled:
+    value: false
+    unit: null
+    icon: null
+    displayname: "Enable surrogate"
+    group: "Surrogate parameters"
+    description: "Enable surrogate-assisted pre-screening to skip training of architectures predicted to perform poorly."
+    display: true
+
+  model_type:
+    value: "random_forest"
+    unit: null
+    icon: null
+    displayname: "Model type"
+    group: "Surrogate parameters"
+    description: "Surrogate model backend: 'random_forest' (fast, robust default) or 'gaussian_process' (calibrated uncertainty, best for small datasets, O(n³) scaling)."
+    display: true
+
+  n_estimators:
+    value: 100
+    unit: null
+    icon: null
+    displayname: "Number of estimators"
+    group: "Surrogate parameters"
+    description: "Number of trees in the Random Forest ensemble."
+    display: true
+
+  min_samples_to_train:
+    value: 20
+    unit: null
+    icon: null
+    displayname: "Min samples to train"
+    group: "Surrogate parameters"
+    description: "Minimum number of observations before the surrogate begins making predictions."
+    display: true
+
+  confidence_threshold:
+    value: 0.5
+    unit: null
+    icon: null
+    displayname: "Confidence threshold"
+    group: "Surrogate parameters"
+    description: "Predicted accuracy below this value marks an individual as a skip candidate."
+    display: true
+
+  exploration_ratio:
+    value: 0.2
+    unit: null
+    icon: null
+    displayname: "Exploration ratio"
+    group: "Surrogate parameters"
+    description: "Fraction of individuals always trained regardless of predictions to prevent self-reinforcing bias."
+    display: true
+
+  evaluation_mode:
+    value: false
+    unit: null
+    icon: null
+    displayname: "Evaluation mode"
+    group: "Surrogate parameters"
+    description: "When true, the surrogate predicts but never skips — all individuals are trained. Produces ground-truth predicted-vs-actual data for paper figures."
+    display: true
+
 ### Microcontroller boards
 boards:
   value: ???
