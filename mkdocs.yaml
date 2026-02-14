@@ -28,4 +28,5 @@ nav:
   - 'Microcontrollers': microcontrollers.md
   - 'Search Space': search-space.md
   - 'Search Space Registry': search-space-registry.md
+  - 'Surrogate Model': surrogate.md
   - 'EvoVis Dashboard': evovis-dashboard.md

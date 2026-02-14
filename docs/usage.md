@@ -83,6 +83,64 @@ python main_edgevolution.py \
 ```
 
 
+## Surrogate-Assisted Search
+
+EdgeVolution includes an optional surrogate model that predicts validation accuracy from architecture encodings. It pre-screens individuals each generation and skips training for those confidently predicted to perform poorly, reducing overall search time.
+
+Two model backends are available:
+
+| Backend | Flag value | Strengths |
+|---------|-----------|-----------|
+| Random Forest | `random_forest` (default) | Fast, robust, good default. Tree-variance provides uncertainty. |
+| Gaussian Process | `gaussian_process` | Calibrated Bayesian uncertainty. Best for small datasets. O(n³) scaling. |
+
+### Enable surrogate pre-screening
+
+```bash
+python main_edgevolution.py \
+  +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
+  surrogate.enabled.value=true
+```
+
+### Use a Gaussian Process backend
+
+```bash
+python main_edgevolution.py \
+  +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
+  surrogate.enabled.value=true surrogate.model_type.value=gaussian_process
+```
+
+### Evaluation mode (predict but still train everything)
+
+In evaluation mode the surrogate predicts accuracy for every individual but never skips any — all individuals are still fully trained. This produces ground-truth predicted-vs-actual data useful for paper figures (scatter plots, error distributions, per-generation correlation).
+
+```bash
+python main_edgevolution.py \
+  +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
+  surrogate.enabled.value=true surrogate.evaluation_mode.value=true
+```
+
+### Tuning the accuracy vs. time trade-off
+
+The surrogate skips training for individuals it confidently predicts to perform poorly. This saves time but means those architectures never get a real evaluation — if the surrogate is wrong, good candidates may be discarded. Two parameters control this trade-off directly:
+
+- **`confidence_threshold`** (default `0.5`) — Only individuals predicted *below* this accuracy are skip candidates. Lowering it makes the surrogate more conservative (skips fewer, wastes less potential). Raising it skips more aggressively and saves more time, but increases the risk of discarding promising architectures.
+- **`exploration_ratio`** (default `0.2`) — Fraction of the population that is *always* trained, regardless of predictions. This prevents the surrogate from reinforcing its own biases. A higher ratio is safer but reduces the time savings; a lower ratio maximizes speedup at the cost of exploration.
+
+As a rule of thumb: if your per-individual training time is **short** (a few seconds to minutes), the surrogate overhead may not be worth the risk — train everything. If training is **expensive** (tens of minutes to hours per individual), even a moderately accurate surrogate pays for itself by cutting the population that needs full training.
+
+Start with evaluation mode (`surrogate.evaluation_mode.value=true`) to measure the surrogate's accuracy on your specific search space before relying on it to skip training. Check `surrogate_evaluation.png` in the results folder — if the correlation is low or the MAE is large relative to accuracy differences in your population, keep the confidence threshold conservative or increase the exploration ratio.
+
+### Output files
+
+When the surrogate is enabled, two CSV files are written to `{results_dir}/surrogate/`:
+
+| File | Contents |
+|------|----------|
+| `surrogate_log.csv` | Per-individual records: `generation, individual, predicted_acc, uncertainty, actual_acc, skipped` |
+| `surrogate_summary.csv` | Per-generation aggregates: `generation, n_total, n_skipped, n_trained, mae, correlation, r_squared` |
+
+
 ## Running Tests
 
 ```bash
@@ -97,3 +155,4 @@ All config files live under `conf/`. See the READMEs in each subdirectory for de
 - [Hyperparameters](../conf/hyperparameters/README.md) — training parameters, population sizes, fitness weights
 - [Search space](../conf/search_space/README.md) — layer types, parameter ranges, topology rules
 - [Boards](../conf/boards/README.md) — MCU target definitions (`none` disables hardware evaluation)
+- [Surrogate](surrogate.md) — surrogate model parameters, backend options, output files
