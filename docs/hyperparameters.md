@@ -12,19 +12,6 @@ This document provides instructions on how to structure and configure the YAML f
 ✅ Decay lists dynamically adjust hyperparameters across generations to optimize the search process.
 
 
-## General Parameters
-These parameters define general settings that apply to the optimization and hardware constraints.
-
-| Parameter              | Value Type | Description |
-|------------------------|------------|-------------|
-| `min_free_space_gpu`  | Integer    | Minimum GPU memory (in bytes) required for execution. |
-
-Example:
-```yaml
-min_free_space_gpu:
-  value: 6_000_000
-```
-
 ## Dataset/DNN Training Hyperparameters
 These parameters define dataset-related and deep neural network training configurations.
 

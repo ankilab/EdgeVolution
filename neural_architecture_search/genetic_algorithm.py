@@ -7,7 +7,6 @@ import json
 import numpy as np
 import time
 import subprocess
-import nvidia_smi
 from tqdm import tqdm
 import copy
 from omegaconf import DictConfig
@@ -169,25 +168,48 @@ class GeneticAlgorithm:
     def train_neural_networks(self):
         """"
         Train all preselected models on the MCU.
-        
+
         :return: None. Writes training results to results.json
         """
-        # start several training processes here
-        min_free_space = self.cfg.hyperparameters.min_free_space_gpu.value
         procs = []
         individuals_names = list(self.individuals.keys())
         tqdm_bar = tqdm(total=len(individuals_names), desc="Training models")
+        idx = 0
 
-        idx = 0 # index of the individual that is currently being trained
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        
+        # Auto-detect GPU and compute parallelization settings
+        gpu_available = False
+        try:
+            import nvidia_smi
+            nvidia_smi.nvmlInit()
+            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+            total_memory = info.total
+            total_gpu_gb = total_memory / (1024 ** 3)
+            min_free_threshold = max(int(total_memory * 0.15), 500_000_000)
+            max_parallel = min(max(1, int(total_gpu_gb / 2)), 8)
+            gpu_available = True
+            print(f"GPU detected: {total_gpu_gb:.1f} GB total, "
+                  f"free-memory threshold: {min_free_threshold / 1e6:.0f} MB, "
+                  f"max parallel processes: {max_parallel}")
+        except Exception:
+            max_parallel = 1
+            print("No GPU detected or nvidia_smi unavailable. "
+                  "Training sequentially (1 process at a time).")
+
         # start training processes
         while idx < len(individuals_names):
             procs = [p for p in procs if p.is_alive()]
-            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
-            if info.free > min_free_space and len(procs) < 4:
+            can_launch = False
+            if gpu_available:
+                info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+                if info.free > min_free_threshold and len(procs) < max_parallel:
+                    can_launch = True
+            else:
+                if len(procs) < max_parallel:
+                    can_launch = True
+
+            if can_launch:
                 command = 'python3 neural_architecture_search/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
@@ -197,7 +219,7 @@ class GeneticAlgorithm:
                           f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' + \
                           f'--loss {self.cfg.hyperparameters.loss.value} ' +\
                           f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
-                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' 
+                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} '
                 proc = Process(target=lambda: Popen(command, shell=True).wait())
                 proc.start()
                 procs.append(proc)
@@ -205,8 +227,9 @@ class GeneticAlgorithm:
                 tqdm_bar.update(1)
             time.sleep(10)
 
-        nvidia_smi.nvmlShutdown()
-        
+        if gpu_available:
+            nvidia_smi.nvmlShutdown()
+
         # make sure to wait until all processes are finished
         for p in procs:
             try:

@@ -298,16 +298,6 @@ hyperparameters:
     group: "Power measurement parameters"
     description: "The number of power measurement samples considered for averaging during the deployment of neural architectures on microcontrollers, influencing the accuracy of power consumption measurement."
     display: true  
-  
-  ### Others
-  min_free_space_gpu:
-    value: ???
-    unit: "B" 
-    icon: "mdi:gpu"
-    displayname: "Min free space GPU"
-    group: "Training parameters"
-    description: "The minimum free space on the GPU before starting training of a new model."
-    display: true
 
   optimize_for_MCU:
     value: false
