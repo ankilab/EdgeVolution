@@ -34,10 +34,19 @@ echo "Generating RAM report"
 west build --build-dir build-$board_type -t ram_report > /dev/null
 
 # flash the given board
-# Only recover if the device is AP-protected (avoid unnecessary USB re-enumeration)
-if ! nrfjprog --snr $board_snr --eraseall 2>/dev/null; then
-    echo "Erase failed — attempting recover (AP protection may be enabled)"
-    nrfjprog --snr $board_snr --recover
-    nrfjprog --snr $board_snr --eraseall
+# Erase before flashing. nrfjprog is used for Nordic boards; other boards
+# rely on west flash --recover which delegates to the board's runner (e.g.
+# openocd for STM32, pyocd, etc.).
+if command -v nrfjprog &>/dev/null && nrfjprog --snr $board_snr --readregs 2>/dev/null | grep -q "R0"; then
+    # Nordic board with working debug port — use nrfjprog for fast erase
+    nrfjprog --snr $board_snr --eraseall 2>/dev/null || {
+        echo "Erase failed — attempting recover (AP protection may be enabled)"
+        nrfjprog --snr $board_snr --recover
+        nrfjprog --snr $board_snr --eraseall
+    }
+    west flash --dev-id $board_snr --build-dir build-$board_type > /dev/null
+else
+    # Non-Nordic board or nrfjprog unavailable — use west flash with --recover
+    # which delegates to the board's configured runner (openocd, pyocd, etc.)
+    west flash --recover --dev-id $board_snr --build-dir build-$board_type > /dev/null
 fi
-west flash --dev-id $board_snr --build-dir build-$board_type  > /dev/null

@@ -11,9 +11,9 @@ import re
 ####################################################################################################
 
 
-def get_nrf_port(board, timeout_in_ms = 3000):
+def get_board_port(board, timeout_in_ms = 3000):
     """ 
-    get_nrf_port waits until the serial port for the corresponding board is available and return it after that.
+    get_board_port waits until the serial port for the corresponding board is available and return it after that.
 
     :param board: dict containing information about board {"model": <board_model>, "snr": <snr_as_string>}
     :param timeout_in_ms: timeout in ms 
@@ -141,7 +141,7 @@ def read_inference_time(board, save_dir = None):
     # getting port for the specific board
     port = None
     try:
-        port = get_nrf_port(board, timeout_in_ms=15000)
+        port = get_board_port(board, timeout_in_ms=15000)
     except RuntimeError as e:
         raise NotImplementedError("add proper handling when the board can not be found")
 

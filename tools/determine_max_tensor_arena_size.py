@@ -19,7 +19,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from update_tensor_arena_size import update_tensor_arena_size
 
-# Total SRAM available per board (from Nordic datasheets)
+# Total SRAM available per board (KB).
+# Add entries for new boards here (e.g. STM32: "nucleo_f446re": 128).
 BOARD_SRAM_KB = {
     "nrf52833dk_nrf52833": 128,
     "nrf52840dk_nrf52840": 256,

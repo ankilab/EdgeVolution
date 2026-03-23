@@ -670,8 +670,6 @@ class EvaluationPipeline:
         """Evaluate models on MCU: flash, measure inference time and energy."""
         path = f'{self.my_saver.results_dir}/Generation_{generation}/'
 
-        from tools.measure_power_consumption import init_ppk2, stop_measuring
-
         individuals_names = list(individuals.keys())
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
             logger.info(f"Evaluate energy of {individual} (index: {idx + 1})")
@@ -686,7 +684,13 @@ class EvaluationPipeline:
                     flasher_path = os.path.abspath('tools/flash_tflite_model.sh')
                     results_path = path + individual + '/results.json'
 
-                    ppk2 = init_ppk2(board.ppk)
+                    # Initialize power profiler if configured (Nordic PPK2).
+                    # Boards without a ppk field skip energy measurement.
+                    ppk2 = None
+                    board_ppk = getattr(board, 'ppk', None)
+                    if board_ppk and board_ppk != "None":
+                        from tools.measure_power_consumption import init_ppk2
+                        ppk2 = init_ppk2(board_ppk)
                     time.sleep(2)
 
                     ret_val = -1
