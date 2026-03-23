@@ -7,19 +7,15 @@ unset(CONFIG_STD_CPP11)
 set(CONFIG_STD_CPP17 y)
     
 
-# Try both uppercase and lowercase variants of EdgeVolution
-find_package(Zephyr PATHS 
-    /home/EdgeVolution/tflite/zephyr
-    /home/edgevolution/tflite/zephyr
+# Try workspace-relative path first, then fall back to ZEPHYR_BASE
+find_package(Zephyr PATHS
+    ${CMAKE_SOURCE_DIR}/../zephyr
     QUIET NO_DEFAULT_PATH
 )
 
 if(NOT Zephyr_FOUND)
-    # Fallback to default search
-    find_package(Zephyr REQUIRED)
-    
+    find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 endif()
-#find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(EdgeVolution_tflite_micro)
 

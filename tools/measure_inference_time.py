@@ -141,7 +141,7 @@ def read_inference_time(board, save_dir = None):
     # getting port for the specific board
     port = None
     try:
-        port = get_nrf_port(board)
+        port = get_nrf_port(board, timeout_in_ms=15000)
     except RuntimeError as e:
         raise NotImplementedError("add proper handling when the board can not be found")
 
