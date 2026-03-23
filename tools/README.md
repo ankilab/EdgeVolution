@@ -39,8 +39,8 @@ Example Nordic board configuration file (YAML):
 ```yaml
 value:
   - model: "nrf52840dk_nrf52840"  # Board model
-    snr: "683248939"  # Serial number
-    ppk: "E373C904"  # PPK (Power Profiling Kit) serial number
+    snr: "<YOUR_BOARD_SNR>"  # Serial number (find via `nrfjprog --ids`)
+    ppk: "<YOUR_PPK_SNR>"  # PPK (Power Profiling Kit) serial number
     power_measurement_threshold: 4000  # Power consumption threshold (unit: mA)
     max_available_tensor_arena_size: 90  # Available tensor arena size * 1024
 ```

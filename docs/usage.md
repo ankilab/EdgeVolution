@@ -39,25 +39,25 @@ EdgeVolution uses [Hydra](https://hydra.cc/) for configuration. Experiments requ
 ### Speech commands (no MCU evaluation)
 
 ```bash
-python main_edgevolution.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none
+python main.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none
 ```
 
 ### Speech commands with MCU evaluation on nRF52840
 
 ```bash
-python main_edgevolution.py +hyperparameters=speech_commands +search_space=speech_commands +boards=nrf52840dk
+python main.py +hyperparameters=speech_commands +search_space=speech_commands +boards=nrf52840dk
 ```
 
 ### CIFAR-10 (no MCU evaluation)
 
 ```bash
-python main_edgevolution.py +hyperparameters=cifar10 +search_space=cifar10 +boards=none
+python main.py +hyperparameters=cifar10 +search_space=cifar10 +boards=none
 ```
 
 ### DaLiAc (no MCU evaluation)
 
 ```bash
-python main_edgevolution.py +hyperparameters=daliac +search_space=daliac +boards=none
+python main.py +hyperparameters=daliac +search_space=daliac +boards=none
 ```
 
 ### Override individual parameters
@@ -65,7 +65,7 @@ python main_edgevolution.py +hyperparameters=daliac +search_space=daliac +boards
 Hydra lets you override any config value from the command line:
 
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands \
   +search_space=speech_commands \
   +boards=none \
@@ -77,7 +77,7 @@ python main_edgevolution.py \
 ## Continuing a Run
 
 ```bash
-python main_edgevolution.py \
+python main.py \
   continue_path=Results/speech_commands/<run_folder> \
   continue_generation=5
 ```
@@ -94,20 +94,20 @@ Two model backends are available:
 | Random Forest | `random_forest` (default) | Fast, robust, good default. Tree-variance provides uncertainty. |
 | Gaussian Process | `gaussian_process` | Calibrated Bayesian uncertainty. Best for small datasets. O(n³) scaling. |
 
-### Enable surrogate pre-screening
+### Accuracy surrogate: enable pre-screening
 
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
-  surrogate.enabled.value=true
+  surrogate_accuracy.enabled.value=true
 ```
 
 ### Use a Gaussian Process backend
 
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
-  surrogate.enabled.value=true surrogate.model_type.value=gaussian_process
+  surrogate_accuracy.enabled.value=true surrogate_accuracy.model_type.value=gaussian_process
 ```
 
 ### Evaluation mode (predict but still train everything)
@@ -115,9 +115,19 @@ python main_edgevolution.py \
 In evaluation mode the surrogate predicts accuracy for every individual but never skips any — all individuals are still fully trained. This produces ground-truth predicted-vs-actual data useful for paper figures (scatter plots, error distributions, per-generation correlation).
 
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
-  surrogate.enabled.value=true surrogate.evaluation_mode.value=true
+  surrogate_accuracy.enabled.value=true surrogate_accuracy.evaluation_mode.value=true
+```
+
+### Hardware surrogate
+
+A second surrogate can predict hardware metrics (energy, inference time) to skip MCU evaluation:
+
+```bash
+python main.py \
+  +hyperparameters=speech_commands +search_space=speech_commands +boards=nrf52840dk \
+  surrogate_hardware.enabled.value=true
 ```
 
 ### Tuning the accuracy vs. time trade-off
@@ -129,22 +139,23 @@ The surrogate skips training for individuals it confidently predicts to perform 
 
 As a rule of thumb: if your per-individual training time is **short** (a few seconds to minutes), the surrogate overhead may not be worth the risk — train everything. If training is **expensive** (tens of minutes to hours per individual), even a moderately accurate surrogate pays for itself by cutting the population that needs full training.
 
-Start with evaluation mode (`surrogate.evaluation_mode.value=true`) to measure the surrogate's accuracy on your specific search space before relying on it to skip training. Check `surrogate_evaluation.png` in the results folder — if the correlation is low or the MAE is large relative to accuracy differences in your population, keep the confidence threshold conservative or increase the exploration ratio.
+Start with evaluation mode (`surrogate_accuracy.evaluation_mode.value=true`) to measure the surrogate's accuracy on your specific search space before relying on it to skip training. Check `surrogate_evaluation.png` in the results folder — if the correlation is low or the MAE is large relative to accuracy differences in your population, keep the confidence threshold conservative or increase the exploration ratio.
 
 ### Output files
 
-When the surrogate is enabled, two CSV files are written to `{results_dir}/surrogate/`:
+When the accuracy surrogate is enabled, two CSV files are written to `{results_dir}/surrogate_accuracy/`:
 
 | File | Contents |
 |------|----------|
 | `surrogate_log.csv` | Per-individual records: `generation, individual, predicted_acc, uncertainty, actual_acc, skipped` |
 | `surrogate_summary.csv` | Per-generation aggregates: `generation, n_total, n_skipped, n_trained, mae, correlation, r_squared` |
 
+When the hardware surrogate is enabled, the same files are written to `{results_dir}/surrogate_hardware/`.
 
 ## Running Tests
 
 ```bash
-pytest tests/ -v
+python3 -m pytest tests/ -v -p no:dash
 ```
 
 

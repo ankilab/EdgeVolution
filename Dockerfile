@@ -76,17 +76,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++-multilib \
     libsdl2-dev \
     libmagic1 \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------
-# CMake >= 3.20 from Kitware APT repo
-# (Ubuntu 20.04 ships cmake 3.16, but CMakeLists.txt requires >= 3.20)
+# CMake 3.28 (compatible with Python 3.8; CMake 4.x requires Python 3.9+)
 # ---------------------------------------------------------------------------
-RUN wget -q https://apt.kitware.com/kitware-archive.sh \
-    && bash kitware-archive.sh \
-    && rm kitware-archive.sh \
-    && apt-get update && apt-get install -y --no-install-recommends cmake \
-    && rm -rf /var/lib/apt/lists/*
+RUN wget -q https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz \
+    && tar xf cmake-3.28.6-linux-x86_64.tar.gz --strip-components=1 -C /usr/local \
+    && rm cmake-3.28.6-linux-x86_64.tar.gz
 
 # ---------------------------------------------------------------------------
 # nRF Command Line Tools (including nrfjprog)
@@ -113,9 +111,8 @@ RUN wget -q --post-data="accept_license_agreement=accepted&submit=Download+softw
         https://www.segger.com/downloads/jlink/JLink_Linux_V788n_x86_64.deb \
     && dpkg --unpack JLink_Linux_V788n_x86_64.deb \
     && rm -f /var/lib/dpkg/info/jlink.postinst \
-    && dpkg --configure jlink \
-    && apt-get install -yf \
-    && rm -rf /tmp/jlink
+    && apt-get update && apt-get install -yf \
+    && rm -rf /var/lib/apt/lists/* /tmp/jlink
 
 # ---------------------------------------------------------------------------
 # Zephyr SDK 0.16.5-1
@@ -129,15 +126,15 @@ RUN wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16
 ENV ZEPHYR_SDK_INSTALL_DIR="/opt/zephyr-sdk-0.16.5-1"
 
 # ---------------------------------------------------------------------------
-# Zephyr workspace via west
-# west==0.14.0 is already installed from requirements.txt in the ml stage.
-# west init + west update downloads ~500MB+ of Zephyr modules (expected).
+# Upgrade west to 1.0.0 (Zephyr 4.0.0 build.py requires west.commands.Verbosity,
+# which was removed in west 0.14.0 and re-added in west 1.0.0)
 # ---------------------------------------------------------------------------
-WORKDIR /EdgeVolution/tflite
-RUN west init . \
-    && west config manifest.group-filter -- +optional \
-    && west update \
-    && west zephyr-export
+RUN pip install --no-cache-dir west==1.0.0
 
+# ---------------------------------------------------------------------------
+# Zephyr workspace is provided via volume mount from the host.
+# The host must have .west/, zephyr/, modules/, etc. in tflite/.
+# ---------------------------------------------------------------------------
 WORKDIR /EdgeVolution
+
 CMD ["/bin/bash"]

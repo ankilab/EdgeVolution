@@ -262,3 +262,7 @@ widgetsnbextension==4.0.3
 wrapt
 yarl
 zipp
+
+# Optional: search strategy backends
+# pip install ax-platform   # for search_strategy=ax (Bayesian optimization; pulls in PyTorch + BoTorch)
+pymoo                       # for search_strategy=pymoo (NSGA-II multi-objective)

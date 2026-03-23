@@ -47,7 +47,7 @@ docker run -it --rm --privileged --gpus all -v $(pwd):/EdgeVolution edgevolution
 
 Inside the container:
 ```bash
-pytest tests/ -v
+python3 -m pytest tests/ -v -p no:dash
 ```
 
 ### Defining hyperparameters
@@ -66,7 +66,24 @@ Before the EdgeVolution optimization run is started, some configurations must be
 ### Running an experiment
 
 ```
-python main_edgevolution.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none
+python main.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none
+```
+
+### Search Strategies
+
+EdgeVolution supports multiple search strategies via a pluggable ask/tell interface. Select a strategy with the `search_strategy=` flag:
+
+| Strategy | Flag | Description |
+|----------|------|-------------|
+| Genetic Algorithm | `search_strategy=genetic_algorithm` | Standard GA with crossover and mutation (default) |
+| Random Search | `search_strategy=random` | Random baseline — no selection or crossover |
+| Regularized Evolution | `search_strategy=regularized_evolution` | Tournament selection with aging (Real et al. 2019) |
+| PyMOO (NSGA-II) | `search_strategy=pymoo` | Multi-objective optimization (requires `pymoo`) |
+| Ax (Bayesian Opt.) | `search_strategy=ax` | Bayesian optimization via BoTorch (requires `ax-platform`) |
+
+Example:
+```bash
+python main.py +hyperparameters=speech_commands +search_space=speech_commands +boards=none search_strategy=regularized_evolution
 ```
 
 For more examples and common commands, see the [Usage Guide](docs/usage.md).

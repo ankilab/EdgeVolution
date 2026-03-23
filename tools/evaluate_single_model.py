@@ -146,13 +146,29 @@ def _calculate_energy_consumption(board_snr: str, results_path: Path):
         # omit the first 10k values as they are not stable
         values = values[10000:]
         values_averaged = pd.Series(values).rolling(POWER_MEASUREMENT_NB_SAMPLES_AVERAGE).mean()
-        start = np.where(values_averaged > POWER_MEASUREMENT_THRESHOLD)[0][0]
-        end = np.where(values_averaged < POWER_MEASUREMENT_THRESHOLD)[0][
-            np.where(values_averaged < POWER_MEASUREMENT_THRESHOLD)[0] >
-            np.where(values_averaged > POWER_MEASUREMENT_THRESHOLD)[0][0]][0]
+
+        # Auto-detect threshold from idle portion of the trace
+        idle_region = values_averaged[:5000]
+        idle_mean = np.nanmean(idle_region)
+        idle_std = np.nanstd(idle_region)
+        adaptive_threshold = idle_mean + max(3 * idle_std, 1000)
+
+        above = np.where(values_averaged > adaptive_threshold)[0]
+        if len(above) > 0:
+            start = above[0]
+            below_after_start = np.where(values_averaged[start:] < adaptive_threshold)[0]
+            if len(below_after_start) > 0:
+                end = start + below_after_start[0]
+            else:
+                end = len(values_averaged)
+        else:
+            start = 0
+            end = len(values_averaged)
 
         # the value with the highest gradient is
-        mean_power_consumption = np.median(values[start:end])  # measured in uA
+        valid = values[start:end]
+        valid = valid[~np.isnan(valid)]
+        mean_power_consumption = np.median(valid) if len(valid) > 0 else np.nanmedian(values)  # measured in uA
         mean_power_consumption = mean_power_consumption * (10 ** -6)  # in A
         voltage = 3.3  # in V
         # get inference time from board

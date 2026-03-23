@@ -4,6 +4,8 @@ tflite/tools/
 tflite/zephyr/
 tflite/build*
 tflite/log.log
+*.log
+results_profile/
 tiny_ml/
 *pycache*
 Results/
@@ -11,6 +13,7 @@ Results/
 *.cc
 #*.tflite
 *.h5
+*.pdf
 tests-resnet.ipynb
 tests-tflite.ipynb
 test-pyserial.ipynb
@@ -23,12 +26,14 @@ README.txt
 nrf-command-line-tools*
 *.ipynb_checkpoints
 get_ops.py
-*build*
+build/
+**/build-*/
 *power_*
 venv
 *airway*
 *venv*
 tflite/optional/*
+tmp/
 
 datasets/data/*
 baselines/private/
