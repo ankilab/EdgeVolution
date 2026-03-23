@@ -1,0 +1,2 @@
+name: ax
+n_initial_random: 10      # Sobol quasi-random initialization trials

@@ -1,3 +1,4 @@
+import logging
 import os.path
 from subprocess import Popen
 
@@ -21,9 +22,9 @@ from .utils.convert_to_tflite import convert_to_tflite
 from .utils.substitute_tflite_layer import substitute_tflite_layer
 from .utils.save_ram_rom_usage import save_ram_rom_usage
 from multiprocessing import get_context
-
 from multiprocessing import Process
-import time
+
+logger = logging.getLogger(__name__)
 
 
 class GeneticAlgorithm:
@@ -60,13 +61,6 @@ class GeneticAlgorithm:
             random_chromosome = self.my_gene_pool.create_gene_sequence()
             self.individuals[name]["genotype"] = random_chromosome
 
-    def create_population_first_generation(self):
-        random_chromosome = self.my_gene_pool.create_gene_sequence()
-        raise NotImplementedError("create_population_first_generation is not implemented yet")
-
-        # TODO: implement this function
-
-
     def prepare_generation(self, current_generation: int):
         """
         Prepare the generation by applying decays to hyperparameters and creating the generation directory.
@@ -101,7 +95,7 @@ class GeneticAlgorithm:
         with get_context("spawn").Pool(cpus) as pool:
             pool.map(self._process_model_translation_and_conversion, self.individuals)
 
-        print("Finished translating and converting models")
+        logger.info("Finished translating and converting models")
     
     def _generate_random_name(self):
         """
@@ -188,13 +182,13 @@ class GeneticAlgorithm:
             min_free_threshold = max(int(total_memory * 0.15), 500_000_000)
             max_parallel = min(max(1, int(total_gpu_gb / 2)), 8)
             gpu_available = True
-            print(f"GPU detected: {total_gpu_gb:.1f} GB total, "
-                  f"free-memory threshold: {min_free_threshold / 1e6:.0f} MB, "
-                  f"max parallel processes: {max_parallel}")
+            logger.info(f"GPU detected: {total_gpu_gb:.1f} GB total, "
+                        f"free-memory threshold: {min_free_threshold / 1e6:.0f} MB, "
+                        f"max parallel processes: {max_parallel}")
         except Exception:
             max_parallel = 1
-            print("No GPU detected or nvidia_smi unavailable. "
-                  "Training sequentially (1 process at a time).")
+            logger.info("No GPU detected or nvidia_smi unavailable. "
+                        "Training sequentially (1 process at a time).")
 
         # start training processes
         while idx < len(individuals_names):
@@ -234,7 +228,7 @@ class GeneticAlgorithm:
         for p in procs:
             try:
                 p.join(timeout=300)
-            except:
+            except Exception:
                 p.join()
 
 
@@ -341,8 +335,23 @@ class GeneticAlgorithm:
 
             values_averaged = pd.Series(values).rolling(self.cfg.hyperparameters.power_measurement_num_samples_average.value).mean()
 
-            start = np.where(values_averaged > power_measurement_threshold)[0][0]
-            end = np.where(values_averaged < power_measurement_threshold)[0][np.where(values_averaged < power_measurement_threshold)[0] > np.where(values_averaged > power_measurement_threshold)[0][0]][0]
+            # Auto-detect inference window from power trace.
+            idle_region = values_averaged[:5000]
+            idle_mean = np.nanmean(idle_region)
+            idle_std = np.nanstd(idle_region)
+            adaptive_threshold = idle_mean + max(3 * idle_std, 1000)
+
+            above = np.where(values_averaged > adaptive_threshold)[0]
+            if len(above) > 0:
+                start = above[0]
+                below_after_start = np.where(values_averaged[start:] < adaptive_threshold)[0]
+                if len(below_after_start) > 0:
+                    end = start + below_after_start[0]
+                else:
+                    end = len(values_averaged)
+            else:
+                start = 0
+                end = len(values_averaged)
 
             # the value with the highest gradient is
             mean_power_consumption = np.mean(values[start:end])  # measured in uA
@@ -386,7 +395,7 @@ class GeneticAlgorithm:
 
         individuals_names = list(self.individuals.keys())
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
-            print(f"Evaluate energy of {individual} (index: {idx+1})")
+            logger.info(f"Evaluate energy of {individual} (index: {idx+1})")
 
             # error log
             error_log_path = path + individual + '/error_log.txt'
@@ -394,26 +403,37 @@ class GeneticAlgorithm:
             # flash tflite model on individual board
             if len(self.cfg.boards.value) > 0:
                 for board in self.cfg.boards.value:
-                    tflite_path = path + individual + '/models/model_tflite_untrained.tflite'
-                    cpp_path = '../tflite/edgevolution_tflite/src/model.cpp'
-                    flasher_path = './tools/flash_tflite_model.sh'
+                    # Use absolute paths so they resolve correctly after cd in flash script
+                    tflite_path = os.path.abspath(path + individual + '/models/model_tflite_untrained.tflite')
+                    cpp_path = os.path.abspath('tflite/edgevolution_tflite/src/model.cpp')
+                    flasher_path = os.path.abspath('tools/flash_tflite_model.sh')
+                    results_path = path + individual + '/results.json'
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)
                     ppk2 = init_ppk2(board.ppk)
                     time.sleep(2)  # --> important to wait a bit before flashing the model
 
                     # flash tflite model on board
+                    ret_val = -1
                     try:
-                        ret_val = subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
+                        ret_val = subprocess.call(['bash', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
-                    
+
                     if ret_val != 0:
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr}. Ret val: {ret_val}.\n")
-                        
-                        # disconnect ppk2 
+                        # Write flash error to results.json so calculate_fitness sees it
+                        try:
+                            with open(results_path) as f:
+                                results = json.loads(f.read())
+                            results['flash_error'] = f"Flash failed on board {board.snr} (ret_val={ret_val})"
+                            with open(results_path, 'w') as f:
+                                json.dump(results, f, indent=2)
+                        except Exception:
+                            pass
+                        # disconnect ppk2
                         del ppk2
                         time.sleep(3)
                         continue
@@ -696,28 +716,27 @@ class GeneticAlgorithm:
             gpus = tf.config.list_physical_devices('GPU')
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
-        except:
-            print("Could not set memory growth in function _process_model_translation")
-            pass
-            
+        except Exception:
+            pass  # GPU memory growth may already be set or no GPU available
+
         # translate chromosome to TensorFlow model
         try:
-            model = translate(self.individuals[individual_name]['genotype'], 
-                              self.cfg.hyperparameters.input_shape.value, 
-                              self.cfg.hyperparameters.num_classes.value, 
-                              self.cfg.hyperparameters.top_activation.value, 
+            model = translate(self.individuals[individual_name]['genotype'],
+                              self.cfg.hyperparameters.input_shape.value,
+                              self.cfg.hyperparameters.num_classes.value,
+                              self.cfg.hyperparameters.top_activation.value,
                               self.cfg.hyperparameters.sample_rate.value)
-        except:
-            raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {self.individuals[individual_name]['genotype']}")
-        
+        except Exception as e:
+            raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {self.individuals[individual_name]['genotype']}") from e
+
         # save TensorFlow model
         self.my_saver.save_population_phenotype(individual_name, self.generation_counter, model)
 
         # substitute STFT and MAG layers
         try:
             model_substituted = substitute_tflite_layer(model, self.cfg.hyperparameters.input_shape.value)
-        except:
-            raise ValueError(f"Error when substituting STFT and MAG layers.")
+        except Exception as e:
+            raise ValueError("Error when substituting STFT and MAG layers.") from e
 
         try:
             # generate dummy data for quantization
@@ -727,10 +746,8 @@ class GeneticAlgorithm:
                 representative_dataset = np.random.uniform(size=(200, self.cfg.hyperparameters.input_shape.value[0], self.cfg.hyperparameters.input_shape.value[1]))
 
             tflite_model = convert_to_tflite(model_substituted, representative_dataset)
-        except:
-            raise ValueError(f"Error when converting to TFLite")
-
-        print(f"Save TFLite model of {individual_name}")
+        except Exception as e:
+            raise ValueError("Error when converting to TFLite") from e
         self.my_saver.save_population_phenotype_tflite(individual_name, self.generation_counter, tflite_model)
 
 
