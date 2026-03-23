@@ -3,9 +3,12 @@ This script contains the GenePool class, which is responsible for creating, muta
 the implementation of the evolutionary/genetic algorithm.
 """
 
+import logging
 import numpy as np
 import json
 from omegaconf import DictConfig
+
+logger = logging.getLogger(__name__)
 
 
 class GenePool:
@@ -177,14 +180,13 @@ class GenePool:
         new_population = []
         parents_names = []
         while len(new_population) < self.params.population_size.value:
-            # get random chromosome
-            #chromosome_1_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
+            # Uniform selection (probability-weighted selection was tested but
+            # showed no improvement over uniform for this problem)
             chromosome_1_name = np.random.choice(fittest_chromosomes)
 
             # get another random chromosome (make sure to not take the same chromosome again)
             chromosome_2_name = chromosome_1_name
             while chromosome_1_name == chromosome_2_name:
-                #chromosome_2_name = np.random.choice(fittest_chromosomes, p=choice_probabilities)
                 chromosome_2_name = np.random.choice(fittest_chromosomes)
 
             # load chromosomes
@@ -196,7 +198,7 @@ class GenePool:
             try:
                 new_chromosomes, chr_1_split, chr_2_split = self._crossover_chromosomes(chromosome_1, chromosome_2)
             except Exception as e:
-                print(e)
+                logger.debug("Crossover failed: %s", e)
                 continue
 
             if new_chromosomes is not None:
@@ -209,21 +211,59 @@ class GenePool:
 
         return new_population, parents_names
 
+    def crossover_from_chromosomes(self, fittest_dict):
+        """Crossover using chromosomes from a dict instead of reading from disk.
+
+        Args:
+            fittest_dict: Dict mapping name -> chromosome (list of gene dicts).
+
+        Returns:
+            (new_population, parents_names) same as crossover().
+        """
+        fittest_names = list(fittest_dict.keys())
+
+        new_population = []
+        parents_names = []
+        while len(new_population) < self.params.population_size.value:
+            chromosome_1_name = np.random.choice(fittest_names)
+
+            chromosome_2_name = chromosome_1_name
+            while chromosome_1_name == chromosome_2_name:
+                chromosome_2_name = np.random.choice(fittest_names)
+
+            chromosome_1 = fittest_dict[chromosome_1_name]
+            chromosome_2 = fittest_dict[chromosome_2_name]
+
+            try:
+                new_chromosomes, chr_1_split, chr_2_split = self._crossover_chromosomes(
+                    chromosome_1, chromosome_2
+                )
+            except Exception as e:
+                logger.debug("Crossover failed: %s", e)
+                continue
+
+            if new_chromosomes is not None:
+                for new_chromosome in new_chromosomes:
+                    if new_chromosome is not None:
+                        new_population.append(new_chromosome)
+                        parents_names.append(
+                            (chromosome_1_name, chromosome_2_name, chr_1_split, chr_2_split)
+                        )
+
+        return new_population, parents_names
+
     def _crossover_chromosomes(self, chromosome_1, chromosome_2):
-        # get the indices where preprocessing ends and where the classification layers start
-        # --> between those layers we will determine a random crossover point
-        # idx_start_1 = self._get_first_conv_layer_index(chromosome_1) --> deprecated
-        # idx_start_2 = self._get_first_conv_layer_index(chromosome_2) --> deprecated
+        # Crossover point is chosen between the first layer and the pooling layer
         idx_start_1, idx_start_2 = 1, 1
         idx_end_1 = self._get_flatten_gap_gmp_index(chromosome_1)
         idx_end_2 = self._get_flatten_gap_gmp_index(chromosome_2)
 
         # get two random split points
         if idx_start_1 is None or idx_end_1 is None:
-            print("None error (chr 1):", chromosome_1)
+            logger.debug("No valid crossover region in chromosome 1")
             return None, None, None
         if idx_start_2 is None or idx_end_2 is None:
-            print("None error (chr 2):", chromosome_2)
+            logger.debug("No valid crossover region in chromosome 2")
             return None, None, None
 
         chr_1_split = np.random.randint(idx_start_1, idx_end_1)
@@ -268,20 +308,13 @@ class GenePool:
         if '2D' in chromosome[idx_gap_gmp - 1]['layer'] and '1D' in chromosome[idx_gap_gmp]['layer']:
             chromosome[idx_gap_gmp]['layer'] = chromosome[idx_gap_gmp]['layer'].replace('1D', '2D')
             chromosome[idx_gap_gmp]['f_name'] = chromosome[idx_gap_gmp]['f_name'].replace('1D', '2D')
-            print("Changed GAP/GMP to 2D. Chromosome:", chromosome)
+            logger.debug("Changed GAP/GMP to 2D")
         elif '1D' in chromosome[idx_gap_gmp - 1]['layer'] and '2D' in chromosome[idx_gap_gmp]['layer']:
             chromosome[idx_gap_gmp]['layer'] = chromosome[idx_gap_gmp]['layer'].replace('2D', '1D')
             chromosome[idx_gap_gmp]['f_name'] = chromosome[idx_gap_gmp]['f_name'].replace('2D', '1D')
-            print("Changed GAP/GMP to 1D. Chromosome:", chromosome)
+            logger.debug("Changed GAP/GMP to 1D")
 
         return chromosome
-
-    @staticmethod
-    def _get_first_conv_layer_index(chromosome):
-        """ Iterate over all genes and return the index where first layer C or DC is. """
-        for idx, gene in enumerate(chromosome):
-            if 'C' in gene['layer'] or 'DC' in gene['layer']:
-                return idx
 
     @staticmethod
     def _get_flatten_gap_gmp_index(chromosome):
@@ -315,7 +348,7 @@ class GenePool:
 
                     result = self._drop_gene(previous_gene, current_gene, following_gene)
                     if result == 'drop':
-                        print(f"MUTATION: Removed Layer: {chromosome[idx]['f_name']}")
+                        logger.debug(f"MUTATION: Removed Layer: {chromosome[idx]['f_name']}")
                         len_chromosome -= 1
                         del chromosome[idx]
                         continue
@@ -328,11 +361,11 @@ class GenePool:
                         gene_to_add = self._get_gene_to_add(chromosome[idx], chromosome[idx + 1])
 
                     if gene_to_add is not None:
-                        print(f"MUTATION: Added Layer: {gene_to_add['f_name']}")
+                        logger.debug(f"MUTATION: Added Layer: {gene_to_add['f_name']}")
                         chromosome = self._add_gene(chromosome, gene_to_add, idx + 1)
                         idx += 1
                 elif mutation == 'params' and idx != 0:
-                    print(f"MUTATION: Mutated Layer: {chromosome[idx]['f_name']}")
+                    logger.debug(f"MUTATION: Mutated Layer: {chromosome[idx]['f_name']}")
                     mutated_gene = self._mutate_parameters(chromosome[idx])
                     chromosome = self._replace_gene(chromosome, mutated_gene, idx)
 
