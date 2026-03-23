@@ -2,6 +2,8 @@
 
 The surrogate model predicts validation accuracy from architecture encodings and optionally skips training for individuals confidently predicted to perform poorly. All surrogate parameters live in the `surrogate` section of `config.yaml` and are disabled by default.
 
+> **See also:** [Hardware Lookup Table (LUT)](hardware_lut.md) — a pre-built hardware cost model that replaces real MCU evaluation entirely, built from a dedicated profiling phase.
+
 ## TL;DR
 
 - Set `surrogate.enabled.value=true` on the command line to turn on surrogate pre-screening.
@@ -31,28 +33,28 @@ The surrogate model predicts validation accuracy from architecture encodings and
 
 **Enable with default settings (Random Forest):**
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
   surrogate.enabled.value=true
 ```
 
 **Use Gaussian Process backend:**
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
   surrogate.enabled.value=true surrogate.model_type.value=gaussian_process
 ```
 
 **Evaluation mode (predict but train everything, for benchmarking):**
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
   surrogate.enabled.value=true surrogate.evaluation_mode.value=true
 ```
 
 **Tune the skip aggressiveness:**
 ```bash
-python main_edgevolution.py \
+python main.py \
   +hyperparameters=speech_commands +search_space=speech_commands +boards=none \
   surrogate.enabled.value=true \
   surrogate.confidence_threshold.value=0.4 \

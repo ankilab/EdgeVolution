@@ -1,8 +1,9 @@
 """
 Surrogate Model for Neural Architecture Search.
 
-Predicts validation accuracy from architecture encodings to pre-screen
-individuals and skip training for those confidently predicted to perform poorly.
+Predicts a target metric (e.g. validation accuracy or energy consumption)
+from architecture encodings.  Used to pre-screen individuals and skip
+expensive evaluation steps for those confidently predicted to perform poorly.
 
 Supported model types:
 - ``random_forest`` — Tree-variance across the ensemble provides uncertainty.
@@ -25,7 +26,7 @@ VALID_MODEL_TYPES = ("random_forest", "gaussian_process")
 
 class SurrogateModel:
     """
-    Surrogate model that predicts validation accuracy from architecture encodings.
+    Surrogate model that predicts a target metric from architecture encodings.
 
     Supports Random Forest and Gaussian Process backends (scikit-learn).
     """
@@ -38,6 +39,7 @@ class SurrogateModel:
         confidence_threshold: float = 0.5,
         exploration_ratio: float = 0.2,
         evaluation_mode: bool = False,
+        target_name: str = "accuracy",
     ):
         """
         Args:
@@ -53,6 +55,9 @@ class SurrogateModel:
             evaluation_mode: When True, the surrogate predicts for all
                 individuals but never skips any — everyone is still fully
                 trained. Produces ground-truth comparison data.
+            target_name: Human-readable name for the predicted metric.
+                Used in CSV column headers and plot labels (e.g.
+                ``"accuracy"`` or ``"energy"``).
         """
         if model_type not in VALID_MODEL_TYPES:
             raise ValueError(
@@ -66,6 +71,7 @@ class SurrogateModel:
         self.confidence_threshold = confidence_threshold
         self.exploration_ratio = exploration_ratio
         self.evaluation_mode = evaluation_mode
+        self.target_name = target_name
 
         self._model = None
         self._encodings: List[np.ndarray] = []
@@ -309,6 +315,7 @@ class SurrogateModel:
             "confidence_threshold": self.confidence_threshold,
             "exploration_ratio": self.exploration_ratio,
             "evaluation_mode": self.evaluation_mode,
+            "target_name": self.target_name,
             "sample_count": self.sample_count,
             "is_fitted": self._is_fitted,
         }
@@ -338,6 +345,7 @@ class SurrogateModel:
             confidence_threshold=metadata["confidence_threshold"],
             exploration_ratio=metadata["exploration_ratio"],
             evaluation_mode=metadata["evaluation_mode"],
+            target_name=metadata.get("target_name", "accuracy"),
         )
 
         # Load training data
@@ -355,6 +363,31 @@ class SurrogateModel:
             model._model = joblib.load(model_path)
             model._is_fitted = True
 
+        return model
+
+    @classmethod
+    def load_pretrained(cls, path: str, **config_overrides) -> "SurrogateModel":
+        """
+        Load training data and fitted model from a previous run, but
+        apply new config values.
+
+        This allows reusing a trained surrogate across runs while
+        letting the new run control threshold, exploration_ratio, etc.
+
+        Args:
+            path: Directory to load from (must contain metadata.json).
+            **config_overrides: Config attributes to override after
+                loading, e.g. ``confidence_threshold=0.6``,
+                ``exploration_ratio=0.3``, ``evaluation_mode=False``.
+
+        Returns:
+            SurrogateModel instance with loaded data/model and
+            overridden config values.
+        """
+        model = cls.load(path)
+        for key, value in config_overrides.items():
+            if hasattr(model, key):
+                setattr(model, key, value)
         return model
 
     def get_diagnostics(self) -> dict:
@@ -419,13 +452,14 @@ class SurrogateModel:
         summary_path = path / "surrogate_summary.csv"
 
         # Write per-individual log
+        target = self.target_name
         log_exists = log_path.exists()
         with open(log_path, "a", newline="") as f:
             writer = csv.writer(f)
             if not log_exists:
                 writer.writerow([
-                    "generation", "individual", "predicted_acc",
-                    "uncertainty", "actual_acc", "skipped",
+                    "generation", "individual", f"predicted_{target}",
+                    "uncertainty", f"actual_{target}", "skipped",
                 ])
             for rec in individual_records:
                 writer.writerow([
@@ -509,16 +543,25 @@ class SurrogateModel:
         with open(summary_path, "r") as f:
             summary_rows = list(csv.DictReader(f))
 
-        # Filter rows with both predicted and actual accuracy
+        # Auto-detect predicted/actual column names (e.g. predicted_accuracy, predicted_energy)
+        headers = list(log_rows[0].keys()) if log_rows else []
+        pred_col = next((h for h in headers if h.startswith("predicted_")), None)
+        actual_col = next((h for h in headers if h.startswith("actual_")), None)
+        if pred_col is None or actual_col is None:
+            return
+        # Derive a human-readable label from the column name
+        target_label = pred_col.replace("predicted_", "").replace("_", " ").title()
+
+        # Filter rows with both predicted and actual values
         pred_rows = [
             r for r in log_rows
-            if r["predicted_acc"] and r["actual_acc"]
+            if r[pred_col] and r[actual_col]
         ]
         if not pred_rows:
             return
 
-        pred_acc = np.array([float(r["predicted_acc"]) for r in pred_rows])
-        actual_acc = np.array([float(r["actual_acc"]) for r in pred_rows])
+        pred_acc = np.array([float(r[pred_col]) for r in pred_rows])
+        actual_acc = np.array([float(r[actual_col]) for r in pred_rows])
         generations = np.array([int(r["generation"]) for r in pred_rows])
 
         sum_gens = [int(r["generation"]) for r in summary_rows if r["mae"]]
@@ -527,7 +570,7 @@ class SurrogateModel:
         sum_r2 = [float(r["r_squared"]) for r in summary_rows if r["r_squared"]]
 
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-        fig.suptitle("Surrogate Model Evaluation", fontsize=14, fontweight="bold")
+        fig.suptitle(f"Surrogate Model Evaluation ({target_label})", fontsize=14, fontweight="bold")
 
         # 1. Scatter: predicted vs actual
         ax = axes[0, 0]
@@ -539,9 +582,9 @@ class SurrogateModel:
                        c=[color], alpha=0.6, s=20, label=f"Gen {gen}")
         lims = [0, max(actual_acc.max(), pred_acc.max()) + 0.05]
         ax.plot(lims, lims, "k--", alpha=0.4, linewidth=1)
-        ax.set_xlabel("Actual Accuracy")
-        ax.set_ylabel("Predicted Accuracy")
-        ax.set_title("Predicted vs Actual Accuracy")
+        ax.set_xlabel(f"Actual {target_label}")
+        ax.set_ylabel(f"Predicted {target_label}")
+        ax.set_title(f"Predicted vs Actual {target_label}")
         ax.legend(fontsize=7, loc="upper left")
 
         # 2. Per-generation correlation & R²
