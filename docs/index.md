@@ -62,6 +62,8 @@ Please use the [Getting Started](getting-started.md).
 
 - [Usage Guide](usage.md) — common commands and configuration reference
 - [Search Space Registry](search-space-registry.md) — how architectures are encoded to vectors for optimisation
+- [Surrogate Model](surrogate.md) — predict accuracy or hardware metrics to skip expensive evaluations
+- [Hardware Lookup Table](hardware_lut.md) — pre-built MCU cost models to replace real hardware evaluation
 
 ## Citation
 
