@@ -7,6 +7,10 @@ site_description: EdgeVolution is a framework to perform end-to-end neural archi
 # Theme Configuration
 theme:
   name: material
+  features:
+    - navigation.instant
+    - navigation.sidebar
+    - navigation.expand
 
 # Extensions
 markdown_extensions:

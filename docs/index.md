@@ -24,7 +24,7 @@ Deploying effective AI on MCUs faces several critical constraints:
 
 EdgeVolution tackles these challenges through a unique, hardware-in-the-loop approach:
 
-1.  **True Hardware-in-the-Loop (HWIL) Optimization:** Unlike many frameworks that rely on proxies or pre-computed tables, EdgeVolution *continuously deploys and measures* candidate neural network architectures directly on the target microcontroller **during** the optimization process. This provides accurate, real-world feedback on:
+1.  **True Hardware-in-the-Loop (HITL) Optimization:** Unlike many frameworks that rely on proxies or pre-computed tables, EdgeVolution *continuously deploys and measures* candidate neural network architectures directly on the target microcontroller **during** the optimization process. This provides accurate, real-world feedback on:
     *   **Inference Time (Latency)**
     *   **Energy Consumption**
     *   **Memory Usage (currently only ROM)**
