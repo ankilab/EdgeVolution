@@ -1,12 +1,17 @@
-defaults:  
-  - _self_  
-  - override hydra/hydra_logging: disabled  
-  - override hydra/job_logging: disabled  
+defaults:
+  - _self_
+  - search_strategy: genetic_algorithm
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
   
-hydra:  
-  output_subdir: null  
-  run:  
+hydra:
+  output_subdir: null
+  run:
     dir: .
+
+### Continue a previous run (optional)
+continue_path: null
+continue_generation: null
 
 hyperparameters:  
   ### General parameters:
@@ -104,8 +109,8 @@ hyperparameters:
     display: true
 
   lr_scheduler:
-    value: ???
-    unit: null 
+    value: null
+    unit: null
     icon: null
     displayname: "Learning rate scheduler"
     group: "Training parameters"
@@ -294,25 +299,78 @@ hyperparameters:
     group: "Power measurement parameters"
     description: "The number of power measurement samples considered for averaging during the deployment of neural architectures on microcontrollers, influencing the accuracy of power consumption measurement."
     display: true  
-  
-  ### Others
-  min_free_space_gpu:
-    value: ???
-    unit: "B" 
-    icon: "mdi:gpu"
-    displayname: "Min free space GPU"
-    group: "Training parameters"
-    description: "The minimum free space on the GPU before starting training of a new model."
-    display: true
 
   optimize_for_MCU:
-    value: ???
-    unit: null 
+    value: false
+    unit: null
     icon: null
     displayname: "Optimize for MCU"
     group: "Training parameters"
     description: "Whether to optimize for MCU or not. If not, models are just optimized for accuracy."
     display: true
+
+### Surrogate model configuration (accuracy)
+surrogate_accuracy:
+  enabled:
+    value: false
+    description: "Enable accuracy surrogate to skip training of architectures predicted to perform poorly."
+  model_type:
+    value: "random_forest"
+  n_estimators:
+    value: 100
+  min_samples_to_train:
+    value: 20
+  confidence_threshold:
+    value: 0.5
+  exploration_ratio:
+    value: 0.2
+  evaluation_mode:
+    value: false
+  pretrained_path:
+    value: null
+    description: "Path to a surrogate_accuracy directory from a previous run."
+
+### Surrogate model configuration (hardware)
+surrogate_hardware:
+  enabled:
+    value: false
+    description: "Enable hardware surrogate to skip MCU evaluation by predicting energy consumption."
+  model_type:
+    value: "random_forest"
+  n_estimators:
+    value: 100
+  min_samples_to_train:
+    value: 20
+  confidence_threshold:
+    value: 0.5
+  exploration_ratio:
+    value: 0.2
+  evaluation_mode:
+    value: false
+  pretrained_path:
+    value: null
+    description: "Path to a surrogate_hardware directory from a previous run."
+
+### Hardware Lookup Table (pre-built cost model from profiling)
+hardware_lut:
+  enabled:
+    value: false
+    description: "Use a pre-built hardware LUT instead of real MCU evaluation."
+  path:
+    value: null
+    description: "Path to a HardwareLUT directory (built by tools/profile_hardware.py)."
+
+### Hardware profiling (for building a lookup table)
+hardware_profile:
+  n_samples:
+    value: 200
+    description: "Number of random architectures to profile on hardware."
+  output:
+    value: null
+    description: "Output path for the hardware LUT directory."
+  mode:
+    value: full
+    description: "LUT mode: 'full' (whole-architecture) or 'layerwise' (per-layer cost decomposition)."
 
 ### Microcontroller boards
 boards:

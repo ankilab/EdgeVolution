@@ -1,0 +1,4 @@
+name: pymoo
+algorithm: nsga2          # nsga2, nsga3
+crossover_prob: 0.9
+mutation_eta: 20

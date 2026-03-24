@@ -21,18 +21,29 @@ class Saver:
 
         self.random_names = []
 
+    @classmethod
+    def from_existing(cls, existing_results_dir):
+        """Create a Saver that points to an existing results directory."""
+        instance = cls.__new__(cls)
+        instance.results_dir = Path(existing_results_dir)
+        instance.random_names = []
+        return instance
+
     def save_params(self, cfg: DictConfig):
         # get git commit hash and add it to params
-        repo = git.Repo(search_parent_directories=True)
         try:
+            repo = git.Repo(search_parent_directories=True)
             sha = repo.head.object.hexsha
             cfg.hyperparameters.git_sha.value = sha
-        except:
+        except Exception:
             cfg.hyperparameters.git_sha.value = "unknown"
 
         with open(self.results_dir / "config.json", "w") as f:
             cfg_dict = OmegaConf.to_container(cfg)
-            cfg_dict = {k: cfg_dict[k] for k in ['boards', 'hyperparameters', 'results', 'fitness_function']}
+            save_keys = ['boards', 'hyperparameters', 'results', 'fitness_function']
+            if 'search_strategy' in cfg_dict:
+                save_keys.append('search_strategy')
+            cfg_dict = {k: cfg_dict[k] for k in save_keys if k in cfg_dict}
             json.dump(cfg_dict, f, indent=4)
 
         # save search_space.json

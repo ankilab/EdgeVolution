@@ -7,4 +7,5 @@ The `config.yaml` file manages all project settings and integrates multiple conf
 - **[Hyperparameters](hyperparameters/README.md)**: Defines training, evolutionary search, and fitness parameters.
 - **[Microcontroller Boards](boards/README.md)**: Specifies supported MCU configurations.
 - **[Search Space](search_space/README.md)**: Defines available layers and their connectivity.
+- **[Surrogate Model](../docs/surrogate.md)**: Optional surrogate-assisted pre-screening to skip training of low-predicted-accuracy architectures.
 

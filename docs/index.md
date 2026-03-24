@@ -58,6 +58,11 @@ EdgeVolution tackles these challenges through a unique, hardware-in-the-loop app
 
 Please use the [Getting Started](getting-started.md).
 
+## Guides
+
+- [Usage Guide](usage.md) — common commands and configuration reference
+- [Search Space Registry](search-space-registry.md) — how architectures are encoded to vectors for optimisation
+
 ## Citation
 
 If you use EdgeVolution in your research, please cite our paper:

@@ -1,198 +1,230 @@
-######################################################################################
-# This file contains the search space for all supported layers and their parameters.
-# To add more layers, follow the instructions in the README.md file.
-######################################################################################
+# Unified Search Space Configuration — Complete
+#
+# This is the full search space combining 1D and 2D paths with cross-dimensional
+# transitions. Categories define default successor rules, and individual layers
+# can override them when needed.
+#
+# Benefits:
+# - Single source of truth (no sync issues between gene_pool and rule_set)
+# - Adding a new layer automatically inherits category rules
+# - Explicit layer-level overrides for special cases
+# - Better documentation and maintainability
 
-gene_pool:
-  feature_extraction_1D:
-    - layer: C_1D
-      f_name: Conv1D
-      filters: [4, 32, 1]
-      kernel_size: [1, 5, 1]
-      strides: [1, 2, 1]
-      padding: ['same']
-      activation: ['relu']
+# =============================================================================
+# Categories define groups of layers and their default connectivity rules
+# =============================================================================
+categories:
+  # --- 1D path ---
+  feature_extraction_1d:
+    description: "1D convolutional feature extraction layers"
+    successors: [feature_extraction_1d, pooling_1d, preprocessing, global_pooling_1d]
 
-    - layer: DC_1D
-      f_name: DepthwiseConv1D
-      kernel_size: [1, 5, 1]
-      strides: [1, 2, 1]
-      padding: ['same']
-      activation: ['relu']
+  pooling_1d:
+    description: "1D local pooling layers"
+    successors: [feature_extraction_1d, preprocessing]
 
-    - layer: MP_1D
-      f_name: MaxPooling1D
-      pool_size: [2, 4, 1]
-      padding: ['same']
+  global_pooling_1d:
+    description: "1D global pooling layers that flatten spatial dimensions"
+    successors: [classification]
 
-    - layer: AP_1D
-      f_name: AveragePooling1D
-      pool_size: [2, 4, 1]
-      padding: ['same']
+  # --- 2D path ---
+  preprocessing:
+    description: "Initial signal processing layers (STFT, etc.)"
+    successors: [magnitude]
 
-    - layer: BN_1D
-      f_name: BatchNormalization()
-      
-  global_pooling_1D:
-    - layer: GAP_1D
-      f_name: GlobalAveragePooling1D()
+  magnitude:
+    description: "Magnitude extraction from complex signals"
+    successors: [feature_extraction_2d, filterbank]
 
-    - layer: GMP_1D
-      f_name: GlobalMaxPooling1D()
+  filterbank:
+    description: "Frequency-domain filterbank layers"
+    successors: [feature_extraction_2d, decibel]
 
-  preprocessing_2D:
-    - layer: STFT_2D
-      f_name: STFT
-      n_fft: [64, 1024, 16]
-      hop_length: [64, 396, 16]
-      input_data_format: ['channels_last']
-      output_data_format: ['channels_last']
+  decibel:
+    description: "Decibel conversion layers"
+    successors: [feature_extraction_2d]
 
-    - layer: MAG_2D
-      f_name: Magnitude()
+  feature_extraction_2d:
+    description: "2D convolutional feature extraction layers"
+    successors: [feature_extraction_2d, pooling_2d, global_pooling_2d]
 
-    - layer: FB_2D
-      f_name: get_filterbank_layer
-      type: ['mel']
-      n_mels: [32, 96, 4]
-      mel_f_min: [0, 0, 1]
-      mel_f_max: [90, 90, 1]
-      output_data_format: ['channels_last']
+  pooling_2d:
+    description: "2D local pooling layers"
+    successors: [feature_extraction_2d]
 
-    - layer: MAG2DEC_2D
-      f_name: MagnitudeToDecibel()
-    
-  feature_extraction_2D:
-    - layer: C_2D
-      f_name: Conv2D
-      filters: [4, 32, 1]
-      kernel_size: [1, 5, 1]
-      strides: [1, 2, 1]
-      padding: ['same']
-      activation: ['relu']
+  global_pooling_2d:
+    description: "2D global pooling layers that flatten spatial dimensions"
+    successors: [classification]
 
-    - layer: DC_2D
-      f_name: DepthwiseConv2D
-      kernel_size: [1, 5, 1]
-      strides: [1, 2, 1]
-      padding: ['same']
-      activation: ['relu']
+  # --- shared ---
+  classification:
+    description: "Dense and regularization layers for classification"
+    successors: [classification]
+    terminal: true
 
-    - layer: MP_2D
-      f_name: MaxPooling2D
-      pool_size: [2, 4, 1]
-      padding: ['same']
+# =============================================================================
+# Valid starting layers
+# STFT_2D listed twice to balance probability of starting with 1D vs 2D path
+# =============================================================================
+start: [STFT_2D, STFT_2D, C_1D, DC_1D]
 
-    - layer: AP_2D
-      f_name: AveragePooling2D
-      pool_size: [2, 4, 1]
-      padding: ['same']
-
-    - layer: BN_2D
-      f_name: BatchNormalization()
-      
-  global_pooling_2D:
-    - layer: GAP_2D
-      f_name: GlobalAveragePooling2D()
-
-    - layer: GMP_2D
-      f_name: GlobalMaxPooling2D()
-
-  Dense:
-    - layer: DO
-      f_name: Dropout
-      rate: [0.0, 0.5, 0.1]
-
-    - layer: D
-      f_name: Dense
-      units: [8, 128, 8]
-      activation: ['relu']
-
-rule_set:
-  Start:
-    rule: ["STFT_2D", "STFT_2D", "C_1D", "DC_1D"] # STFT two times to balance probabilities to start with 1D or 2D
-    # rule: ["STFT_2D"]
-    # rule: ["STFT_2D", "C_1D", "DC_1D"]
-    # rule: ["C_1D", "DC_1D"]
-  
-  #################################################
-  # 1D layers
-  #################################################
+# =============================================================================
+# Layer definitions
+# =============================================================================
+layers:
+  # ---------------------------------------------------------------------------
+  # 1D feature extraction layers
+  # ---------------------------------------------------------------------------
   C_1D:
-    rule: ["AP_1D", "MP_1D", "BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-  
+    category: feature_extraction_1d
+    f_name: Conv1D
+    filters: [4, 32, 1]
+    kernel_size: [1, 5, 1]
+    strides: [1, 2, 1]
+    padding: [same]
+    activation: [relu]
+
   DC_1D:
-    rule: ["AP_1D", "MP_1D", "BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-
-  MP_1D:
-    rule: ["BN_1D", "DC_1D", "C_1D", "STFT_2D"]
-
-  AP_1D:
-    rule: ["BN_1D","DC_1D", "C_1D", "STFT_2D"]
+    category: feature_extraction_1d
+    f_name: DepthwiseConv1D
+    kernel_size: [1, 5, 1]
+    strides: [1, 2, 1]
+    padding: [same]
+    activation: [relu]
 
   BN_1D:
-    rule: ["AP_1D", "MP_1D", "DC_1D", "C_1D", "STFT_2D"]
+    category: feature_extraction_1d
+    f_name: BatchNormalization()
 
+  # ---------------------------------------------------------------------------
+  # 1D pooling layers
+  # ---------------------------------------------------------------------------
+  MP_1D:
+    category: pooling_1d
+    f_name: MaxPooling1D
+    pool_size: [2, 4, 1]
+    padding: [same]
+
+  AP_1D:
+    category: pooling_1d
+    f_name: AveragePooling1D
+    pool_size: [2, 4, 1]
+    padding: [same]
+
+  # ---------------------------------------------------------------------------
+  # 1D global pooling layers
+  # ---------------------------------------------------------------------------
   GAP_1D:
-    rule: ["D", "DO"]
+    category: global_pooling_1d
+    f_name: GlobalAveragePooling1D()
 
   GMP_1D:
-    rule: ["D", "DO"]
+    category: global_pooling_1d
+    f_name: GlobalMaxPooling1D()
 
-  #################################################
-  # 2D layers
-  #################################################
-
+  # ---------------------------------------------------------------------------
+  # Preprocessing layers
+  # ---------------------------------------------------------------------------
   STFT_2D:
-    rule: ["MAG_2D"]
+    category: preprocessing
+    f_name: STFT
+    n_fft: [64, 1024, 16]
+    hop_length: [64, 396, 16]
+    input_data_format: [channels_last]
+    output_data_format: [channels_last]
 
+  # ---------------------------------------------------------------------------
+  # Magnitude layers
+  # ---------------------------------------------------------------------------
   MAG_2D:
-    rule: ["C_2D", "DC_2D", "FB_2D", "MAG2DEC_2D"]
+    category: magnitude
+    f_name: Magnitude()
 
+  # ---------------------------------------------------------------------------
+  # Filterbank layers
+  # NOTE: get_filterbank_layer also requires 'sample_rate' and 'n_fft' params,
+  # which are injected at translation time by prepare_stft_and_fb_genes.py
+  # (derived from the preceding STFT layer). They are not part of the search.
+  # ---------------------------------------------------------------------------
   FB_2D:
-    rule: ["C_2D", "DC_2D", "MAG2DEC_2D"]
+    category: filterbank
+    f_name: get_filterbank_layer
+    type: [mel]
+    n_mels: [32, 96, 4]
+    mel_f_min: [0, 0, 1]
+    mel_f_max: [90, 90, 1]
+    output_data_format: [channels_last]
 
+  # ---------------------------------------------------------------------------
+  # Decibel conversion
+  # ---------------------------------------------------------------------------
   MAG2DEC_2D:
-    rule: ["C_2D", "DC_2D"]
+    category: decibel
+    f_name: MagnitudeToDecibel()
 
+  # ---------------------------------------------------------------------------
+  # 2D feature extraction layers
+  # ---------------------------------------------------------------------------
   C_2D:
-    rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
+    category: feature_extraction_2d
+    f_name: Conv2D
+    filters: [4, 32, 1]
+    kernel_size: [1, 5, 1]
+    strides: [1, 2, 1]
+    padding: [same]
+    activation: [relu]
 
   DC_2D:
-    rule: ["AP_2D", "MP_2D", "BN_2D", "DC_2D", "C_2D"]
-
-  MP_2D:
-    rule: ["BN_2D", "DC_2D", "C_2D"]
-
-  AP_2D:
-    rule: ["BN_2D", "DC_2D", "C_2D"]
+    category: feature_extraction_2d
+    f_name: DepthwiseConv2D
+    kernel_size: [1, 5, 1]
+    strides: [1, 2, 1]
+    padding: [same]
+    activation: [relu]
 
   BN_2D:
-    rule: ["AP_2D", "MP_2D", "DC_2D", "C_2D"]
+    category: feature_extraction_2d
+    f_name: BatchNormalization()
 
+  # ---------------------------------------------------------------------------
+  # 2D pooling layers
+  # ---------------------------------------------------------------------------
+  MP_2D:
+    category: pooling_2d
+    f_name: MaxPooling2D
+    pool_size: [2, 4, 1]
+    padding: [same]
+
+  AP_2D:
+    category: pooling_2d
+    f_name: AveragePooling2D
+    pool_size: [2, 4, 1]
+    padding: [same]
+
+  # ---------------------------------------------------------------------------
+  # 2D global pooling layers
+  # ---------------------------------------------------------------------------
   GAP_2D:
-    rule: ["D", "DO"]
+    category: global_pooling_2d
+    f_name: GlobalAveragePooling2D()
 
   GMP_2D:
-    rule: ["D", "DO"]
+    category: global_pooling_2d
+    f_name: GlobalMaxPooling2D()
 
-
-  #################################################
-  # Dense layers
-  #################################################
+  # ---------------------------------------------------------------------------
+  # Classification layers
+  # D and DO alternate (D -> DO -> D) via layer-level successor overrides
+  # ---------------------------------------------------------------------------
   D:
-    rule: ["DO"]
+    category: classification
+    f_name: Dense
+    units: [8, 128, 8]
+    activation: [relu]
+    successors: [DO]
 
   DO:
-    rule: ["D"]
-
-
-#################################################
-# Rule set group just for Dashboard visualization
-#################################################
-rule_set_group:
-  - group: "feature_extraction_1D"
-    rule: ["Global Pooling 1D"]
-
-  - group: "feature_extraction_2D"
-    rule: ["Global Pooling 2D"]
+    category: classification
+    f_name: Dropout
+    rate: [0.0, 0.5, 0.1]
+    successors: [D]

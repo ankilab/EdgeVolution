@@ -1,0 +1,14 @@
+[project]
+name = "edgevolution"
+version = "0.1.0"
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+ax = ["ax-platform"]
+pymoo = ["pymoo"]
+
+[tool.setuptools.packages.find]
+include = ["neural_architecture_search*", "utils*", "tools*", "datasets*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

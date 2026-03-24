@@ -29,8 +29,8 @@ value:
 ```yaml
 value:
     - model: "nrf52840dk_nrf52840"  # Board model
-      snr: "1050283223"  # Serial number
-      ppk: "FAFD344C"  # PPK (Power Profiling Kit) serial number
+      snr: "<YOUR_BOARD_SNR>"  # Serial number (find via `nrfjprog --ids`)
+      ppk: "<YOUR_PPK_SNR>"  # PPK (Power Profiling Kit) serial number
 ```
 
 ### Adding a New Microcontroller

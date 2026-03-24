@@ -1,3 +1,4 @@
+import logging
 import os.path
 from subprocess import Popen
 
@@ -7,7 +8,6 @@ import json
 import numpy as np
 import time
 import subprocess
-import nvidia_smi
 from tqdm import tqdm
 import copy
 from omegaconf import DictConfig
@@ -21,15 +21,15 @@ from .src.objective_function import calculate_fitness
 from .utils.convert_to_tflite import convert_to_tflite
 from .utils.substitute_tflite_layer import substitute_tflite_layer
 from .utils.save_ram_rom_usage import save_ram_rom_usage
-from tools.measure_power_consumption import init_ppk2, stop_measuring
 from multiprocessing import get_context
-
 from multiprocessing import Process
-import time
+
+logger = logging.getLogger(__name__)
 
 
 class GeneticAlgorithm:
-    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None, profiling_stats=None):
+    def __init__(self, cfg: DictConfig, saver: Saver, loader: Loader = None,
+                 surrogate=None, search_space_registry=None):
         self.cfg = cfg
         self.my_saver = saver
         self.my_gene_pool = GenePool(cfg)
@@ -42,6 +42,11 @@ class GeneticAlgorithm:
             self.individuals: dict = loader.load_individuals()
 
         self.generation_counter: int = 0  # information in which generation we are currently
+
+        # Surrogate model for accuracy prediction
+        self.surrogate = surrogate
+        self.search_space_registry = search_space_registry
+        self._skipped_individuals: dict = {}
 
     def init_first_generation(self):
         # update parameters for the first generation
@@ -56,13 +61,6 @@ class GeneticAlgorithm:
         for name in self.individuals.keys():
             random_chromosome = self.my_gene_pool.create_gene_sequence()
             self.individuals[name]["genotype"] = random_chromosome
-
-    def create_population_first_generation(self):
-        random_chromosome = self.my_gene_pool.create_gene_sequence()
-        raise NotImplementedError("create_population_first_generation is not implemented yet")
-
-        # TODO: implement this function
-
 
     def prepare_generation(self, current_generation: int):
         """
@@ -106,14 +104,7 @@ class GeneticAlgorithm:
         with get_context("spawn").Pool(cpus) as pool:
             pool.map(self._process_model_translation_and_conversion, self.individuals)
 
-        print(f"  ✓ Finished translating and converting models")
-        
-        # Record overall translation/conversion time for this phase
-        if self.profiling_stats is not None:
-            translation_conversion_duration = time.time() - translation_conversion_start
-            self.profiling_stats.record_phase_time(
-                self.generation_counter, "translation_and_conversion_parallel", translation_conversion_duration
-            )
+        logger.info("Finished translating and converting models")
     
     def _generate_random_name(self):
         """
@@ -180,37 +171,48 @@ class GeneticAlgorithm:
     def train_neural_networks(self):
         """"
         Train all preselected models on the MCU.
-        
+
         :return: None. Writes training results to results.json
         """
-        print(f"\n{'='*80}")
-        print(f"Starting training for {len(self.individuals)} models")
-        print(f"{'='*80}\n")
-        
-        # start several training processes here
-        min_free_space = self.cfg.hyperparameters.min_free_space_gpu.value
         procs = []
         individuals_names = list(self.individuals.keys())
         tqdm_bar = tqdm(total=len(individuals_names), desc="Training models")
+        idx = 0
 
-        # Track training start times for profiling
-        training_start_times = {}
+        # Auto-detect GPU and compute parallelization settings
+        gpu_available = False
+        try:
+            import nvidia_smi
+            nvidia_smi.nvmlInit()
+            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+            total_memory = info.total
+            total_gpu_gb = total_memory / (1024 ** 3)
+            min_free_threshold = max(int(total_memory * 0.15), 500_000_000)
+            max_parallel = min(max(1, int(total_gpu_gb / 2)), 8)
+            gpu_available = True
+            logger.info(f"GPU detected: {total_gpu_gb:.1f} GB total, "
+                        f"free-memory threshold: {min_free_threshold / 1e6:.0f} MB, "
+                        f"max parallel processes: {max_parallel}")
+        except Exception:
+            max_parallel = 1
+            logger.info("No GPU detected or nvidia_smi unavailable. "
+                        "Training sequentially (1 process at a time).")
 
-        idx = 0 # index of the individual that is currently being trained
-        nvidia_smi.nvmlInit()
-        handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-        
         # start training processes
         while idx < len(individuals_names):
             procs = [p for p in procs if p.is_alive()]
-            info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
 
-            if info.free > min_free_space and len(procs) < 4:
-                individual_name = individuals_names[idx]
-                
-                # Record training start time for profiling
-                training_start_times[individual_name] = time.time()
-                
+            can_launch = False
+            if gpu_available:
+                info = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+                if info.free > min_free_threshold and len(procs) < max_parallel:
+                    can_launch = True
+            else:
+                if len(procs) < max_parallel:
+                    can_launch = True
+
+            if can_launch:
                 command = 'python3 neural_architecture_search/src/train.py ' + \
                           f'--results_dir {self.my_saver.results_dir} ' + \
                           f'--gen_dir Generation_{self.generation_counter} ' + \
@@ -220,7 +222,7 @@ class GeneticAlgorithm:
                           f'--batch_size {self.cfg.hyperparameters.batch_size.value} ' + \
                           f'--loss {self.cfg.hyperparameters.loss.value} ' +\
                           f'--metrics {" ".join(str(i) for i in self.cfg.hyperparameters.metrics.value)} ' + \
-                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} ' 
+                          f'--optimizer {self.cfg.hyperparameters.optimizer.value} '
                 proc = Process(target=lambda: Popen(command, shell=True).wait())
                 proc.start()
                 procs.append(proc)
@@ -228,13 +230,14 @@ class GeneticAlgorithm:
                 tqdm_bar.update(1)
             time.sleep(10)
 
-        nvidia_smi.nvmlShutdown()
-        
+        if gpu_available:
+            nvidia_smi.nvmlShutdown()
+
         # make sure to wait until all processes are finished
         for p in procs:
             try:
                 p.join(timeout=300)
-            except:
+            except Exception:
                 p.join()
         
         # Record training times for profiling
@@ -354,8 +357,23 @@ class GeneticAlgorithm:
 
             values_averaged = pd.Series(values).rolling(self.cfg.hyperparameters.power_measurement_num_samples_average.value).mean()
 
-            start = np.where(values_averaged > power_measurement_threshold)[0][0]
-            end = np.where(values_averaged < power_measurement_threshold)[0][np.where(values_averaged < power_measurement_threshold)[0] > np.where(values_averaged > power_measurement_threshold)[0][0]][0]
+            # Auto-detect inference window from power trace.
+            idle_region = values_averaged[:5000]
+            idle_mean = np.nanmean(idle_region)
+            idle_std = np.nanstd(idle_region)
+            adaptive_threshold = idle_mean + max(3 * idle_std, 1000)
+
+            above = np.where(values_averaged > adaptive_threshold)[0]
+            if len(above) > 0:
+                start = above[0]
+                below_after_start = np.where(values_averaged[start:] < adaptive_threshold)[0]
+                if len(below_after_start) > 0:
+                    end = start + below_after_start[0]
+                else:
+                    end = len(values_averaged)
+            else:
+                start = 0
+                end = len(values_averaged)
 
             # the value with the highest gradient is
             mean_power_consumption = np.mean(values[start:end])  # measured in uA
@@ -395,6 +413,8 @@ class GeneticAlgorithm:
         """
         path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
 
+        from tools.measure_power_consumption import init_ppk2, stop_measuring
+
         individuals_names = list(self.individuals.keys())
         print(f"\n{'='*80}")
         print(f"Starting MCU evaluation for {len(individuals_names)} models")
@@ -404,40 +424,45 @@ class GeneticAlgorithm:
         deployment_times = {}
         
         for idx, individual in tqdm(enumerate(individuals_names), total=len(individuals_names)):
-            print(f"\n[{idx+1}/{len(individuals_names)}] Evaluating {individual} on MCU...")
-            
-            # Track deployment start time for this individual
-            individual_deployment_start = time.time()
+            logger.info(f"Evaluate energy of {individual} (index: {idx+1})")
 
-            # error log 
+            # error log
             error_log_path = path + individual + '/error_log.txt'
 
             # flash tflite model on individual board
             if len(self.cfg.boards.value) > 0:
                 for board in self.cfg.boards.value:
-                    tflite_path = path + individual + '/models/model_tflite_untrained.tflite'
-                    cpp_path = '../tflite/edgevolution_tflite/src/model.cpp'
-                    flasher_path = './tools/flash_tflite_model.sh'
+                    # Use absolute paths so they resolve correctly after cd in flash script
+                    tflite_path = os.path.abspath(path + individual + '/models/model_tflite_untrained.tflite')
+                    cpp_path = os.path.abspath('tflite/edgevolution_tflite/src/model.cpp')
+                    flasher_path = os.path.abspath('tools/flash_tflite_model.sh')
+                    results_path = path + individual + '/results.json'
 
                     # init PPK2 --> THIS NEEDS TO BE DONE BEFORE FLASHING THE MODEL (would not work otherwise)
                     ppk2 = init_ppk2(board.ppk)
                     time.sleep(2)  # --> important to wait a bit before flashing the model
 
-                    # flash tflite model on board (includes compilation)
-                    flash_start = time.time()
+                    # flash tflite model on board
+                    ret_val = -1
                     try:
-                        ret_val = subprocess.call(['bash', '-i', flasher_path, tflite_path, cpp_path, board.model, board.snr])
-                        flash_duration = time.time() - flash_start
-                        print(f"  Flash & compile took {flash_duration:.2f} seconds")
+                        ret_val = subprocess.call(['bash', flasher_path, tflite_path, cpp_path, board.model, board.snr])
                     except Exception as e:
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr} - exception: {str(e)}.\n")
-                    
+
                     if ret_val != 0:
                         with open(error_log_path, 'a') as f:
                             f.write(f"Error when flashing model on board {board.snr}. Ret val: {ret_val}.\n")
-                        
-                        # disconnect ppk2 
+                        # Write flash error to results.json so calculate_fitness sees it
+                        try:
+                            with open(results_path) as f:
+                                results = json.loads(f.read())
+                            results['flash_error'] = f"Flash failed on board {board.snr} (ret_val={ret_val})"
+                            with open(results_path, 'w') as f:
+                                json.dump(results, f, indent=2)
+                        except Exception:
+                            pass
+                        # disconnect ppk2
                         del ppk2
                         time.sleep(3)
                         continue
@@ -517,6 +542,118 @@ class GeneticAlgorithm:
         print(f"MCU evaluation completed for generation {self.generation_counter}")
         print(f"{'='*80}\n")
             
+
+    def surrogate_prescreen(self):
+        """
+        Use the surrogate model to pre-screen individuals and skip training
+        for those confidently predicted to perform poorly.
+
+        Skipped individuals get their predicted val_acc written to results.json
+        so that selection() works unchanged.
+        """
+        if self.surrogate is None or self.search_space_registry is None:
+            return
+
+        to_train, to_skip, _ = self.surrogate.prescreen(
+            self.individuals, self.search_space_registry.encode
+        )
+
+        if not to_skip:
+            self._skipped_individuals = {}
+            return
+
+        predictions = self.surrogate.get_predictions()
+        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+
+        # Write surrogate-predicted results for skipped individuals
+        self._skipped_individuals = {}
+        for name in to_skip:
+            self._skipped_individuals[name] = self.individuals[name]
+            pred = predictions.get(name, {})
+            predicted_acc = pred.get("predicted_acc", 0.0)
+
+            results_path = path + name + '/results.json'
+            if os.path.exists(results_path):
+                with open(results_path, 'r') as f:
+                    results = json.load(f)
+            else:
+                results = {}
+
+            results['val_acc'] = predicted_acc
+            results['surrogate_skipped'] = True
+
+            with open(results_path, 'w') as f:
+                json.dump(results, f, indent=2)
+
+        # Remove skipped individuals so train_neural_networks skips them
+        self.individuals = {
+            name: data for name, data in self.individuals.items()
+            if name in to_train
+        }
+
+    def collect_surrogate_data(self):
+        """
+        After training, collect actual accuracies, update the surrogate model,
+        and merge skipped individuals back into self.individuals.
+        """
+        if self.surrogate is None or self.search_space_registry is None:
+            return
+
+        path = f'{self.my_saver.results_dir}/Generation_{self.generation_counter}/'
+        predictions = self.surrogate.get_predictions()
+
+        # Collect observations from actually-trained individuals
+        for name, data in self.individuals.items():
+            results_path = path + name + '/results.json'
+            if not os.path.exists(results_path):
+                continue
+            with open(results_path, 'r') as f:
+                results = json.load(f)
+            val_acc = results.get('val_acc')
+            if val_acc is not None:
+                encoding = self.search_space_registry.encode(data["genotype"])
+                self.surrogate.add_observation(encoding, float(val_acc))
+
+        # Build per-individual records for logging
+        individual_records = []
+        all_names = list(self.individuals.keys()) + list(self._skipped_individuals.keys())
+
+        for name in all_names:
+            pred = predictions.get(name, {})
+            predicted_acc = pred.get("predicted_acc")
+            uncertainty = pred.get("uncertainty")
+            skipped = name in self._skipped_individuals
+
+            # Read actual accuracy
+            results_path = path + name + '/results.json'
+            actual_acc = None
+            if os.path.exists(results_path):
+                with open(results_path, 'r') as f:
+                    results = json.load(f)
+                actual_acc = results.get('val_acc')
+
+            individual_records.append({
+                "name": name,
+                "predicted_acc": predicted_acc,
+                "uncertainty": uncertainty,
+                "actual_acc": float(actual_acc) if actual_acc is not None else None,
+                "skipped": skipped,
+            })
+
+        # Merge skipped individuals back
+        self.individuals.update(self._skipped_individuals)
+        self._skipped_individuals = {}
+
+        # Log generation data
+        surrogate_dir = f'{self.my_saver.results_dir}/surrogate'
+        self.surrogate.log_generation(
+            self.generation_counter, individual_records, surrogate_dir
+        )
+
+        # Fit and save if enough data
+        if self.surrogate.is_ready:
+            self.surrogate.fit()
+            self.surrogate.save(surrogate_dir)
 
     def selection(self):
         """
@@ -636,35 +773,28 @@ class GeneticAlgorithm:
             gpus = tf.config.list_physical_devices('GPU')
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
-        except:
-            print("Could not set memory growth in function _process_model_translation")
-            pass
-            
+        except Exception:
+            pass  # GPU memory growth may already be set or no GPU available
+
         # translate chromosome to TensorFlow model
         try:
-            model = translate(self.individuals[individual_name]['genotype'], 
-                              self.cfg.hyperparameters.input_shape.value, 
-                              self.cfg.hyperparameters.num_classes.value, 
-                              self.cfg.hyperparameters.top_activation.value, 
+            model = translate(self.individuals[individual_name]['genotype'],
+                              self.cfg.hyperparameters.input_shape.value,
+                              self.cfg.hyperparameters.num_classes.value,
+                              self.cfg.hyperparameters.top_activation.value,
                               self.cfg.hyperparameters.sample_rate.value)
-        except:
-            raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {self.individuals[individual_name]['genotype']}")
-        
-        # Record translation time for profiling
-        if self.profiling_stats is not None:
-            translation_duration = time.time() - translation_start_time
-            self.profiling_stats.record_model_operation(
-                self.generation_counter, individual_name, "translation", translation_duration
-            )
-        
+        except Exception as e:
+            raise ValueError(f"Error when translating from genotype to phenotype. Chromosome: {self.individuals[individual_name]['genotype']}") from e
+
+
         # save TensorFlow model
         self.my_saver.save_population_phenotype(individual_name, self.generation_counter, model)
 
         # substitute STFT and MAG layers
         try:
             model_substituted = substitute_tflite_layer(model, self.cfg.hyperparameters.input_shape.value)
-        except:
-            raise ValueError(f"Error when substituting STFT and MAG layers.")
+        except Exception as e:
+            raise ValueError("Error when substituting STFT and MAG layers.") from e
 
         conversion_start_time = time.time()
         
@@ -676,17 +806,8 @@ class GeneticAlgorithm:
                 representative_dataset = np.random.uniform(size=(200, self.cfg.hyperparameters.input_shape.value[0], self.cfg.hyperparameters.input_shape.value[1]))
 
             tflite_model = convert_to_tflite(model_substituted, representative_dataset)
-        except:
-            raise ValueError(f"Error when converting to TFLite")
-
-        # Record conversion time for profiling
-        if self.profiling_stats is not None:
-            conversion_duration = time.time() - conversion_start_time
-            self.profiling_stats.record_model_operation(
-                self.generation_counter, individual_name, "tflite_conversion", conversion_duration
-            )
-
-        print(f"Save TFLite model of {individual_name}")
+        except Exception as e:
+            raise ValueError("Error when converting to TFLite") from e
         self.my_saver.save_population_phenotype_tflite(individual_name, self.generation_counter, tflite_model)
 
 

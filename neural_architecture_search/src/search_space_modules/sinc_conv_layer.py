@@ -1,6 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
+from neural_architecture_search.src.layer_registry import LayerRegistry
+
 
 def sinc(x):
     return np.where(x == 0, 1.0, np.sin(np.pi * x) / (np.pi * x))
@@ -19,6 +21,7 @@ def generate_sinc_kernel(kernel_size, cutoff):
     return kernel
 
 
+@LayerRegistry.register(metadata={"source": "custom", "category": "preprocessing"})
 class SincConv1D(tf.keras.layers.Layer):
     """
     SincConv1D layer as described in the paper:
@@ -35,6 +38,7 @@ class SincConv1D(tf.keras.layers.Layer):
         tf.keras.layers.Dense(2, activation='softmax')
     ])
     """
+
     def __init__(self, num_filters, kernel_size, cutoff, **kwargs):
         """
         :param num_filters: number of filters
@@ -54,21 +58,25 @@ class SincConv1D(tf.keras.layers.Layer):
         sinc_kernel = np.expand_dims(sinc_kernel, axis=-1)
 
         # Create a trainable weight variable for the Sinc kernel
-        self.kernel = self.add_weight(name='kernel',
-                                      shape=(self.kernel_size, 1, self.num_filters),
-                                      initializer=tf.keras.initializers.Constant(sinc_kernel),
-                                      trainable=True)
+        self.kernel = self.add_weight(
+            name="kernel",
+            shape=(self.kernel_size, 1, self.num_filters),
+            initializer=tf.keras.initializers.Constant(sinc_kernel),
+            trainable=True,
+        )
 
     def call(self, inputs):
         # Apply 1D convolution with the Sinc kernel
-        outputs = tf.nn.conv1d(inputs, self.kernel, stride=1, padding='SAME')
+        outputs = tf.nn.conv1d(inputs, self.kernel, stride=1, padding="SAME")
         return outputs
-    
+
     def get_config(self):
         config = super(SincConv1D, self).get_config()
-        config.update({
-            'num_filters': self.num_filters,
-            'kernel_size': self.kernel_size,
-            'cutoff': self.cutoff
-        })
+        config.update(
+            {
+                "num_filters": self.num_filters,
+                "kernel_size": self.kernel_size,
+                "cutoff": self.cutoff,
+            }
+        )
         return config

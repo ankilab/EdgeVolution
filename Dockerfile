@@ -1,37 +1,68 @@
-# # Use an official lightweight Python image.
-FROM tensorflow/tensorflow:2.9.1-gpu
+# ===========================================================================
+# EdgeVolution Multi-Target Dockerfile
+#
+# Targets:
+#   ml       - TensorFlow 2.9.1 GPU + Python deps + project code (DEFAULT)
+#   embedded - Extends ml with nRF tools, J-Link, Zephyr SDK, west workspace
+#
+# Usage:
+#   docker build -t edgevolution .                                # builds ml
+#   docker build --target embedded -t edgevolution-embedded .     # builds embedded
+# ===========================================================================
 
-# # Prevent interactive dialogs during apt-get installs
+# ===========================================================================
+# Stage 1: ML / NAS runtime (default target)
+# Base: tensorflow/tensorflow:2.9.1-gpu (Ubuntu 20.04, Python 3.8, CUDA 11.2)
+# ===========================================================================
+FROM tensorflow/tensorflow:2.9.1-gpu AS ml
+
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ---------------------------------------------------------------------------
-# System dependencies & basic setup
-# ---------------------------------------------------------------------------
+# The TF base image already provides python3, pip, wget, curl, etc.
+# Only install packages that are actually missing.
+#   git         - required by GitPython (used in utils/saver.py)
+#   ffmpeg      - required by librosa/pydub for audio processing
+#   libsndfile1 - required by SoundFile for audio I/O
+#   vim         - convenience for interactive debugging
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    dpkg \
     git \
+    ffmpeg \
+    libsndfile1 \
     vim \
-    vim-common \
-    ca-certificates \
-    udev \
-    libusb-1.0-0 \
-    libxcb-render-util0 \
-    libxcb-randr0 \
-    libxcb-icccm4 \
-    libxcb-keysyms1 \
-    libxcb-image0 \
-    libxkbcommon-x11-0 \
-    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /EdgeVolution
+
+# Copy requirements.txt FIRST for Docker layer caching.
+# pip install is only re-run when requirements.txt changes,
+# not on every source code change.
+COPY requirements.txt /EdgeVolution/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --timeout 600 -r requirements.txt
+
+# Copy the rest of the project source code.
+# .dockerignore prevents copying .git, docs, notebooks, build artifacts, etc.
+COPY . /EdgeVolution
+RUN pip install --no-cache-dir -e .
+
+CMD ["/bin/bash"]
+
+
+# ===========================================================================
+# Stage 2: Embedded toolchain (extends ml)
+# Adds: nRF CLI tools, Segger J-Link, CMake >= 3.20, Zephyr SDK, west workspace
+# ===========================================================================
+FROM ml AS embedded
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System packages required by Zephyr, west, nRF tools, and the C/C++ build.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     lsb-release \
+    udev \
+    libusb-1.0-0 \
     build-essential \
-    ffmpeg \
-    python3 \
-    python3-pip \
-    python3-venv \
-    python3-dev \
-    git \
     ninja-build \
     gperf \
     ccache \
@@ -45,104 +76,66 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++-multilib \
     libsdl2-dev \
     libmagic1 \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 
 # ---------------------------------------------------------------------------
-# Install nRF Command Line Tools (including nrfjprog)
+# CMake 3.28 (compatible with Python 3.8; CMake 4.x requires Python 3.9+)
+# ---------------------------------------------------------------------------
+RUN wget -q https://github.com/Kitware/CMake/releases/download/v3.28.6/cmake-3.28.6-linux-x86_64.tar.gz \
+    && tar xf cmake-3.28.6-linux-x86_64.tar.gz --strip-components=1 -C /usr/local \
+    && rm cmake-3.28.6-linux-x86_64.tar.gz
+
+# ---------------------------------------------------------------------------
+# nRF Command Line Tools (including nrfjprog)
 # ---------------------------------------------------------------------------
 WORKDIR /tmp/nrf
-RUN wget "https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-21-0/nrf-command-line-tools-10.21.0_linux-amd64.tar.gz" \
-    && tar xvf nrf-command-line-tools-10.21.0_linux-amd64.tar.gz \
-    && sudo cp -a nrf-command-line-tools /opt/ \
-    && rm -rf nrf-command-line-tools-10.21.0_linux-amd64.tar.gz nrf-command-line-tools
+RUN wget -q "https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-21-0/nrf-command-line-tools-10.21.0_linux-amd64.tar.gz" \
+    && tar xf nrf-command-line-tools-10.21.0_linux-amd64.tar.gz \
+    && cp -a nrf-command-line-tools /opt/ \
+    && rm -rf /tmp/nrf
 
 ENV PATH="${PATH}:/opt/nrf-command-line-tools/bin"
 
 # ---------------------------------------------------------------------------
-# Install Segger J-Link software
-# (You might want to update the version to the latest.)
+# Segger J-Link
+# The J-Link .deb postinst script tries to start udev/systemd services
+# which don't exist in Docker. Workaround:
+#   1. dpkg --unpack  (extract files without running postinst)
+#   2. Remove the postinst script
+#   3. dpkg --configure  (mark package as configured)
+#   4. apt-get install -yf  (resolve any missing dependencies)
 # ---------------------------------------------------------------------------
-RUN /lib/systemd/systemd-udevd --daemon
-RUN udevadm monitor &
-
-RUN wget --post-data="accept_license_agreement=accepted&submit=Download+software" https://www.segger.com/downloads/jlink/JLink_Linux_V788n_x86_64.deb 
-
-# Took this small workaround from: https://forums.docker.com/t/udevadm-monitor-in-docker-file/125723
-RUN dpkg --unpack JLink_Linux_V788n_x86_64.deb
-RUN rm /var/lib/dpkg/info/jlink.postinst -f
-RUN dpkg --configure jlink
-RUN apt install -yf 
-
-# ---------------------------------------------------------------------------
-# Install CMake (some distributions already have an older version).
-# ---------------------------------------------------------------------------
-RUN wget https://apt.kitware.com/kitware-archive.sh \
-    && sudo bash kitware-archive.sh \
-    && rm kitware-archive.sh \
-    && apt-get update && apt-get install -y cmake
+WORKDIR /tmp/jlink
+RUN wget -q --post-data="accept_license_agreement=accepted&submit=Download+software" \
+        https://www.segger.com/downloads/jlink/JLink_Linux_V788n_x86_64.deb \
+    && dpkg --unpack JLink_Linux_V788n_x86_64.deb \
+    && rm -f /var/lib/dpkg/info/jlink.postinst \
+    && apt-get update && apt-get install -yf \
+    && rm -rf /var/lib/apt/lists/* /tmp/jlink
 
 # ---------------------------------------------------------------------------
-# Install west (Zephyr's meta-tool) and dependencies
-# ---------------------------------------------------------------------------
-RUN pip install west
-
-# ---------------------------------------------------------------------------
-# Install Zephyr SDK to /opt/zephyr-sdk-0.16.5-1
+# Zephyr SDK 0.16.5-1
 # ---------------------------------------------------------------------------
 WORKDIR /opt
-RUN wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.5-1/zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz \
-    && wget -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.5-1/sha256.sum | shasum --check --ignore-missing \
-    && tar xvf zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz \
+RUN wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.5-1/zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz \
+    && wget -q -O - https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.5-1/sha256.sum | shasum --check --ignore-missing \
+    && tar xf zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz \
     && rm zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz
 
 ENV ZEPHYR_SDK_INSTALL_DIR="/opt/zephyr-sdk-0.16.5-1"
 
 # ---------------------------------------------------------------------------
-# Create a non-root user
+# Upgrade west to 1.0.0 (Zephyr 4.0.0 build.py requires west.commands.Verbosity,
+# which was removed in west 0.14.0 and re-added in west 1.0.0)
 # ---------------------------------------------------------------------------
-ARG USERNAME=edgedev
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash \
-    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
-
-# Add user to dialout group for serial port access
-RUN usermod -a -G dialout,plugdev $USERNAME
+RUN pip install --no-cache-dir west==1.0.0
 
 # ---------------------------------------------------------------------------
-# Create a project directory and copy your files
-# (Assuming you have requirements.txt and a tflite/ folder, etc.)
+# Zephyr workspace is provided via volume mount from the host.
+# The host must have .west/, zephyr/, modules/, etc. in tflite/.
 # ---------------------------------------------------------------------------
 WORKDIR /EdgeVolution
-COPY . /EdgeVolution
 
-# ---------------------------------------------------------------------------
-# Install Python dependencies (as root, but accessible to user)
-# ---------------------------------------------------------------------------
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-RUN pip install --upgrade numba librosa
-
-# ---------------------------------------------------------------------------
-# Zephyr project initialization (as root first)
-# ---------------------------------------------------------------------------
-WORKDIR /EdgeVolution/tflite
-RUN if [ ! -f .west/config ]; then west init .; else echo "West workspace already initialized"; fi && \
-    west config manifest.group-filter -- +optional && \
-    west zephyr-export
-
-# ---------------------------------------------------------------------------
-# Change ownership of the project directory to the non-root user
-# ---------------------------------------------------------------------------
-RUN chown -R $USERNAME:$USERNAME /EdgeVolution
-
-# Switch to non-root user
-USER $USERNAME
-
-WORKDIR /EdgeVolution
 CMD ["/bin/bash"]

@@ -10,16 +10,47 @@ This guide will help you set up and run EdgeVolution on your system.
 git clone https://github.com/ankilab/EdgeVolution
 ```
 
-### Building the Docker Image
+### Docker Build Targets
 
-```bash
-docker build -t edgevolution-container .
+The Dockerfile provides two build targets. The `embedded` image extends `ml` — it contains everything in `ml` plus the hardware toolchain:
+
 ```
+┌──────────────────────────────────────────────────────────────┐
+│  embedded   (docker build --target embedded .)               │
+│                                                              │
+│  nRF CLI tools, Segger J-Link, Zephyr SDK, west workspace   │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  ml   (docker build .)              ← DEFAULT target   │  │
+│  │                                                        │  │
+│  │  TensorFlow 2.9.1-gpu · Python deps · project code    │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**ML/NAS only** (default) — architecture search, training, evaluation:
+```bash
+docker build -t edgevolution .
+```
+
+**Embedded** — everything above plus cross-compilation and flashing to MCUs:
+```bash
+docker build --target embedded -t edgevolution-embedded .
+```
+
+> The embedded build downloads the Zephyr SDK and modules (~1.5 GB).
+> Docker caches this layer, so subsequent builds are fast.
 
 ### Running the Container
 
+**ML/NAS (GPU-accelerated):**
 ```bash
-docker run -it --rm --user $(id -u):$(id -g) --privileged --cpus="10.0" --gpus all -v $(pwd):/EdgeVolution edgevolution-container
+docker run -it --rm --gpus all -v $(pwd):/EdgeVolution edgevolution
+```
+
+**Embedded (with USB passthrough for J-Link):**
+```bash
+docker run -it --rm --privileged --gpus all -v $(pwd):/EdgeVolution edgevolution-embedded
 ```
 
 ## Configuration

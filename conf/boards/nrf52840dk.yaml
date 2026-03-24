@@ -1,20 +1,8 @@
-# value:
-#   - model: "nrf52840dk_nrf52840"  # Board model
-#     snr: "1050283223"  # Serial number
-#     ppk: "FAFD344C"  # PPK (Power Profiling Kit) serial number
-#     power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
-#     max_available_tensor_arena_size: 155  # Available tensor arena size
-
+# Replace <YOUR_BOARD_SNR> and <YOUR_PPK_SNR> with your device serial numbers.
+# See conf/boards/README.md for instructions on finding these values.
 value:
   - model: "nrf52840dk_nrf52840"  # Board model
-    snr: "1050242564"  # Serial number
-    ppk: "FEA55411"  # PPK (Power Profiling Kit) serial number
-    power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
-    max_available_tensor_arena_size: 155  # Available tensor arena size
-
-# value:
-#   - model: "nrf52840dk_nrf52840"  # Board model
-#     snr: "1050289157"  # Serial number
-#     ppk: "None"  # PPK (Power Profiling Kit) serial number
-#     power_measurement_threshold: 4000  # Power consumption threshold (unit: mA) --> use tools/determine_power_consumption_threshold.py if needed
-#     max_available_tensor_arena_size: 155  # Available tensor arena size
+    snr: "<YOUR_BOARD_SNR>"  # Serial number (find via `nrfjprog --ids`)
+    ppk: "<YOUR_PPK_SNR>"  # PPK (Power Profiling Kit) serial number
+    power_measurement_threshold: 4000  # Fallback only; adaptive threshold is computed at runtime
+    max_available_tensor_arena_size: 155  # Use tools/determine_max_tensor_arena_size.py to verify
