@@ -1,0 +1,1221 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="EdgeVolution is a framework to perform end-to-end neural architecture search for microcontrollers.">
+      
+      
+        <meta name="author" content="René Groh">
+      
+      
+        <link rel="canonical" href="https://ankilab.github.io/EdgeVolution/usage/">
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../debug-nordic-boards/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Usage - EdgeVolution</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#usage-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="EdgeVolution" class="md-header__button md-logo" aria-label="EdgeVolution" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            EdgeVolution
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Usage
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="EdgeVolution" class="md-nav__button md-logo" aria-label="EdgeVolution" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    EdgeVolution
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Experiments
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running Experiments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#speech-commands-no-mcu-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speech commands (no MCU evaluation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speech-commands-with-mcu-evaluation-on-nrf52840" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speech commands with MCU evaluation on nRF52840
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cifar-10-no-mcu-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CIFAR-10 (no MCU evaluation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daliac-no-mcu-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DaLiAc (no MCU evaluation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#override-individual-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Override individual parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continuing-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuing a Run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surrogate-assisted-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Surrogate-Assisted Search
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Surrogate-Assisted Search">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#accuracy-surrogate-enable-pre-screening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accuracy surrogate: enable pre-screening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-a-gaussian-process-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use a Gaussian Process backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evaluation-mode-predict-but-still-train-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation mode (predict but still train everything)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardware-surrogate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware surrogate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuning-the-accuracy-vs-time-trade-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the accuracy vs. time trade-off
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debug-nordic-boards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debug Nordic Boards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dataloader-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataloader Definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperparameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hyperparameters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../microcontrollers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Microcontrollers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search-space/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Search Space
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search-space-registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Search Space Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../surrogate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Surrogate Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware_lut/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware Lookup Table
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evovis-dashboard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EvoVis Dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Experiments
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running Experiments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#speech-commands-no-mcu-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speech commands (no MCU evaluation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speech-commands-with-mcu-evaluation-on-nrf52840" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speech commands with MCU evaluation on nRF52840
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cifar-10-no-mcu-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CIFAR-10 (no MCU evaluation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daliac-no-mcu-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DaLiAc (no MCU evaluation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#override-individual-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Override individual parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continuing-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuing a Run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surrogate-assisted-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Surrogate-Assisted Search
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Surrogate-Assisted Search">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#accuracy-surrogate-enable-pre-screening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accuracy surrogate: enable pre-screening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-a-gaussian-process-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use a Gaussian Process backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evaluation-mode-predict-but-still-train-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation mode (predict but still train everything)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardware-surrogate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardware surrogate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuning-the-accuracy-vs-time-trade-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the accuracy vs. time trade-off
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="usage-guide">Usage Guide<a class="headerlink" href="#usage-guide" title="Permanent link">&para;</a></h1>
+<p>Quick reference for common EdgeVolution commands. See the <a href="../README.md">README</a> for setup instructions.</p>
+<h2 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h2>
+<p><strong>Build the ML/NAS image (default):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>edgevolution<span class="w"> </span>.
+</code></pre></div></p>
+<p><strong>Build the embedded image (includes nRF tools, J-Link, Zephyr SDK):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>build<span class="w"> </span>--target<span class="w"> </span>embedded<span class="w"> </span>-t<span class="w"> </span>edgevolution-embedded<span class="w"> </span>.
+</code></pre></div></p>
+<p><strong>Run the ML container (GPU-accelerated):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/EdgeVolution<span class="w"> </span>edgevolution
+</code></pre></div></p>
+<p><strong>Run the embedded container (with USB passthrough for J-Link):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>--privileged<span class="w"> </span>--gpus<span class="w"> </span>all<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/EdgeVolution<span class="w"> </span>edgevolution-embedded
+</code></pre></div></p>
+<h2 id="running-experiments">Running Experiments<a class="headerlink" href="#running-experiments" title="Permanent link">&para;</a></h2>
+<p>EdgeVolution uses <a href="https://hydra.cc/">Hydra</a> for configuration. Experiments require three config groups:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Flag</th>
+<th>Available configs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hyperparameters</td>
+<td><code>+hyperparameters=</code></td>
+<td><code>speech_commands</code>, <code>cifar10</code>, <code>daliac</code>, <code>emg_airob</code></td>
+</tr>
+<tr>
+<td>Search space</td>
+<td><code>+search_space=</code></td>
+<td><code>speech_commands</code>, <code>cifar10</code>, <code>daliac</code>, <code>emg_airob</code>, <code>complete</code></td>
+</tr>
+<tr>
+<td>Boards</td>
+<td><code>+boards=</code></td>
+<td><code>none</code>, <code>nrf52840dk</code>, <code>nrf5340dk</code>, <code>nrf52833dk</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="speech-commands-no-mcu-evaluation">Speech commands (no MCU evaluation)<a class="headerlink" href="#speech-commands-no-mcu-evaluation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>main.py<span class="w"> </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span>+boards<span class="o">=</span>none
+</code></pre></div>
+<h3 id="speech-commands-with-mcu-evaluation-on-nrf52840">Speech commands with MCU evaluation on nRF52840<a class="headerlink" href="#speech-commands-with-mcu-evaluation-on-nrf52840" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>main.py<span class="w"> </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span>+boards<span class="o">=</span>nrf52840dk
+</code></pre></div>
+<h3 id="cifar-10-no-mcu-evaluation">CIFAR-10 (no MCU evaluation)<a class="headerlink" href="#cifar-10-no-mcu-evaluation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>main.py<span class="w"> </span>+hyperparameters<span class="o">=</span>cifar10<span class="w"> </span>+search_space<span class="o">=</span>cifar10<span class="w"> </span>+boards<span class="o">=</span>none
+</code></pre></div>
+<h3 id="daliac-no-mcu-evaluation">DaLiAc (no MCU evaluation)<a class="headerlink" href="#daliac-no-mcu-evaluation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>python<span class="w"> </span>main.py<span class="w"> </span>+hyperparameters<span class="o">=</span>daliac<span class="w"> </span>+search_space<span class="o">=</span>daliac<span class="w"> </span>+boards<span class="o">=</span>none
+</code></pre></div>
+<h3 id="override-individual-parameters">Override individual parameters<a class="headerlink" href="#override-individual-parameters" title="Permanent link">&para;</a></h3>
+<p>Hydra lets you override any config value from the command line:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>+boards<span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>hyperparameters.num_epochs.value<span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span>hyperparameters.num_generations.value<span class="o">=</span><span class="m">5</span>
+</code></pre></div>
+<h2 id="continuing-a-run">Continuing a Run<a class="headerlink" href="#continuing-a-run" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nv">continue_path</span><span class="o">=</span>Results/speech_commands/&lt;run_folder&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nv">continue_generation</span><span class="o">=</span><span class="m">5</span>
+</code></pre></div>
+<h2 id="surrogate-assisted-search">Surrogate-Assisted Search<a class="headerlink" href="#surrogate-assisted-search" title="Permanent link">&para;</a></h2>
+<p>EdgeVolution includes an optional surrogate model that predicts validation accuracy from architecture encodings. It pre-screens individuals each generation and skips training for those confidently predicted to perform poorly, reducing overall search time.</p>
+<p>Two model backends are available:</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Flag value</th>
+<th>Strengths</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Random Forest</td>
+<td><code>random_forest</code> (default)</td>
+<td>Fast, robust, good default. Tree-variance provides uncertainty.</td>
+</tr>
+<tr>
+<td>Gaussian Process</td>
+<td><code>gaussian_process</code></td>
+<td>Calibrated Bayesian uncertainty. Best for small datasets. O(n³) scaling.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="accuracy-surrogate-enable-pre-screening">Accuracy surrogate: enable pre-screening<a class="headerlink" href="#accuracy-surrogate-enable-pre-screening" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span>+boards<span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>surrogate_accuracy.enabled.value<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+<h3 id="use-a-gaussian-process-backend">Use a Gaussian Process backend<a class="headerlink" href="#use-a-gaussian-process-backend" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span>+boards<span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>surrogate_accuracy.enabled.value<span class="o">=</span><span class="nb">true</span><span class="w"> </span>surrogate_accuracy.model_type.value<span class="o">=</span>gaussian_process
+</code></pre></div>
+<h3 id="evaluation-mode-predict-but-still-train-everything">Evaluation mode (predict but still train everything)<a class="headerlink" href="#evaluation-mode-predict-but-still-train-everything" title="Permanent link">&para;</a></h3>
+<p>In evaluation mode the surrogate predicts accuracy for every individual but never skips any — all individuals are still fully trained. This produces ground-truth predicted-vs-actual data useful for paper figures (scatter plots, error distributions, per-generation correlation).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span>+boards<span class="o">=</span>none<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>surrogate_accuracy.enabled.value<span class="o">=</span><span class="nb">true</span><span class="w"> </span>surrogate_accuracy.evaluation_mode.value<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+<h3 id="hardware-surrogate">Hardware surrogate<a class="headerlink" href="#hardware-surrogate" title="Permanent link">&para;</a></h3>
+<p>A second surrogate can predict hardware metrics (energy, inference time) to skip MCU evaluation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>python<span class="w"> </span>main.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>+hyperparameters<span class="o">=</span>speech_commands<span class="w"> </span>+search_space<span class="o">=</span>speech_commands<span class="w"> </span>+boards<span class="o">=</span>nrf52840dk<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>surrogate_hardware.enabled.value<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+<h3 id="tuning-the-accuracy-vs-time-trade-off">Tuning the accuracy vs. time trade-off<a class="headerlink" href="#tuning-the-accuracy-vs-time-trade-off" title="Permanent link">&para;</a></h3>
+<p>The surrogate skips training for individuals it confidently predicts to perform poorly. This saves time but means those architectures never get a real evaluation — if the surrogate is wrong, good candidates may be discarded. Two parameters control this trade-off directly:</p>
+<ul>
+<li><strong><code>confidence_threshold</code></strong> (default <code>0.5</code>) — Only individuals predicted <em>below</em> this accuracy are skip candidates. Lowering it makes the surrogate more conservative (skips fewer, wastes less potential). Raising it skips more aggressively and saves more time, but increases the risk of discarding promising architectures.</li>
+<li><strong><code>exploration_ratio</code></strong> (default <code>0.2</code>) — Fraction of the population that is <em>always</em> trained, regardless of predictions. This prevents the surrogate from reinforcing its own biases. A higher ratio is safer but reduces the time savings; a lower ratio maximizes speedup at the cost of exploration.</li>
+</ul>
+<p>As a rule of thumb: if your per-individual training time is <strong>short</strong> (a few seconds to minutes), the surrogate overhead may not be worth the risk — train everything. If training is <strong>expensive</strong> (tens of minutes to hours per individual), even a moderately accurate surrogate pays for itself by cutting the population that needs full training.</p>
+<p>Start with evaluation mode (<code>surrogate_accuracy.evaluation_mode.value=true</code>) to measure the surrogate's accuracy on your specific search space before relying on it to skip training. Check <code>surrogate_evaluation.png</code> in the results folder — if the correlation is low or the MAE is large relative to accuracy differences in your population, keep the confidence threshold conservative or increase the exploration ratio.</p>
+<h3 id="output-files">Output files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h3>
+<p>When the accuracy surrogate is enabled, two CSV files are written to <code>{results_dir}/surrogate_accuracy/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>surrogate_log.csv</code></td>
+<td>Per-individual records: <code>generation, individual, predicted_acc, uncertainty, actual_acc, skipped</code></td>
+</tr>
+<tr>
+<td><code>surrogate_summary.csv</code></td>
+<td>Per-generation aggregates: <code>generation, n_total, n_skipped, n_trained, mae, correlation, r_squared</code></td>
+</tr>
+</tbody>
+</table>
+<p>When the hardware surrogate is enabled, the same files are written to <code>{results_dir}/surrogate_hardware/</code>.</p>
+<h2 id="running-tests">Running Tests<a class="headerlink" href="#running-tests" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-v<span class="w"> </span>-p<span class="w"> </span>no:dash
+</code></pre></div>
+<h2 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h2>
+<p>All config files live under <code>conf/</code>. See the READMEs in each subdirectory for details:</p>
+<ul>
+<li><a href="../conf/hyperparameters/README.md">Hyperparameters</a> — training parameters, population sizes, fitness weights</li>
+<li><a href="../conf/search_space/README.md">Search space</a> — layer types, parameter ranges, topology rules</li>
+<li><a href="../conf/boards/README.md">Boards</a> — MCU target definitions (<code>none</code> disables hardware evaluation)</li>
+<li><a href="../surrogate/">Surrogate</a> — surrogate model parameters, backend options, output files</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sidebar", "navigation.expand"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
