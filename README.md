@@ -114,4 +114,19 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 # Citation
 
-tbd
+If you use this work or software in your research, please cite our paper:
+
+```bibtex
+@article{groh2026edgevolution,
+  title={EdgeVolution: democratizing multi-objective neural architecture search and end-to-end deployment on microcontrollers},
+  author={Groh, Ren{\'e} and Dendorfer, Stefan and {\'A}vila Pava, Mateo and Egle, Fabio and Zimmermann, Sebastian and Kist, Andreas M.},
+  journal={Communications Engineering},
+  volume={5},
+  number={1},
+  pages={113},
+  year={2026},
+  publisher={Nature Publishing Group UK London},
+  doi={10.1038/s44172-026-00708-2},
+  url={https://doi.org/10.1038/s44172-026-00708-2}
+}
+```
